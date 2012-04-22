@@ -6,6 +6,7 @@
                    projectFiles="true">
       <itemPath>include/ConnectionManager.h</itemPath>
       <itemPath>include/ConnectionTCP.h</itemPath>
+      <itemPath>include/MessageManager.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
                    displayName="Resource Files"
@@ -17,6 +18,7 @@
       <logicalFolder name="src" displayName="src" projectFiles="true">
         <itemPath>src/ConnectionManager.cpp</itemPath>
         <itemPath>src/ConnectionTCP.cpp</itemPath>
+        <itemPath>src/MessageManager.cpp</itemPath>
       </logicalFolder>
       <itemPath>main.cpp</itemPath>
     </logicalFolder>
@@ -38,6 +40,8 @@
                    kind="IMPORTANT_FILES_FOLDER">
       <itemPath>Makefile</itemPath>
     </logicalFolder>
+    <itemPath>src/SensorMessage.cpp</itemPath>
+    <itemPath>include/SensorMessage.h</itemPath>
   </logicalFolder>
   <sourceRootList>
     <Elem>.</Elem>

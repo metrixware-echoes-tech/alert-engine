@@ -3,7 +3,7 @@
  * faites par les clients. C'est cette fonction qui écoute sur le réseau sur le port indiqué.
  * 
  * @author ECHOES Technologies (RHI)
- * @date 2012-04-2
+ * @date 2012-04-22
  */
 
 #ifndef CONNECTIONMANAGER_H
@@ -25,7 +25,7 @@ public:
      * Destructeur
      */
     virtual ~ConnectionManager();
-    
+ 
 private:
     
    /**
@@ -38,7 +38,7 @@ private:
      * @param pointer : pointeur d'un objet de type ConnectionTCP
      * @param error_code : objet d'erreur boost
      */
-   void handleAcceptConnection(ConnectionTCP::ptrConnectionTCP new_connection,const boost::system::error_code& error);
+   void handleAcceptConnection(ConnectionTCP::ptrConnectionTCP newConnection,const boost::system::error_code& error);
    
     
     //C'est l'objet qui permet d'accepter les connexions entrantes via la méthode async_accept(). 

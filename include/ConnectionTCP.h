@@ -22,15 +22,16 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include "SensorMessage.h"
 
 using boost::asio::ip::tcp;
-
+       
 class ConnectionTCP : public boost::enable_shared_from_this<ConnectionTCP>
 {
     public:
-        
-        //création d'un type de variable :connectionTCP_ptr correspondant au pointeur d'un objet de type ConnectionTCP
-        typedef boost::shared_ptr<ConnectionTCP> ptrConnectionTCP;
+        //création d'un type de variable : ptrConnectionTCP correspondant au pointeur d'un 
+        // objet de type ConnectionTCP
+        typedef boost::shared_ptr<ConnectionTCP> ptrConnectionTCP;          
         
         /**
          * Constructeur de la classe ConnectionTCP
@@ -39,7 +40,7 @@ class ConnectionTCP : public boost::enable_shared_from_this<ConnectionTCP>
         ConnectionTCP(boost::asio::io_service& io_service);
 
         /**
-         * Méthode statique qui créé un objet de type ConnectionTCP
+         * Méthode statique qui créé un objet de type ConnectionTCP et renvoie son adresse (pointeur)
          * @param ioservice          l'ioservice instancié
          * @return ptrConnectionTCP un pointeur vers l'objet créé cf typedef en bas
          */   
@@ -164,7 +165,7 @@ class ConnectionTCP : public boost::enable_shared_from_this<ConnectionTCP>
          *destructeur
          */
         virtual ~ConnectionTCP();
-
+                
     private:
         //socket TCP
         tcp::socket m_socket;
@@ -177,6 +178,6 @@ class ConnectionTCP : public boost::enable_shared_from_this<ConnectionTCP>
         //chaine de caractères du header à recevoir
         char m_in_header[header_length];
         //vecteur de type char du message à recevoir (retaillé en fonction du header)
-        std::vector<char> m_in_data;
+        std::vector<char> m_in_data;       
 };
 #endif // CONNECTIONTCP_H

@@ -3,17 +3,17 @@
 using boost::asio::ip::tcp;
 
 //création d'un type de variable : prtConnectionTCP correspondant au pointeur d'un objet de type ConnectionTCP
-typedef boost::shared_ptr<ConnectionTCP> connectionTCP_ptr;
+typedef boost::shared_ptr<ConnectionTCP> ptrConnectionTCP;
 
-// le constructeur créé le socket à base de l'ioservice et renvoie un pointeur cf shared_ptr
+// le constructeur créé le socket à base de l'ioservice
 ConnectionTCP::ConnectionTCP(boost::asio::io_service& io_service)
     : m_socket(io_service)
 {
 }
 
-connectionTCP_ptr ConnectionTCP::create(boost::asio::io_service& ios)
+ptrConnectionTCP ConnectionTCP::create(boost::asio::io_service& ios)
 {
-    return connectionTCP_ptr(new ConnectionTCP(ios));
+    return ptrConnectionTCP(new ConnectionTCP(ios));
 }
 
 tcp::socket& ConnectionTCP::socket()
@@ -23,5 +23,5 @@ tcp::socket& ConnectionTCP::socket()
 
 ConnectionTCP::~ConnectionTCP()
 {
-    //dtor
+        m_socket.close();
 }

@@ -34,8 +34,10 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
+	${OBJECTDIR}/src/MessageManager.o \
 	${OBJECTDIR}/main.o \
 	${OBJECTDIR}/src/ConnectionManager.o \
+	${OBJECTDIR}/src/SensorMessage.o \
 	${OBJECTDIR}/src/ConnectionTCP.o
 
 # Test Directory
@@ -69,6 +71,11 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engine: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engine ${OBJECTFILES} ${LDLIBSOPTIONS} 
 
+${OBJECTDIR}/src/MessageManager.o: src/MessageManager.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/MessageManager.o src/MessageManager.cpp
+
 ${OBJECTDIR}/main.o: main.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
@@ -78,6 +85,11 @@ ${OBJECTDIR}/src/ConnectionManager.o: src/ConnectionManager.cpp
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/ConnectionManager.o src/ConnectionManager.cpp
+
+${OBJECTDIR}/src/SensorMessage.o: src/SensorMessage.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/SensorMessage.o src/SensorMessage.cpp
 
 ${OBJECTDIR}/src/ConnectionTCP.o: src/ConnectionTCP.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
@@ -106,6 +118,19 @@ ${TESTDIR}/tests/main.o: tests/main.cpp
 	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${TESTDIR}/tests/main.o tests/main.cpp
 
 
+${OBJECTDIR}/src/MessageManager_nomain.o: ${OBJECTDIR}/src/MessageManager.o src/MessageManager.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	@NMOUTPUT=`${NM} ${OBJECTDIR}/src/MessageManager.o`; \
+	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
+	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
+	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
+	then  \
+	    ${RM} $@.d;\
+	    $(COMPILE.cc) -O2 -Dmain=__nomain -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/MessageManager_nomain.o src/MessageManager.cpp;\
+	else  \
+	    ${CP} ${OBJECTDIR}/src/MessageManager.o ${OBJECTDIR}/src/MessageManager_nomain.o;\
+	fi
+
 ${OBJECTDIR}/main_nomain.o: ${OBJECTDIR}/main.o main.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	@NMOUTPUT=`${NM} ${OBJECTDIR}/main.o`; \
@@ -130,6 +155,19 @@ ${OBJECTDIR}/src/ConnectionManager_nomain.o: ${OBJECTDIR}/src/ConnectionManager.
 	    $(COMPILE.cc) -O2 -Dmain=__nomain -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/ConnectionManager_nomain.o src/ConnectionManager.cpp;\
 	else  \
 	    ${CP} ${OBJECTDIR}/src/ConnectionManager.o ${OBJECTDIR}/src/ConnectionManager_nomain.o;\
+	fi
+
+${OBJECTDIR}/src/SensorMessage_nomain.o: ${OBJECTDIR}/src/SensorMessage.o src/SensorMessage.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	@NMOUTPUT=`${NM} ${OBJECTDIR}/src/SensorMessage.o`; \
+	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
+	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
+	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
+	then  \
+	    ${RM} $@.d;\
+	    $(COMPILE.cc) -O2 -Dmain=__nomain -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/SensorMessage_nomain.o src/SensorMessage.cpp;\
+	else  \
+	    ${CP} ${OBJECTDIR}/src/SensorMessage.o ${OBJECTDIR}/src/SensorMessage_nomain.o;\
 	fi
 
 ${OBJECTDIR}/src/ConnectionTCP_nomain.o: ${OBJECTDIR}/src/ConnectionTCP.o src/ConnectionTCP.cpp 

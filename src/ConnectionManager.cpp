@@ -1,4 +1,6 @@
 #include "ConnectionManager.h"
+#include "ConnectionTCP.h"
+#include "MessageManager.h"
 
 //le constructeur créé un objet de type acceptor avec comme paramètre l'io_service, l'IP de la machine et le port 
 //spécifié pour lancer le serveur et lance la méthode start_accept()
@@ -29,12 +31,12 @@ void ConnectionManager::acceptConnection()
 }
 
 
-void  ConnectionManager::handleAcceptConnection(ConnectionTCP::ptrConnectionTCP new_connection,const boost::system::error_code& error)
+void  ConnectionManager::handleAcceptConnection(ConnectionTCP::ptrConnectionTCP newConnection,const boost::system::error_code& error)
 {
     if (!error)
     {
         std::cout << "New sensor connected" << std::endl;
-        //lecture des messages recu       
+        MessageManager::ptrMessageManager messageManager = MessageManager::create(newConnection);
+        acceptConnection();
     }
-
 }
