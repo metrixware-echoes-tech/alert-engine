@@ -1,24 +1,28 @@
 #include <iostream>
 #include "ConnectionTCP.h"
-#include "ServerTCP.h"
+#include "ConnectionManager.h"
 
 using namespace std;
 
 int main()
 {
-	try
-	{
-		//pièce centrale de boost : l'io_service (coeur de la bibliothèque boost)
-		boost::asio::io_service io_service;
-		// Création d'un serveur TCP
-		ServerTCP centralisateur(io_service, 7171);
-		//execute les actions asynchrones. Cette méthode est bloquante
-		io_service.run();
-	}
-	catch (std::exception& e)
-	{
-		std::cerr << e.what() << std::endl;
-	}
+        try
+        {
+            //pièce centrale de boost : l'io_service (coeur de la bibliothèque boost)    
+            boost::asio::io_service io_service;
+            //création d'un endpoint avec l'ip d'écoute et le port d'écoute
+            tcp::endpoint endpoint(tcp::v4(), 7171);
+            
+            //a revoir
+            ConnectionManager mConnectionManager(io_service, endpoint);
+            
+            //execute les actions asynchrones. Cette méthode est bloquante
+            io_service.run();
+        }
+        catch (std::exception& e)
+        {
+                std::cerr << "Exception: " << e.what() << "\n";
+        }
 
-	return 0;
+        return 0;
 }
