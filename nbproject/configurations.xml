@@ -8,6 +8,7 @@
       <itemPath>include/ConnectionTCP.h</itemPath>
       <itemPath>include/Message.h</itemPath>
       <itemPath>include/MessageManager.h</itemPath>
+      <itemPath>include/Value.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
                    displayName="Resource Files"
@@ -22,7 +23,7 @@
         <itemPath>src/Message.cpp</itemPath>
         <itemPath>src/MessageManager.cpp</itemPath>
         <itemPath>src/Value.cpp</itemPath>
-        <itemPath>include/Value.h</itemPath>
+        <itemPath>include/tools.h</itemPath>
       </logicalFolder>
       <itemPath>main.cpp</itemPath>
     </logicalFolder>

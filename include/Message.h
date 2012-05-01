@@ -1,5 +1,5 @@
 /** 
- * La classe Message expose le format des messages recus par les sondes
+ * The message class represent the message format received by the probes
  * 
  * @author ECHOES Technologies (RHI)
  * @date 2012-04-22
@@ -24,11 +24,21 @@
 class Message {
 public:
     /**
-     * classe builder's
-     * @param the substring [ids="1-2-1-2-4-2" value="lkihazaz"]
-     * @return the Value object
+     * class' builder
      */
-    Value unserializeValue(std::string& strValue);
+    Message();
+    
+    /**
+     * class' destructor
+     */
+    virtual ~Message();
+
+    void unserializeValue(std::string& strValue);
+    
+    private:
+    
+    // value of the message
+    Value value1;
     
 
 };

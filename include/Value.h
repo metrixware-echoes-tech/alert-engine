@@ -1,6 +1,5 @@
 /** 
- * La classe Value est une classe fille de la classe Message, elle expose le bloc de valeur qu'on retrouve dans 
- * chaque message
+ * The value class represent the value format received in the message
  * 
  * @author ECHOES Technologies (RHI)
  * @date 2012-04-24
@@ -8,7 +7,7 @@
 
 /**
  * Exemple de valeur dans un message
- * [ids="1-2-1-2-4-2" value="lkihazaz"] signification de ids=idPlugin-idAsset-idSource-idSearch
+ * [ids="1-2-1-2" value="lkihazaz"] signification de ids=idPlugin-idAsset-idSource-idSearch
  */
 
 #ifndef VALUE_H

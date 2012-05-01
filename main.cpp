@@ -1,8 +1,6 @@
 #include <iostream>
 #include "ConnectionTCP.h"
 #include "ConnectionManager.h"
-//test serialisation
-#include "Value.h"
 
 using namespace std;
 
@@ -28,10 +26,16 @@ using namespace std;
 //
 //        return 0;
 //}
+
+//test serialisation
+#include "Message.h"
 //main test de la sérialisation
 int main()
 {
-        
+    Message mess1;
+    std::string s;
+    s.assign("[ids=\"1-2-1-2-4-2\" value=\"lkihazaz\"]");
+    mess1.unserializeValue(s);
 
-        return 0;
+    return 0;
 }

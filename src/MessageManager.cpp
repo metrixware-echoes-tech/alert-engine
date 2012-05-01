@@ -1,5 +1,6 @@
 #include "MessageManager.h"
 #include <string>
+#include "Message.h"
 
 MessageManager::MessageManager(ConnectionTCP::ptrConnectionTCP mmPtrConnectionTCP):
 mPtrConnection(mmPtrConnectionTCP)
