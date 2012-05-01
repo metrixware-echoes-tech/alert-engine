@@ -10,18 +10,13 @@ mPtrConnection(mmPtrConnectionTCP)
 void MessageManager::waitForDatas()
 {
     //on lance l'écoute d'événements
-    mPtrConnection->async_read(mMessage,
-                                 boost::bind(
-                                             &MessageManager::handleWaitForDatas,
-                                             shared_from_this(),
-                                             boost::asio::placeholders::error
-                                             )
-                                 );
-    if(mMessage.m_message.size() != 0)
-    {
-        std::cout << "affichage message :" << std::endl;
-        std::cout << mMessage.m_message << std::endl;
-    }
+//    mPtrConnection->async_read(mMessage,
+//                                 boost::bind(
+//                                             &MessageManager::handleWaitForDatas,
+//                                             shared_from_this(),
+//                                             boost::asio::placeholders::error
+//                                             )
+//                                 );
 }
 
 void MessageManager::handleWaitForDatas(const boost::system::error_code &error)

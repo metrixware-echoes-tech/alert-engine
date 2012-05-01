@@ -15,7 +15,7 @@
 #include <boost/bind.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
-#include "SensorMessage.h"
+#include "Message.h"
 
 class ConnectionManager;
 
@@ -52,7 +52,7 @@ public:
 private:
     
     
-    SensorMessage mMessage;
+   // Message mMessage;
     //pointeur vers la connexion TCP associée à la session de chat
     ConnectionTCP::ptrConnectionTCP mPtrConnection;
     

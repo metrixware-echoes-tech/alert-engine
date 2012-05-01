@@ -22,7 +22,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
-#include "SensorMessage.h"
+#include "Message.h"
 
 using boost::asio::ip::tcp;
        
@@ -109,7 +109,7 @@ class ConnectionTCP : public boost::enable_shared_from_this<ConnectionTCP>
 
                 //on resize notre char de récupération des données en fonction de la taille du header récupérée
                 m_in_data.resize(m_in_datasize);
-                //ligne non comprise, mais appelà handle read data
+                //ligne non comprise, mais appel à handle read data
                 void (ConnectionTCP::*f) (const boost::system::error_code&, T&, boost::tuple<Handler>) = &ConnectionTCP::handle_read_data<T, Handler>;
 
                 //on ré écoute
@@ -141,17 +141,20 @@ class ConnectionTCP : public boost::enable_shared_from_this<ConnectionTCP>
                 {
                     //on met dans une string les données du string de reception en rapport avec sa taille
                     std::string archive_data(&m_in_data[0], m_in_data.size());
+                    std::cout << "archive :" << archive_data << std::endl;
                     //on créer un flux texte d'entrée pour les datas et on met archive_data dans stream_data_in
                     std::istringstream stream_data_in(archive_data);
                     //on applique le désarchivage du flux texte
                     boost::archive::text_iarchive archive(stream_data_in);
                     //on rempli le buffer avec l'archive désérialisée
                     archive >> t;
+                    std::cout << "message unserialized and SensorMessage object filled" << std::endl;
                 }
                 catch (std::exception& e)
                 {
                     //en cas d'echec
                     boost::system::error_code error(boost::asio::error::invalid_argument);
+                    std::cout << "unserialization failed of the received message" << std::endl;
                     boost::get<0>(handler)(error);
                     return;
                 }
