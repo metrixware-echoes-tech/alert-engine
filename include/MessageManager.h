@@ -10,12 +10,17 @@
 #define	MESSAGEMANAGER_H
 
 #include "ConnectionTCP.h"
+#include "Message.h"
 #include <iostream>
+#include <queue>
+#include <vector>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
-#include "Message.h"
+
+
+#define PACKET_SIZE 1500
 
 class ConnectionManager;
 
@@ -24,8 +29,8 @@ class MessageManager : public boost::enable_shared_from_this<MessageManager>
 public:
     //création d'un type de variable :ptrMessageManager correspondant au pointeur 
     //d'un objet de type MessageManager
-    typedef boost::shared_ptr<MessageManager> ptrMessageManager;    
-    
+    typedef boost::shared_ptr<MessageManager> ptrMessageManager;  
+      
     /**
      * Constructeur de la classe
      * @param la connexion TCP associée 
@@ -52,10 +57,12 @@ public:
 private:
     
     
-   // Message mMessage;
-    //pointeur vers la connexion TCP associée à la session de chat
+    //pointeur vers la connexion TCP associée à la sonde
     ConnectionTCP::ptrConnectionTCP mPtrConnection;
     
+    //FIFO of char entries. Each entry contains PACKET_SIZE bytes of char
+    std::queue<std::vector<char, PACKET_SIZE> > dataQueue;
+
 };
 
 #endif	/* MESSAGEMANAGER_H */

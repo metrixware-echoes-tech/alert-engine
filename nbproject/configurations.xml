@@ -4,11 +4,10 @@
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
-      <itemPath>include/ConnectionManager.h</itemPath>
-      <itemPath>include/ConnectionTCP.h</itemPath>
-      <itemPath>include/Message.h</itemPath>
-      <itemPath>include/MessageManager.h</itemPath>
+      <itemPath>include/StructuredData.h</itemPath>
+      <itemPath>include/Syslog.h</itemPath>
       <itemPath>include/Value.h</itemPath>
+      <itemPath>include/tools.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
                    displayName="Resource Files"
@@ -18,12 +17,9 @@
                    displayName="Source Files"
                    projectFiles="true">
       <logicalFolder name="src" displayName="src" projectFiles="true">
-        <itemPath>src/ConnectionManager.cpp</itemPath>
-        <itemPath>src/ConnectionTCP.cpp</itemPath>
-        <itemPath>src/Message.cpp</itemPath>
-        <itemPath>src/MessageManager.cpp</itemPath>
+        <itemPath>src/StructuredData.cpp</itemPath>
+        <itemPath>src/Syslog.cpp</itemPath>
         <itemPath>src/Value.cpp</itemPath>
-        <itemPath>include/tools.h</itemPath>
       </logicalFolder>
       <itemPath>main.cpp</itemPath>
     </logicalFolder>
@@ -70,6 +66,7 @@
             <linkerLibLibItem>pthread</linkerLibLibItem>
             <linkerLibLibItem>boost_thread</linkerLibLibItem>
             <linkerLibLibItem>boost_serialization</linkerLibLibItem>
+            <linkerLibLibItem>wt</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>

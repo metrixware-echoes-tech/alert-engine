@@ -34,12 +34,10 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
+	${OBJECTDIR}/src/Syslog.o \
+	${OBJECTDIR}/src/StructuredData.o \
 	${OBJECTDIR}/main.o \
-	${OBJECTDIR}/src/MessageManager.o \
-	${OBJECTDIR}/src/ConnectionManager.o \
-	${OBJECTDIR}/src/Value.o \
-	${OBJECTDIR}/src/Message.o \
-	${OBJECTDIR}/src/ConnectionTCP.o
+	${OBJECTDIR}/src/Value.o
 
 # Test Directory
 TESTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}/tests
@@ -72,35 +70,25 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engine: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engine ${OBJECTFILES} ${LDLIBSOPTIONS} 
 
+${OBJECTDIR}/src/Syslog.o: src/Syslog.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/Syslog.o src/Syslog.cpp
+
+${OBJECTDIR}/src/StructuredData.o: src/StructuredData.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/StructuredData.o src/StructuredData.cpp
+
 ${OBJECTDIR}/main.o: main.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
 	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/main.o main.cpp
 
-${OBJECTDIR}/src/MessageManager.o: src/MessageManager.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/MessageManager.o src/MessageManager.cpp
-
-${OBJECTDIR}/src/ConnectionManager.o: src/ConnectionManager.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/ConnectionManager.o src/ConnectionManager.cpp
-
 ${OBJECTDIR}/src/Value.o: src/Value.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/Value.o src/Value.cpp
-
-${OBJECTDIR}/src/Message.o: src/Message.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/Message.o src/Message.cpp
-
-${OBJECTDIR}/src/ConnectionTCP.o: src/ConnectionTCP.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/ConnectionTCP.o src/ConnectionTCP.cpp
 
 # Subprojects
 .build-subprojects:
@@ -124,6 +112,32 @@ ${TESTDIR}/tests/main.o: tests/main.cpp
 	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${TESTDIR}/tests/main.o tests/main.cpp
 
 
+${OBJECTDIR}/src/Syslog_nomain.o: ${OBJECTDIR}/src/Syslog.o src/Syslog.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	@NMOUTPUT=`${NM} ${OBJECTDIR}/src/Syslog.o`; \
+	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
+	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
+	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
+	then  \
+	    ${RM} $@.d;\
+	    $(COMPILE.cc) -O2 -Dmain=__nomain -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/Syslog_nomain.o src/Syslog.cpp;\
+	else  \
+	    ${CP} ${OBJECTDIR}/src/Syslog.o ${OBJECTDIR}/src/Syslog_nomain.o;\
+	fi
+
+${OBJECTDIR}/src/StructuredData_nomain.o: ${OBJECTDIR}/src/StructuredData.o src/StructuredData.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	@NMOUTPUT=`${NM} ${OBJECTDIR}/src/StructuredData.o`; \
+	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
+	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
+	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
+	then  \
+	    ${RM} $@.d;\
+	    $(COMPILE.cc) -O2 -Dmain=__nomain -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/StructuredData_nomain.o src/StructuredData.cpp;\
+	else  \
+	    ${CP} ${OBJECTDIR}/src/StructuredData.o ${OBJECTDIR}/src/StructuredData_nomain.o;\
+	fi
+
 ${OBJECTDIR}/main_nomain.o: ${OBJECTDIR}/main.o main.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	@NMOUTPUT=`${NM} ${OBJECTDIR}/main.o`; \
@@ -137,32 +151,6 @@ ${OBJECTDIR}/main_nomain.o: ${OBJECTDIR}/main.o main.cpp
 	    ${CP} ${OBJECTDIR}/main.o ${OBJECTDIR}/main_nomain.o;\
 	fi
 
-${OBJECTDIR}/src/MessageManager_nomain.o: ${OBJECTDIR}/src/MessageManager.o src/MessageManager.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	@NMOUTPUT=`${NM} ${OBJECTDIR}/src/MessageManager.o`; \
-	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
-	then  \
-	    ${RM} $@.d;\
-	    $(COMPILE.cc) -O2 -Dmain=__nomain -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/MessageManager_nomain.o src/MessageManager.cpp;\
-	else  \
-	    ${CP} ${OBJECTDIR}/src/MessageManager.o ${OBJECTDIR}/src/MessageManager_nomain.o;\
-	fi
-
-${OBJECTDIR}/src/ConnectionManager_nomain.o: ${OBJECTDIR}/src/ConnectionManager.o src/ConnectionManager.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	@NMOUTPUT=`${NM} ${OBJECTDIR}/src/ConnectionManager.o`; \
-	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
-	then  \
-	    ${RM} $@.d;\
-	    $(COMPILE.cc) -O2 -Dmain=__nomain -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/ConnectionManager_nomain.o src/ConnectionManager.cpp;\
-	else  \
-	    ${CP} ${OBJECTDIR}/src/ConnectionManager.o ${OBJECTDIR}/src/ConnectionManager_nomain.o;\
-	fi
-
 ${OBJECTDIR}/src/Value_nomain.o: ${OBJECTDIR}/src/Value.o src/Value.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	@NMOUTPUT=`${NM} ${OBJECTDIR}/src/Value.o`; \
@@ -174,32 +162,6 @@ ${OBJECTDIR}/src/Value_nomain.o: ${OBJECTDIR}/src/Value.o src/Value.cpp
 	    $(COMPILE.cc) -O2 -Dmain=__nomain -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/Value_nomain.o src/Value.cpp;\
 	else  \
 	    ${CP} ${OBJECTDIR}/src/Value.o ${OBJECTDIR}/src/Value_nomain.o;\
-	fi
-
-${OBJECTDIR}/src/Message_nomain.o: ${OBJECTDIR}/src/Message.o src/Message.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	@NMOUTPUT=`${NM} ${OBJECTDIR}/src/Message.o`; \
-	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
-	then  \
-	    ${RM} $@.d;\
-	    $(COMPILE.cc) -O2 -Dmain=__nomain -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/Message_nomain.o src/Message.cpp;\
-	else  \
-	    ${CP} ${OBJECTDIR}/src/Message.o ${OBJECTDIR}/src/Message_nomain.o;\
-	fi
-
-${OBJECTDIR}/src/ConnectionTCP_nomain.o: ${OBJECTDIR}/src/ConnectionTCP.o src/ConnectionTCP.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	@NMOUTPUT=`${NM} ${OBJECTDIR}/src/ConnectionTCP.o`; \
-	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
-	then  \
-	    ${RM} $@.d;\
-	    $(COMPILE.cc) -O2 -Dmain=__nomain -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/ConnectionTCP_nomain.o src/ConnectionTCP.cpp;\
-	else  \
-	    ${CP} ${OBJECTDIR}/src/ConnectionTCP.o ${OBJECTDIR}/src/ConnectionTCP_nomain.o;\
 	fi
 
 # Run Test Targets

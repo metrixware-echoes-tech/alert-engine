@@ -19,7 +19,7 @@
 #define	MESSAGE_H
 
 #include <string>
-#include "Value.h"
+#include <Wt/WDateTime>
 
 class Message {
 public:
@@ -33,14 +33,28 @@ public:
      */
     virtual ~Message();
 
-    void unserializeValue(std::string& strValue);
+    /**
+     * method the unserialize a value included in a message
+     * @param strValue the string that contains the informations
+     * @return error or success
+     */
+    int unserializeValue(std::string& strValue);
     
-    private:
+  
+private:    
+    //Message's Identifier
+    unsigned int idMessage;
+    //Probe's identifer
+    unsigned int idProbe;
+    //PID of the process
+    unsigned int pid;  
+    //name of the process
+    std::string processName;
+    //FQDN of the probe
+    std::string FQDN;
+    //Sent date of the message on the probe
+    Wt::WDateTime SentDate;
     
-    // value of the message
-    Value value1;
-    
-
 };
 
 #endif	/* MESSAGE_H */

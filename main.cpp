@@ -1,41 +1,10 @@
-#include <iostream>
-#include "ConnectionTCP.h"
-#include "ConnectionManager.h"
+#include "StructuredData.h"
 
-using namespace std;
-
-//int main()
-//{
-//        try
-//        {
-//            //pièce centrale de boost : l'io_service (coeur de la bibliothèque boost)    
-//            boost::asio::io_service io_service;
-//            //création d'un endpoint avec l'ip d'écoute et le port d'écoute
-//            tcp::endpoint endpoint(tcp::v4(), 7171);
-//            
-//            //a revoir
-//            ConnectionManager mConnectionManager(io_service, endpoint);
-//            
-//            //execute les actions asynchrones. Cette méthode est bloquante
-//            io_service.run();
-//        }
-//        catch (std::exception& e)
-//        {
-//                std::cerr << "Exception: " << e.what() << "\n";
-//        }
-//
-//        return 0;
-//}
-
-//test serialisation
-#include "Message.h"
-//main test de la sérialisation
 int main()
 {
-    Message mess1;
-    std::string s;
-    s.assign("[ids=\"1-2-1-2-4-2\" value=\"lkihazaz\"]");
-    mess1.unserializeValue(s);
-
+    StructuredData a;
+    std::string toto;
+    toto.assign("[prop@5875 ver=1 probe=12][res2@5875 offset=15 8-4-5-6-2=\"543\" 8-4-5-6-1=\"54546\"][res1@5875 offset=15 8-4-5-6-2=\"543\" 8-4-5-6-1=\"54546\"]");
+    a.unserializeStructuredData(toto);   
     return 0;
 }
