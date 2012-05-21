@@ -7,7 +7,7 @@
 
 /**
  * part of the log parsed here
- * idPlugin-idAsset-idSource-idSearch-idSubSearch="value"
+ * idPlugin-idAsset-idSource-idSearch-numSubSearch="value"
  */
 
 #ifndef VALUE_H

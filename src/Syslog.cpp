@@ -4,14 +4,12 @@ Syslog::Syslog()
 {
 }
 
-Syslog::Syslog(std::string mReceptionDate,
-               std::string mSentDate,
+Syslog::Syslog(std::string mSentDate,
                std::string mHostname,
                std::string mAppName,
                std::string mProcId,
                std::string mMsgId
-              ):receptionDate(mReceptionDate),
-                sentDate(mSentDate),
+              ):sentDate(mSentDate),
                 hostname(mHostname),
                 appName(mAppName),
                 procId(mProcId),
@@ -39,4 +37,19 @@ unsigned int Syslog::getPrbId()
 void Syslog::setPrbId(unsigned int id)
 {
     prbId = id;
+}
+
+std::string Syslog::getSentDate()
+{
+    return sentDate;
+}
+
+std::string Syslog::getReceptionDate()
+{
+    return receptionDate;
+}
+
+void Syslog::setReceptionDate(std::string date)
+{
+    receptionDate = date;
 }

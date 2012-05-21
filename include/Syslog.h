@@ -20,8 +20,7 @@ public:
     /**
      * class' builder
      */
-    Syslog(std::string mReceptionDate,
-           std::string mSentDate,
+    Syslog(std::string msentDate,
            std::string mHostname,
            std::string mAppName,
            std::string mProcId,
@@ -38,6 +37,11 @@ public:
     
     unsigned int getPrbId();
     void setPrbId(unsigned int id);
+    
+    std::string getSentDate();
+    
+    std::string getReceptionDate();
+    void setReceptionDate(std::string date);
     
 private:
 
