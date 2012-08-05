@@ -4,10 +4,8 @@
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
-      <itemPath>include/StructuredData.h</itemPath>
-      <itemPath>include/Syslog.h</itemPath>
-      <itemPath>include/Value.h</itemPath>
-      <itemPath>include/tools.h</itemPath>
+      <itemPath>include/Parser.h</itemPath>
+      <itemPath>include/ToolsEngine.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
                    displayName="Resource Files"
@@ -17,9 +15,8 @@
                    displayName="Source Files"
                    projectFiles="true">
       <logicalFolder name="src" displayName="src" projectFiles="true">
-        <itemPath>src/StructuredData.cpp</itemPath>
-        <itemPath>src/Syslog.cpp</itemPath>
-        <itemPath>src/Value.cpp</itemPath>
+        <itemPath>src/Parser.cpp</itemPath>
+        <itemPath>src/ToolsEngine.cpp</itemPath>
       </logicalFolder>
       <itemPath>main.cpp</itemPath>
     </logicalFolder>
@@ -51,22 +48,29 @@
     <conf name="Debug" type="1">
       <toolsSet>
         <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
-        <compilerSet>default</compilerSet>
+        <compilerSet>GNU|GNU</compilerSet>
       </toolsSet>
       <compileType>
         <ccTool>
           <incDir>
             <pElem>include</pElem>
             <pElem>../UnitTest++/src</pElem>
+            <pElem>../dbo/include</pElem>
           </incDir>
         </ccTool>
         <linkerTool>
+          <linkerAddLib>
+            <pElem>../dbo/dist/SharedObjectFcgid/GNU-Linux-x86</pElem>
+          </linkerAddLib>
           <linkerLibItems>
             <linkerLibLibItem>boost_system</linkerLibLibItem>
             <linkerLibLibItem>pthread</linkerLibLibItem>
             <linkerLibLibItem>boost_thread</linkerLibLibItem>
             <linkerLibLibItem>boost_serialization</linkerLibLibItem>
             <linkerLibLibItem>wt</linkerLibLibItem>
+            <linkerLibLibItem>wtdbo</linkerLibLibItem>
+            <linkerLibLibItem>dbo</linkerLibLibItem>
+            <linkerLibLibItem>boost_filesystem</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>

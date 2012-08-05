@@ -6,22 +6,30 @@
  * @date 2012-05-08
  */
 
-#ifndef STRUCTUREDDATA_H
-#define	STRUCTUREDDATA_H
+#ifndef PARSER_H
+#define	PARSER_H
 
-#include "Syslog.h"
-#include "Value.h"
+#include "information/Syslog.h"
+#include "probe/Probe.h"
+#include <tools/Session.h>
 #include <string>
 #include <queue>
 #include <iostream>
+#include <Wt/Dbo/Dbo>
+#include <Wt/WDateTime>
+#include <Wt/Utils>
+#include "ToolsEngine.h"
+#include <information/InformationValue.h>
+#include <information/Information.h>
+#include <asset/Asset.h>
 
-class StructuredData {
+class Parser {
 public:
     /**
      * class' builder
      */
-    StructuredData();
-    virtual ~StructuredData();
+    Parser();
+    virtual ~Parser();
     /**
      * example of a rawStructuredData : 
      * [res2@5875 offset=10 8-4-5-6-2="53" 8-4-5-6-1="987"]
@@ -30,38 +38,40 @@ public:
     
     /**
      * method to fill the value's queue with the initial rawStructuredData 
-     * @param the rawStructuredData
+     * @param the pointer to the syslog we want to parse
      * @return error or success
      */
-    int unserializeStructuredData(std::string& rawStructuredData);
+    int unserializeStructuredData(Wt::Dbo::ptr<Syslog> ptrSyslog);
     
     /**
      * method to unserialize the SD Elements included in a rawStructuredData
      * @param strSDElement the string that contains the informations
+     * @param the pointer to the syslog we want to parse
      * @return error or success
      */
-    int unserializeSDElement(std::string& strSDElement);
+    int unserializeSDElement(std::string& strSDElement, Wt::Dbo::ptr<Syslog> ptrSyslog);
     
     /**
      * method to unserialize a value included in a SDElement
      * @param strValue the string that contains the informations
      * @param offset the offet contained on the sd-element to calculate the date
+     * @param the pointer to the syslog we want to parse
      * @return error or success
      */
-    int unserializeValue(std::string& strValue, int offset);
+    int unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Syslog> ptrSyslog);
     
     /**
      * method to unserialize the sd-element concerning the properties
      * @param strProperties the sub string of rawStructuredData that contains the properties
+     * @param the pointer to the syslog we want to parse, to fill the properties inside
      * @return error or success
      */
-    int unserializeProperties(std::string& strProperties);
+    int unserializeProperties(std::string& strProperties, Wt::Dbo::ptr<Syslog> ptrSyslog);
     
 private:
-    Syslog syslogHeader;
-    Value tempValue;
-    std::queue<Value> valuesFifo;
+      InformationValue *informationValueTmp;
+
 };
 
-#endif	/* STRUCTUREDDATA_H */
+#endif	/* PARSER_H */
 

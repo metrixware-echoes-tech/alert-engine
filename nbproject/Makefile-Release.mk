@@ -34,10 +34,9 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
-	${OBJECTDIR}/src/Syslog.o \
-	${OBJECTDIR}/src/StructuredData.o \
 	${OBJECTDIR}/main.o \
-	${OBJECTDIR}/src/Value.o
+	${OBJECTDIR}/src/Parser.o \
+	${OBJECTDIR}/src/ToolsEngine.o
 
 # Test Directory
 TESTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}/tests
@@ -70,25 +69,20 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engine: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engine ${OBJECTFILES} ${LDLIBSOPTIONS} 
 
-${OBJECTDIR}/src/Syslog.o: src/Syslog.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/Syslog.o src/Syslog.cpp
-
-${OBJECTDIR}/src/StructuredData.o: src/StructuredData.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/StructuredData.o src/StructuredData.cpp
-
 ${OBJECTDIR}/main.o: main.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
 	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/main.o main.cpp
 
-${OBJECTDIR}/src/Value.o: src/Value.cpp 
+${OBJECTDIR}/src/Parser.o: src/Parser.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/Value.o src/Value.cpp
+	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/Parser.o src/Parser.cpp
+
+${OBJECTDIR}/src/ToolsEngine.o: src/ToolsEngine.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/ToolsEngine.o src/ToolsEngine.cpp
 
 # Subprojects
 .build-subprojects:
@@ -112,32 +106,6 @@ ${TESTDIR}/tests/main.o: tests/main.cpp
 	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${TESTDIR}/tests/main.o tests/main.cpp
 
 
-${OBJECTDIR}/src/Syslog_nomain.o: ${OBJECTDIR}/src/Syslog.o src/Syslog.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	@NMOUTPUT=`${NM} ${OBJECTDIR}/src/Syslog.o`; \
-	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
-	then  \
-	    ${RM} $@.d;\
-	    $(COMPILE.cc) -O2 -Dmain=__nomain -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/Syslog_nomain.o src/Syslog.cpp;\
-	else  \
-	    ${CP} ${OBJECTDIR}/src/Syslog.o ${OBJECTDIR}/src/Syslog_nomain.o;\
-	fi
-
-${OBJECTDIR}/src/StructuredData_nomain.o: ${OBJECTDIR}/src/StructuredData.o src/StructuredData.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	@NMOUTPUT=`${NM} ${OBJECTDIR}/src/StructuredData.o`; \
-	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
-	then  \
-	    ${RM} $@.d;\
-	    $(COMPILE.cc) -O2 -Dmain=__nomain -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/StructuredData_nomain.o src/StructuredData.cpp;\
-	else  \
-	    ${CP} ${OBJECTDIR}/src/StructuredData.o ${OBJECTDIR}/src/StructuredData_nomain.o;\
-	fi
-
 ${OBJECTDIR}/main_nomain.o: ${OBJECTDIR}/main.o main.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	@NMOUTPUT=`${NM} ${OBJECTDIR}/main.o`; \
@@ -151,17 +119,30 @@ ${OBJECTDIR}/main_nomain.o: ${OBJECTDIR}/main.o main.cpp
 	    ${CP} ${OBJECTDIR}/main.o ${OBJECTDIR}/main_nomain.o;\
 	fi
 
-${OBJECTDIR}/src/Value_nomain.o: ${OBJECTDIR}/src/Value.o src/Value.cpp 
+${OBJECTDIR}/src/Parser_nomain.o: ${OBJECTDIR}/src/Parser.o src/Parser.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
-	@NMOUTPUT=`${NM} ${OBJECTDIR}/src/Value.o`; \
+	@NMOUTPUT=`${NM} ${OBJECTDIR}/src/Parser.o`; \
 	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
 	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
 	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
 	then  \
 	    ${RM} $@.d;\
-	    $(COMPILE.cc) -O2 -Dmain=__nomain -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/Value_nomain.o src/Value.cpp;\
+	    $(COMPILE.cc) -O2 -Dmain=__nomain -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/Parser_nomain.o src/Parser.cpp;\
 	else  \
-	    ${CP} ${OBJECTDIR}/src/Value.o ${OBJECTDIR}/src/Value_nomain.o;\
+	    ${CP} ${OBJECTDIR}/src/Parser.o ${OBJECTDIR}/src/Parser_nomain.o;\
+	fi
+
+${OBJECTDIR}/src/ToolsEngine_nomain.o: ${OBJECTDIR}/src/ToolsEngine.o src/ToolsEngine.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	@NMOUTPUT=`${NM} ${OBJECTDIR}/src/ToolsEngine.o`; \
+	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
+	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
+	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
+	then  \
+	    ${RM} $@.d;\
+	    $(COMPILE.cc) -O2 -Dmain=__nomain -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/ToolsEngine_nomain.o src/ToolsEngine.cpp;\
+	else  \
+	    ${CP} ${OBJECTDIR}/src/ToolsEngine.o ${OBJECTDIR}/src/ToolsEngine_nomain.o;\
 	fi
 
 # Run Test Targets
