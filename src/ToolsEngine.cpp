@@ -33,3 +33,12 @@ int ToolsEngine::stringToInt(std::string str)
     size = 0;
     return intConv;
 }
+
+Wt::WLogEntry ToolsEngine::log(std::string criticity)
+{
+    logger.addField("type",false);
+    logger.addField("datetime",false);
+    logger.addField("message", true);
+ 
+    return ToolsEngine::logger.entry(criticity) << criticity << Wt::WLogger::sep << Wt::WLogger::timestamp << Wt::WLogger::sep;
+}

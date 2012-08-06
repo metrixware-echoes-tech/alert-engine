@@ -13,6 +13,7 @@
 #include <stdlib.h>
 
 #include <tools/Session.h>
+#include <Wt/WLogger>
 
 class ToolsEngine {
 public:
@@ -22,9 +23,11 @@ public:
     ToolsEngine();
     virtual ~ToolsEngine();
 
-    static Session session;      
+    static Session session;
+    static Wt::WLogger logger;
     static int wstringToInt(std::wstring str);
     static int stringToInt(std::string str);
+    static Wt::WLogEntry log(std::string criticity);
 };
 
 

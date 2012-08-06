@@ -69,7 +69,23 @@ public:
     int unserializeProperties(std::string& strProperties, Wt::Dbo::ptr<Syslog> ptrSyslog);
     
 private:
+      
+      //concerning value
       InformationValue *informationValueTmp;
+      int idAsset;
+      int idPlugin;
+      int idSearch;
+      int idSource;
+      int numSubSearch;
+      std::string sValue;
+      
+      //concerning SD Element
+      int offset;
+      std::vector<std::string> idsPlusValue; // the list of 8-4-5-6-2="543" ids="val"
+      std::vector<size_t> spaces; // the list of the spaces in the sub string
+      
+      //concerning Structure Datas
+      std::vector<size_t> posBrackets; // the list of the brackets positions
 
 };
 
