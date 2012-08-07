@@ -36,7 +36,8 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 OBJECTFILES= \
 	${OBJECTDIR}/main.o \
 	${OBJECTDIR}/src/Parser.o \
-	${OBJECTDIR}/src/ToolsEngine.o
+	${OBJECTDIR}/src/ToolsEngine.o \
+	${OBJECTDIR}/src/AlertProcessor.o
 
 # Test Directory
 TESTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}/tests
@@ -59,7 +60,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=-L../dbo/dist/SharedObjectFcgid/GNU-Linux-x86 -lboost_system -lpthread -lboost_thread -lboost_serialization -lwt -lwtdbo -ldbo -lboost_filesystem
+LDLIBSOPTIONS=-L../dbo/dist/SharedObjectWthttpd/GNU-Linux-x86 -lboost_system -lpthread -lboost_thread -lboost_serialization -lboost_filesystem -lwt -lwtdbo -ldbo
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
@@ -83,6 +84,11 @@ ${OBJECTDIR}/src/ToolsEngine.o: src/ToolsEngine.cpp
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.cc) -g -Iinclude -I../UnitTest++/src -I../dbo/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/ToolsEngine.o src/ToolsEngine.cpp
+
+${OBJECTDIR}/src/AlertProcessor.o: src/AlertProcessor.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -g -Iinclude -I../UnitTest++/src -I../dbo/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/AlertProcessor.o src/AlertProcessor.cpp
 
 # Subprojects
 .build-subprojects:
@@ -143,6 +149,19 @@ ${OBJECTDIR}/src/ToolsEngine_nomain.o: ${OBJECTDIR}/src/ToolsEngine.o src/ToolsE
 	    $(COMPILE.cc) -g -Iinclude -I../UnitTest++/src -I../dbo/include -Dmain=__nomain -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/ToolsEngine_nomain.o src/ToolsEngine.cpp;\
 	else  \
 	    ${CP} ${OBJECTDIR}/src/ToolsEngine.o ${OBJECTDIR}/src/ToolsEngine_nomain.o;\
+	fi
+
+${OBJECTDIR}/src/AlertProcessor_nomain.o: ${OBJECTDIR}/src/AlertProcessor.o src/AlertProcessor.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	@NMOUTPUT=`${NM} ${OBJECTDIR}/src/AlertProcessor.o`; \
+	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
+	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
+	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
+	then  \
+	    ${RM} $@.d;\
+	    $(COMPILE.cc) -g -Iinclude -I../UnitTest++/src -I../dbo/include -Dmain=__nomain -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/AlertProcessor_nomain.o src/AlertProcessor.cpp;\
+	else  \
+	    ${CP} ${OBJECTDIR}/src/AlertProcessor.o ${OBJECTDIR}/src/AlertProcessor_nomain.o;\
 	fi
 
 # Run Test Targets

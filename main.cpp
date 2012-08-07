@@ -1,4 +1,5 @@
 #include "Parser.h"
+#include "AlertProcessor.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
@@ -7,8 +8,10 @@
 #include "ToolsEngine.h"
  
 void* checkNewDatas(void* data);
+void* checkNewAlerts(void* data);
 
-Session ToolsEngine::session("hostaddr=127.0.0.1 port=5432 dbname=echoes user=echoes password=toto");
+Session ToolsEngine::sessionParser("hostaddr=172.16.3.101 port=5432 dbname=echoes user=echoes password=toto");
+Session ToolsEngine::sessionAlertProcessor("hostaddr=172.16.3.101 port=5432 dbname=echoes user=echoes password=toto");
 Wt::WLogger ToolsEngine::logger;
 
 int main()
@@ -20,15 +23,18 @@ int main()
     
     ToolsEngine::logger.setFile("/tmp/engine.log");
     
-    // On crée un thread
-    pthread_t thread;
+    // thread's creation
+    pthread_t threadCheckNewDatas;
+    pthread_t threadCheckNewAlerts;
     
-    // Permet d'exécuter le fonction maFonction en parallèle
-    pthread_create(&thread, NULL, checkNewDatas, NULL);
+    // execute the method checkNewDatas() et checkNewAlerts() in parallel
+    pthread_create(&threadCheckNewDatas, NULL, checkNewDatas, NULL);
+    pthread_create(&threadCheckNewAlerts, NULL, checkNewAlerts, NULL);    
  
-    // Attend la fin du thread créé
-    pthread_join(thread, NULL);
-      
+    // wait the end of the created thread
+    pthread_join(threadCheckNewDatas, NULL);
+    pthread_join(threadCheckNewAlerts, NULL);
+    
     return 0;
 }
 
@@ -42,8 +48,8 @@ void* checkNewDatas(void* data)
     {
         //SQL session
         {
-            Wt::Dbo::Transaction transaction(ToolsEngine::session);
-            Wt::Dbo::ptr<Syslog> receivedSyslog = ToolsEngine::session.find<Syslog>().where("\"SLO_STATE\" = ?").limit(1).bind("0");
+            Wt::Dbo::Transaction transaction(ToolsEngine::sessionParser);
+            Wt::Dbo::ptr<Syslog> receivedSyslog = ToolsEngine::sessionParser.find<Syslog>().where("\"SLO_STATE\" = ?").limit(1).bind("0");
             if (receivedSyslog )
             {
                 // state is 0 is "new entry" state = 1 is "processing"
@@ -71,4 +77,10 @@ void* checkNewDatas(void* data)
         }
         sleep(1);
     };
+}
+
+void* checkNewAlerts(void*)
+{
+    AlertProcessor alertProcessor;
+    alertProcessor.VerifyAlerts();
 }

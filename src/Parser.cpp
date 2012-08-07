@@ -1,5 +1,4 @@
 #include "Parser.h"
-#include <ctime>
 
 Parser::Parser() {
 }
@@ -28,9 +27,9 @@ int Parser::unserializeStructuredData(Wt::Dbo::ptr<Syslog> ptrSyslog)
     {
         //SQL session
         {
-            Wt::Dbo::Transaction transaction(ToolsEngine::session);
+            Wt::Dbo::Transaction transaction(ToolsEngine::sessionParser);
             //we fill the local copy of the syslo pointer with the id of the received syslog
-            ptrSyslogTmp = ToolsEngine::session.find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslog.id());
+            ptrSyslogTmp = ToolsEngine::sessionParser.find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslog.id());
             oBracket = ptrSyslogTmp.get()->sd.value().find('[',oBracket+1);
             cBracket = ptrSyslogTmp.get()->sd.value().find(']',cBracket+1);
         }
@@ -46,7 +45,7 @@ int Parser::unserializeStructuredData(Wt::Dbo::ptr<Syslog> ptrSyslog)
     {   
         //SQL session
         {
-            Wt::Dbo::Transaction transaction(ToolsEngine::session);
+            Wt::Dbo::Transaction transaction(ToolsEngine::sessionParser);
             tempString.assign(ptrSyslogTmp.get()->sd.toUTF8().substr(posBrackets.at(i)+1,posBrackets.at(i+1)-posBrackets.at(i)-1));                   
         }
         
@@ -98,13 +97,13 @@ int Parser::unserializeProperties(std::string& strProperties, Wt::Dbo::ptr<Syslo
     {
         try 
         {                         
-            Wt::Dbo::Transaction transaction(ToolsEngine::session);
+            Wt::Dbo::Transaction transaction(ToolsEngine::sessionParser);
             //we fill the local copy of the syslo pointer with the id of the received syslog
-            ptrSyslogTmp = ToolsEngine::session.find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslog.id());
+            ptrSyslogTmp = ToolsEngine::sessionParser.find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslog.id());
             ptrSyslogTmp.modify()->version = ToolsEngine::stringToInt(strProperties.substr(tbEquals[0]+1,space-(tbEquals[0]+1)));      
 
             //we find the probe that have the id of the received syslog and get its pointer
-            ptrProbe = ToolsEngine::session.find<Probe>().where("\"PRB_ID\" = ?").bind(idProbeTmp);             
+            ptrProbe = ToolsEngine::sessionParser.find<Probe>().where("\"PRB_ID\" = ?").bind(idProbeTmp);             
 
             //we modify the probe in the local copy of the syslog pointer with the getted object
             ptrSyslogTmp.modify()->probe = ptrProbe;
@@ -234,7 +233,7 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
       idAsset = ToolsEngine::stringToInt(strValue.substr(tbDashs[0]+1,tbDashs[1]-(tbDashs[0]+1)));   
       idSource = ToolsEngine::stringToInt(strValue.substr(tbDashs[1]+1,tbDashs[2]-(tbDashs[1]+1))); 
       idSearch = ToolsEngine::stringToInt(strValue.substr(tbDashs[2]+1,tbDashs[3]-(tbDashs[2]+1)));
-      numSubSearch = ToolsEngine::stringToInt(strValue.substr(tbDashs[3]+1,tbDashs[4]-(tbDashs[3]+1)));
+      valueNum = ToolsEngine::stringToInt(strValue.substr(tbDashs[3]+1,tbDashs[4]-(tbDashs[3]+1)));
       sValue = Wt::Utils::base64Decode(strValue.substr(tbQuotes[0]+1,tbQuotes[1]-(tbQuotes[0]+1)));
    
    
@@ -242,13 +241,13 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
     { 
         try 
         {   
-            Wt::Dbo::Transaction transaction(ToolsEngine::session);
+            Wt::Dbo::Transaction transaction(ToolsEngine::sessionParser);
             informationValueTmp = new InformationValue();
-            Wt::Dbo::ptr<Information2> ptrInfTmp = ToolsEngine::session.find<Information2>()
+            Wt::Dbo::ptr<Information2> ptrInfTmp = ToolsEngine::sessionParser.find<Information2>()
                     .where("\"PLG_ID_PLG_ID\" = ?").bind(idPlugin)
                     .where("\"SRC_ID\" = ?").bind(idSource)
                     .where("\"SEA_ID\" = ?").bind(idSearch)
-                    .where("\"SUB_SEA_NUM\" = ?").bind(numSubSearch);
+                    .where("\"INF_VALUE_NUM\" = ?").bind(valueNum);
 
             informationValueTmp->information = ptrInfTmp;
             informationValueTmp->value = sValue;
@@ -260,12 +259,12 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
 
             informationValueTmp->syslog = ptrSyslog;
 
-            Wt::Dbo::ptr<Asset> ptrAstTmp = ToolsEngine::session.find<Asset>()
+            Wt::Dbo::ptr<Asset> ptrAstTmp = ToolsEngine::sessionParser.find<Asset>()
                     .where("\"AST_ID\" = ?").bind(idAsset);
 
             informationValueTmp->asset = ptrAstTmp;
 
-            ToolsEngine::session.add(informationValueTmp);
+            ToolsEngine::sessionParser.add(informationValueTmp);
             res = 0;           
         }
         catch (Wt::Dbo::Exception e)

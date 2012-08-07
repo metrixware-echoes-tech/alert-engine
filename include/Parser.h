@@ -1,4 +1,6 @@
 /** 
+ * 
+ * This class parse the datas received in the SYSLOG table of the database and put its in the correct tables
  * A structured data represent a received log : a syslog object and 
  * multiples values.
  * 
@@ -76,7 +78,7 @@ private:
       int idPlugin;
       int idSearch;
       int idSource;
-      int numSubSearch;
+      int valueNum;
       std::string sValue;
       
       //concerning SD Element

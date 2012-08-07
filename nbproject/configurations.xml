@@ -4,6 +4,7 @@
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
+      <itemPath>include/AlertProcessor.h</itemPath>
       <itemPath>include/Parser.h</itemPath>
       <itemPath>include/ToolsEngine.h</itemPath>
     </logicalFolder>
@@ -15,6 +16,7 @@
                    displayName="Source Files"
                    projectFiles="true">
       <logicalFolder name="src" displayName="src" projectFiles="true">
+        <itemPath>src/AlertProcessor.cpp</itemPath>
         <itemPath>src/Parser.cpp</itemPath>
         <itemPath>src/ToolsEngine.cpp</itemPath>
       </logicalFolder>
@@ -60,17 +62,17 @@
         </ccTool>
         <linkerTool>
           <linkerAddLib>
-            <pElem>../dbo/dist/SharedObjectFcgid/GNU-Linux-x86</pElem>
+            <pElem>../dbo/dist/SharedObjectWthttpd/GNU-Linux-x86</pElem>
           </linkerAddLib>
           <linkerLibItems>
             <linkerLibLibItem>boost_system</linkerLibLibItem>
             <linkerLibLibItem>pthread</linkerLibLibItem>
             <linkerLibLibItem>boost_thread</linkerLibLibItem>
             <linkerLibLibItem>boost_serialization</linkerLibLibItem>
+            <linkerLibLibItem>boost_filesystem</linkerLibLibItem>
             <linkerLibLibItem>wt</linkerLibLibItem>
             <linkerLibLibItem>wtdbo</linkerLibLibItem>
             <linkerLibLibItem>dbo</linkerLibLibItem>
-            <linkerLibLibItem>boost_filesystem</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>

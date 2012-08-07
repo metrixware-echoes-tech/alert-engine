@@ -23,7 +23,8 @@ public:
     ToolsEngine();
     virtual ~ToolsEngine();
 
-    static Session session;
+    static Session sessionParser;
+    static Session sessionAlertProcessor;    
     static Wt::WLogger logger;
     static int wstringToInt(std::wstring str);
     static int stringToInt(std::string str);
