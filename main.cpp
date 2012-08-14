@@ -2,13 +2,14 @@
 #include "AlertProcessor.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include <pthread.h>
 #include <Wt/Dbo/Dbo>
 #include <tools/Session.h>
 #include "ToolsEngine.h"
+#include <boost/thread/thread.hpp>
+
  
-void* checkNewDatas(void* data);
-void* checkNewAlerts(void* data);
+void checkNewDatas();
+void checkNewAlerts();
 
 Session ToolsEngine::sessionParser("hostaddr=172.16.3.101 port=5432 dbname=echoes user=echoes password=toto");
 Session ToolsEngine::sessionAlertProcessor("hostaddr=172.16.3.101 port=5432 dbname=echoes user=echoes password=toto");
@@ -24,21 +25,21 @@ int main()
     ToolsEngine::logger.setFile("/tmp/engine.log");
     
     // thread's creation
-    pthread_t threadCheckNewDatas;
-    pthread_t threadCheckNewAlerts;
+    boost::thread_group threadsEngine;
+   // boost::thread threadCheckNewDatas; 
+    //boost::thread threadCheckNewAlerts;
     
     // execute the method checkNewDatas() et checkNewAlerts() in parallel
-    pthread_create(&threadCheckNewDatas, NULL, checkNewDatas, NULL);
-    pthread_create(&threadCheckNewAlerts, NULL, checkNewAlerts, NULL);    
+    threadsEngine.create_thread(&checkNewDatas);
+    threadsEngine.create_thread(&checkNewAlerts);
  
     // wait the end of the created thread
-    pthread_join(threadCheckNewDatas, NULL);
-    pthread_join(threadCheckNewAlerts, NULL);
+    threadsEngine.join_all();
     
     return 0;
 }
 
-void* checkNewDatas(void* data)
+void checkNewDatas()
 {
     Parser parser ;
     //result
@@ -79,7 +80,7 @@ void* checkNewDatas(void* data)
     };
 }
 
-void* checkNewAlerts(void*)
+void checkNewAlerts()
 {
     AlertProcessor alertProcessor;
     alertProcessor.VerifyAlerts();

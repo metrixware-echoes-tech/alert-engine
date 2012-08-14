@@ -12,6 +12,13 @@
                    displayName="Resource Files"
                    projectFiles="true">
     </logicalFolder>
+    <logicalFolder name="f1" displayName="Scripts" projectFiles="true" kind="ROOT">
+      <itemPath>scripts/fill_echoes_database_sensor.sql</itemPath>
+      <itemPath>scripts/fill_echoes_database_sensor2.sql</itemPath>
+      <itemPath>scripts/fill_echoes_database_sensor3.sql</itemPath>
+      <itemPath>scripts/log-echoes.sh</itemPath>
+      <itemPath>scripts/rsyslog.conf</itemPath>
+    </logicalFolder>
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">

@@ -9,17 +9,13 @@ AlertProcessor::~AlertProcessor() {
 int AlertProcessor::VerifyAlerts()
 {
 typedef Wt::Dbo::collection< Wt::Dbo::ptr<Alert> > Alerts;
-int threadNumber=0;
+boost::thread_group threadsVerifyAlerts;
+//int threadNumber=0;
 //std::vector<pthread_t> threadList;
-    
+    boost::mutex::scoped_lock scoped_lock(mutex);
     //SQL session
     {
-        Wt::Dbo::Transaction transaction(ToolsEngine::sessionAlertProcessor);
-        //we fill the local copy of the syslo pointer with the id of the received syslog
-        //ptrSyslogTmp = ToolsEngine::session.find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslog.id());
-        //oBracket = ptrSyslogTmp.get()->sd.value().find('[',oBracket+1);
-        //cBracket = ptrSyslogTmp.get()->sd.value().find(']',cBracket+1);
-        
+        Wt::Dbo::Transaction transaction(ToolsEngine::sessionAlertProcessor);        
 
         //we get the list of all defined alerts in the database
         Alerts alerts = ToolsEngine::sessionAlertProcessor.find<Alert>();
@@ -27,29 +23,40 @@ int threadNumber=0;
 
         for (Alerts::const_iterator i = alerts.begin(); i != alerts.end(); ++i)
         {
-            ToolsEngine::log("info") << " [Class:AlertProcessor] " << " the Alert : " << (*i)->name << " is in the database. \n";
-            
-            //we instanciate a thread for each alert
-            pthread_t thread = 0;
-           // threadList.push_back() = thread;
-
-           Wt::Dbo::ptr<Alert> toto = *i;
-           const Alert *alert = toto.get();
-            // we execute the checkNewDatas method in the thread
-            pthread_create(&thread, NULL, AlertProcessor::InformationValueLoop, (void*) alert);
-
-            // wait the end of the created thread
-            pthread_join(thread, NULL);
-
+           ToolsEngine::log("info") << " [Class:AlertProcessor] " << " the Alert : " << (*i)->name << " is in the database. \n";
+           //we instanciate a thread for each alert           
+           //this : instance de la classe (l'objet lui même) dans laquelle est exécuté bind()
+           threadsVerifyAlerts.create_thread(boost::bind(&AlertProcessor::InformationValueLoop,this,*i));
         }
-    
+        threadsVerifyAlerts.join_all();
     }
 return 0;
 }
 
-void* AlertProcessor::InformationValueLoop(void* arg)
+void AlertProcessor::InformationValueLoop(Wt::Dbo::ptr<Alert> alertPtr)
 {
-    Alert *alertPtr = arg;
     ToolsEngine::log("info") << " [Class:AlertProcessor] " << " the Alert : " << alertPtr->name << " from information value loop. \n";
-    pthread_exit(NULL);
-}
+    
+    ToolsEngine::log("info") << " [Class:AlertProcessor] " << " Alert informations: type : " << alertPtr->alertType->name << "\n";
+    
+//    boost::mutex::scoped_lock scoped_lock(mutex);
+    //SQL session
+//    {
+//        Wt::Dbo::Transaction transaction(ToolsEngine::sessionAlertProcessor);        
+//
+//        //we get the type of the alert and the params to build de comparison process
+//        if (alertPtr->alertType->name == "threshold")
+//        {
+//            alertPtr.get()->alertType.get()->alertCriterias.get()->
+//        }
+//        Alerts alerts = ToolsEngine::sessionAlertProcessor.find<Alert>();
+//    }
+    
+} 
+
+/*
+typedef std::vector<int>::iterator iterator ;
+thg.create_thread(boost::bind(static_cast<void(*)(vector<int>::iterator,vector<int>::iterator)>(sort<vector<int>::iterator>), mass.begin(), mass.end()));
+
+typedef Wt::Dbo::collection< Wt::Dbo::ptr<Alert> > Alerts;
+threadsVerifyAlerts.create_thread(boost::bind(&AlertProcessor::InformationValueLoop,i));*/

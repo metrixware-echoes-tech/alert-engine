@@ -23,9 +23,9 @@
 #include <alert/AlertValue.h>
 #include <alert/AlertType.h>
 #include <alert/AlertCriteria.h>
-#include <pthread.h>
-#include <vector>
-
+#include <boost/thread/thread.hpp>
+#include <boost/bind/bind.hpp>
+#include <boost/thread/mutex.hpp>
 
 
 class AlertProcessor {
@@ -48,9 +48,12 @@ public:
     * @param the pointer of the alert
     * @return code for the parent thread
     */ 
-    void* InformationValueLoop(void* arg);
+    void InformationValueLoop(Wt::Dbo::ptr<Alert> alertPtr);
+    
+
     
 private:
+    boost::mutex mutex;
        
 };
 
