@@ -26,6 +26,8 @@
 #include <boost/thread/thread.hpp>
 #include <boost/bind/bind.hpp>
 #include <boost/thread/mutex.hpp>
+#include <tools/Session.h>
+#include <boost/lexical_cast.hpp>
 
 
 class AlertProcessor {
@@ -40,7 +42,7 @@ public:
     * method to 
     * @return error or success
     */
-    int VerifyAlerts();
+    int VerifyAlerts();  
     
     
    /**
@@ -54,6 +56,10 @@ public:
     
 private:
     boost::mutex mutex;
+    
+    enum criteria{lt = 1,le = 2,eq = 3,ne = 4,ge = 5,gt = 6};
+    
+    enum informationUnitType{number = 1,text = 2};
        
 };
 

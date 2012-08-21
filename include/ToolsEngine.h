@@ -29,6 +29,7 @@ public:
     static int wstringToInt(std::wstring str);
     static int stringToInt(std::string str);
     static Wt::WLogEntry log(std::string criticity);
+    static std::string sqlCredentials;
 };
 
 

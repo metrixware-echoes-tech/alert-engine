@@ -263,6 +263,9 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
                     .where("\"AST_ID\" = ?").bind(idAsset);
 
             informationValueTmp->asset = ptrAstTmp;
+            
+            // state : 0 = pending, 1 = processing, 2 = done    
+            informationValueTmp->state = 0;
 
             ToolsEngine::sessionParser.add(informationValueTmp);
             res = 0;           

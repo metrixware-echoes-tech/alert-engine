@@ -12,10 +12,9 @@
                    displayName="Resource Files"
                    projectFiles="true">
     </logicalFolder>
-    <logicalFolder name="f1" displayName="Scripts" projectFiles="true" kind="ROOT">
+    <logicalFolder name="f1" displayName="Scripts" projectFiles="true">
       <itemPath>scripts/fill_echoes_database_sensor.sql</itemPath>
-      <itemPath>scripts/fill_echoes_database_sensor2.sql</itemPath>
-      <itemPath>scripts/fill_echoes_database_sensor3.sql</itemPath>
+      <itemPath>scripts/histo_tracking_tsa.sql</itemPath>
       <itemPath>scripts/log-echoes.sh</itemPath>
       <itemPath>scripts/rsyslog.conf</itemPath>
     </logicalFolder>
@@ -69,7 +68,7 @@
         </ccTool>
         <linkerTool>
           <linkerAddLib>
-            <pElem>../dbo/dist/SharedObjectWthttpd/GNU-Linux-x86</pElem>
+            <pElem>../dbo/dist/SharedObject/GNU-Linux-x86</pElem>
           </linkerAddLib>
           <linkerLibItems>
             <linkerLibLibItem>boost_system</linkerLibLibItem>

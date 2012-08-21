@@ -60,7 +60,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=-L../dbo/dist/SharedObjectWthttpd/GNU-Linux-x86 -lboost_system -lpthread -lboost_thread -lboost_serialization -lboost_filesystem -lwt -lwtdbo -ldbo
+LDLIBSOPTIONS=-L../dbo/dist/SharedObject/GNU-Linux-x86 -lboost_system -lpthread -lboost_thread -lboost_serialization -lboost_filesystem -lwt -lwtdbo -ldbo
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}

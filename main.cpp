@@ -11,9 +11,12 @@
 void checkNewDatas();
 void checkNewAlerts();
 
-Session ToolsEngine::sessionParser("hostaddr=172.16.3.101 port=5432 dbname=echoes user=echoes password=toto");
-Session ToolsEngine::sessionAlertProcessor("hostaddr=172.16.3.101 port=5432 dbname=echoes user=echoes password=toto");
+std::string ToolsEngine::sqlCredentials = "hostaddr=172.16.3.101 port=5432 dbname=echoes user=echoes password=toto";
+
+Session ToolsEngine::sessionParser(ToolsEngine::sqlCredentials);
+Session ToolsEngine::sessionAlertProcessor(ToolsEngine::sqlCredentials);
 Wt::WLogger ToolsEngine::logger;
+
 
 int main()
 {
@@ -22,7 +25,20 @@ int main()
     toto.assign("[prop@5875 ver=1 probe=12][res2@5875 offset=15 81-4-15-6-2=\"543\" 8-4-51-6-1=\"54546\"][res1@5875 offset=75 844-4-5-456-2=\"129873\" 8-445-5-645-1=\"pojl\"]");
     a.unserializeStructuredData(toto); */
     
+    //création des tables de la bdd (to remove)
+    try 
+        {
+            ToolsEngine::sessionParser.createTables();
+            std::cerr << "Created database." << std::endl;
+        } catch (std::exception& e) {
+            std::cerr << e.what() << std::endl;
+            std::cerr << "Using existing database";
+        }
+    
     ToolsEngine::logger.setFile("/tmp/engine.log");
+    ToolsEngine::logger.addField("type",false);
+    ToolsEngine::logger.addField("datetime",false);
+    ToolsEngine::logger.addField("message", true);
     
     // thread's creation
     boost::thread_group threadsEngine;
