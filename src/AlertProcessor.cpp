@@ -195,7 +195,8 @@ void AlertProcessor::InformationValueLoop(Wt::Dbo::ptr<Alert> alertPtr)
                         ToolsEngine::log("error") << "[Class:AlertProcessor] " << "switch Information unit type check failed";
                         break;               
                 }
-                sleep(1);
+                boost::this_thread::sleep(boost::posix_time::milliseconds(ToolsEngine::sleepThreadMilliSec)); 
+                //sleep(1);
             }//fin try
             catch (Wt::Dbo::Exception e)
             {

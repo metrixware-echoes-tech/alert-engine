@@ -30,6 +30,7 @@ public:
     static int stringToInt(std::string str);
     static Wt::WLogEntry log(std::string criticity);
     static std::string sqlCredentials;
+    static int sleepThreadMilliSec; //the milliseconds to wait between each loop in our process (reading the database for new info, calculate alerts)
 };
 
 

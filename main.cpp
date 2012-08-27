@@ -12,6 +12,7 @@ void checkNewDatas();
 void checkNewAlerts();
 
 std::string ToolsEngine::sqlCredentials = "hostaddr=172.16.3.101 port=5432 dbname=echoes user=echoes password=toto";
+int ToolsEngine::sleepThreadMilliSec = 10;
 
 Session ToolsEngine::sessionParser(ToolsEngine::sqlCredentials);
 Session ToolsEngine::sessionAlertProcessor(ToolsEngine::sqlCredentials);
@@ -92,7 +93,7 @@ void checkNewDatas()
             }
 
         }
-        sleep(1);
+        boost::this_thread::sleep(boost::posix_time::milliseconds(ToolsEngine::sleepThreadMilliSec));
     };
 }
 
