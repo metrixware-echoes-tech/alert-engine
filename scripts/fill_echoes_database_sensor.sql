@@ -419,7 +419,12 @@ INSERT INTO "T_ADDON_ADO" ("ADO_ID", version, "ADO_NAME", "ADO_DELETE") VALUES (
 -- Dependencies: 172 2390
 -- Data for Name: T_ORGANIZATION_TYPE_OTY; Type: TABLE DATA; Schema: public; Owner: echoes
 --
-
+INSERT INTO "T_ORGANIZATION_TYPE_OTY"("OTY_ID", version, "OTY_NAME", "OTY_DELETE")
+    VALUES ('1', '0', 'Company', NULL);
+INSERT INTO "T_ORGANIZATION_TYPE_OTY"("OTY_ID", version, "OTY_NAME", "OTY_DELETE")
+    VALUES ('2', '0', 'Individual', NULL);
+INSERT INTO "T_ORGANIZATION_TYPE_OTY"("OTY_ID", version, "OTY_NAME", "OTY_DELETE")
+    VALUES ('3', '0', 'Association', NULL);
 
 
 --
