@@ -37,7 +37,8 @@ OBJECTFILES= \
 	${OBJECTDIR}/main.o \
 	${OBJECTDIR}/src/Parser.o \
 	${OBJECTDIR}/src/ToolsEngine.o \
-	${OBJECTDIR}/src/AlertProcessor.o
+	${OBJECTDIR}/src/AlertProcessor.o \
+	${OBJECTDIR}/src/AlertSender.o
 
 # Test Directory
 TESTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}/tests
@@ -89,6 +90,11 @@ ${OBJECTDIR}/src/AlertProcessor.o: src/AlertProcessor.cpp
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/AlertProcessor.o src/AlertProcessor.cpp
+
+${OBJECTDIR}/src/AlertSender.o: src/AlertSender.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/AlertSender.o src/AlertSender.cpp
 
 # Subprojects
 .build-subprojects:
@@ -162,6 +168,19 @@ ${OBJECTDIR}/src/AlertProcessor_nomain.o: ${OBJECTDIR}/src/AlertProcessor.o src/
 	    $(COMPILE.cc) -O2 -Dmain=__nomain -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/AlertProcessor_nomain.o src/AlertProcessor.cpp;\
 	else  \
 	    ${CP} ${OBJECTDIR}/src/AlertProcessor.o ${OBJECTDIR}/src/AlertProcessor_nomain.o;\
+	fi
+
+${OBJECTDIR}/src/AlertSender_nomain.o: ${OBJECTDIR}/src/AlertSender.o src/AlertSender.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	@NMOUTPUT=`${NM} ${OBJECTDIR}/src/AlertSender.o`; \
+	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
+	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
+	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
+	then  \
+	    ${RM} $@.d;\
+	    $(COMPILE.cc) -O2 -Dmain=__nomain -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/AlertSender_nomain.o src/AlertSender.cpp;\
+	else  \
+	    ${CP} ${OBJECTDIR}/src/AlertSender.o ${OBJECTDIR}/src/AlertSender_nomain.o;\
 	fi
 
 # Run Test Targets

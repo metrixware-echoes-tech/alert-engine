@@ -28,6 +28,7 @@
 #include <boost/thread/mutex.hpp>
 #include <tools/Session.h>
 #include <boost/lexical_cast.hpp>
+#include "AlertSender.h"
 
 
 class AlertProcessor {
@@ -39,7 +40,7 @@ public:
     virtual ~AlertProcessor();
     
    /**
-    * method to 
+    * method that create a thread for each alert resgistered in the database
     * @return error or success
     */
     int VerifyAlerts();  

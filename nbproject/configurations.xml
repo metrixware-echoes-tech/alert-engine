@@ -5,6 +5,7 @@
                    displayName="Header Files"
                    projectFiles="true">
       <itemPath>include/AlertProcessor.h</itemPath>
+      <itemPath>include/AlertSender.h</itemPath>
       <itemPath>include/Parser.h</itemPath>
       <itemPath>include/ToolsEngine.h</itemPath>
     </logicalFolder>
@@ -23,6 +24,7 @@
                    projectFiles="true">
       <logicalFolder name="src" displayName="src" projectFiles="true">
         <itemPath>src/AlertProcessor.cpp</itemPath>
+        <itemPath>src/AlertSender.cpp</itemPath>
         <itemPath>src/Parser.cpp</itemPath>
         <itemPath>src/ToolsEngine.cpp</itemPath>
       </logicalFolder>
@@ -79,6 +81,7 @@
             <linkerLibLibItem>wt</linkerLibLibItem>
             <linkerLibLibItem>wtdbo</linkerLibLibItem>
             <linkerLibLibItem>dbo</linkerLibLibItem>
+            <linkerLibLibItem>boost_program_options</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>

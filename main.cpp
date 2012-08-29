@@ -6,6 +6,14 @@
 #include <tools/Session.h>
 #include "ToolsEngine.h"
 #include <boost/thread/thread.hpp>
+//include for config file
+#include <boost/config.hpp>
+#include <boost/program_options/detail/config_file.hpp>
+#include <boost/program_options/parsers.hpp>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <set>
 
  
 void checkNewDatas();
@@ -26,6 +34,7 @@ int main()
     toto.assign("[prop@5875 ver=1 probe=12][res2@5875 offset=15 81-4-15-6-2=\"543\" 8-4-51-6-1=\"54546\"][res1@5875 offset=75 844-4-5-456-2=\"129873\" 8-445-5-645-1=\"pojl\"]");
     a.unserializeStructuredData(toto); */
     
+    
     //création des tables de la bdd (to remove)
     try 
         {
@@ -40,6 +49,32 @@ int main()
     ToolsEngine::logger.addField("type",false);
     ToolsEngine::logger.addField("datetime",false);
     ToolsEngine::logger.addField("message", true);
+    
+    //load the config file
+    std::ifstream configFile("engine.conf");
+    if(!configFile)
+    {
+        ToolsEngine::log("error") << " [Class:main] "<< " Config file not found";
+        return 1;
+    }
+    std::set<std::string> options;
+    std::map<std::string, std::string> parameters;
+    options.insert("*");
+    
+    //reading the config file
+    try
+    {
+        for(boost::program_options::detail::config_file_iterator i(configFile, options), e; i != e ; ++i)
+            {
+                ToolsEngine::log("info") << " [Class:main] "<< " Config file reading :" << i->string_key <<"  " << i->value[0];
+                parameters[i->string_key] = i->value[0];
+            }
+    }
+    catch(std::exception& e)
+    {
+            ToolsEngine::log("error") << " [Class:main] "<< "config file reading failed : " << e.what();
+    }  
+    
     
     // thread's creation
     boost::thread_group threadsEngine;
@@ -58,7 +93,7 @@ int main()
 
 void checkNewDatas()
 {
-    Parser parser ;
+    Parser *parser = new Parser();
     //result
     int res = -1;
     
@@ -74,7 +109,7 @@ void checkNewDatas()
                 receivedSyslog.modify()->state = 1;
                 try
                 {
-                    res = parser.unserializeStructuredData(receivedSyslog);
+                    res = parser->unserializeStructuredData(receivedSyslog);
                     if (res == 0)
                     {
                         //state = 2 is "processing complete"

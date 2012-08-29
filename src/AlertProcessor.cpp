@@ -149,6 +149,9 @@ void AlertProcessor::InformationValueLoop(Wt::Dbo::ptr<Alert> alertPtr)
                                     if( boost::lexical_cast<double>(i->get()->value) == valNum)
                                     {
                                         ToolsEngine::log("info") << " [Class:AlertProcessor] " << " Alert generated =";         
+                                        //we create the sender
+                                        AlertSender alertSender;
+                                        alertSender.send(alertPtr,*i);
                                     }
                                     i->modify()->state = 2;
                                 }
