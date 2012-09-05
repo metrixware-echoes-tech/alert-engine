@@ -18,7 +18,10 @@
 #include <media/MediaValue.h>
 #include <media/Media.h>
 #include <alert/AlertTracking.h>
-
+#include <Wt/Http/Client>
+#include <Wt/Http/Request>
+#include <Wt/Http/Response>
+#include <Wt/WObject>
 
 typedef Wt::Dbo::collection< Wt::Dbo::ptr<MediaValue> > MediaValueList;
 

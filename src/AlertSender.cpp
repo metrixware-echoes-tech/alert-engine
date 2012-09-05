@@ -25,9 +25,14 @@ Wt::Dbo::ptr<AlertTracking> AlertSender::createAlertTrackingNumber(Wt::Dbo::ptr<
     now->currentDateTime();
     newAlertTracking->sendDate = *now;
     Wt::Dbo::ptr<AlertTracking> alertTrackingPtr;
+    
     try
     {         
-        alertTrackingPtr = session->add(newAlertTracking);
+        alertTrackingPtr = session->add<AlertTracking>(newAlertTracking);
+        alertPtr.modify()->name = "prout"; //vérification taille mémoire
+        session->flush();
+        std::cout << "ptr id : " << alertTrackingPtr.id() << "\n";
+        
     }
     catch (Wt::Dbo::Exception e)
     {
@@ -38,7 +43,7 @@ Wt::Dbo::ptr<AlertTracking> AlertSender::createAlertTrackingNumber(Wt::Dbo::ptr<
 
 int AlertSender::sendSMS(Wt::Dbo::ptr<InformationValue> InformationValuePtr, Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<AlertTracking> alertTrackingPtr)
 {
-    
+    std::cout << "ptr id : " << alertTrackingPtr.id() << "\n";
     Wt::WString phoneNumber = alertTrackingPtr.get()->mediaValue.get()->value;
     Wt::WString assetConcerned = InformationValuePtr.get()->asset.get()->name;
     Wt::WString alertName = alertPtr.get()->name;
@@ -52,7 +57,31 @@ int AlertSender::sendSMS(Wt::Dbo::ptr<InformationValue> InformationValuePtr, Wt:
             << " concernant : " << alertName
             << " relevé : " << informationReceived << " " << unit
             << " prévu : " << alertValue << " " << unit
-            << " à : " << date;     
+            << " à : " << date;
+    Wt::WString sms =  "Nouvelle alerte sur :" +  assetConcerned
+                    + " concernant : " + alertName
+                    + " relevé : " + informationReceived + " " + unit
+                    + " prévu : " + alertValue + " " + unit
+                    + " à : " + date;
+
+    // HTTP Client init
+    Wt::Http::Client *client = new Wt::Http::Client(*te->ioService);       
+
+
+    std::string bodyText = "alertid=" + boost::lexical_cast<std::string>(alertPtr.id()) + "&alerttrackingid=" + boost::lexical_cast<std::string>(alertTrackingPtr.id()) + "&messageText=" + sms.toUTF8() + "&number=" + phoneNumber.toUTF8() + "&login=contact@echoes-tech.com&password=147258369aA";
+
+
+    ToolsEngine::log("info") << " [Class:AlertSender] " << bodyText;
+
+    /** Message containing the http parameters and the body of the post request */
+    Wt::Http::Message message;
+    message.addBodyText(bodyText);
+    message.setHeader("Content-Type", "application/x-www-form-urlencoded");
+
+    std::string apiAddress = "https://sms/netsize/send";
+    ToolsEngine::log("info") << " [Class:AlertSender] " << "[SMS] Trying to send request to API. Address : " << apiAddress;
+   // client->post(apiAddress, message); 
+//    exit(0);
 }
 
 int AlertSender::send(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<InformationValue> InformationValuePtr )
@@ -63,6 +92,7 @@ int AlertSender::send(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<InformationValu
     for (MediaValueList::const_iterator j = mediaList.begin(); j != mediaList.end(); ++j) 
     {
         Wt::Dbo::ptr<AlertTracking> alertTrackingPtr = AlertSender::createAlertTrackingNumber(alertPtr,*j);
+        std::cout << "ptr id : " << alertTrackingPtr.id() << "\n";
         //for each media value for this alert we send the corresponding alert over the air
         switch (j->get()->media.id())
         {

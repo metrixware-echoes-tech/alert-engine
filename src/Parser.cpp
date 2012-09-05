@@ -8,6 +8,7 @@ Parser::~Parser() {
 
 int Parser::unserializeStructuredData(Wt::Dbo::ptr<Syslog> ptrSyslog)
 {
+    ToolsEngine::log("info") << " [Class:Parser] " << " Unserialize StructuredData begin" ;    
     //[prop@5875 ver=1 probe=12]
     //[res2@5875 offset=15 8-4-5-6-2="543" 8-4-5-6-1="54546"][res1@5875 offset=75 8-4-5-6-2="123" 8-4-5-6-1="pojl"]
     
@@ -27,9 +28,9 @@ int Parser::unserializeStructuredData(Wt::Dbo::ptr<Syslog> ptrSyslog)
     {
         //SQL session
         {
-            Wt::Dbo::Transaction transaction(ToolsEngine::sessionParser);
+            Wt::Dbo::Transaction transaction(*(te->sessionParser));
             //we fill the local copy of the syslo pointer with the id of the received syslog
-            ptrSyslogTmp = ToolsEngine::sessionParser.find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslog.id());
+            ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslog.id());
             oBracket = ptrSyslogTmp.get()->sd.value().find('[',oBracket+1);
             cBracket = ptrSyslogTmp.get()->sd.value().find(']',cBracket+1);
         }
@@ -45,7 +46,7 @@ int Parser::unserializeStructuredData(Wt::Dbo::ptr<Syslog> ptrSyslog)
     {   
         //SQL session
         {
-            Wt::Dbo::Transaction transaction(ToolsEngine::sessionParser);
+            Wt::Dbo::Transaction transaction(*(te->sessionParser));
             tempString.assign(ptrSyslogTmp.get()->sd.toUTF8().substr(posBrackets.at(i)+1,posBrackets.at(i+1)-posBrackets.at(i)-1));                   
         }
         
@@ -74,6 +75,7 @@ int Parser::unserializeStructuredData(Wt::Dbo::ptr<Syslog> ptrSyslog)
 
 int Parser::unserializeProperties(std::string& strProperties, Wt::Dbo::ptr<Syslog> ptrSyslog)
 {
+    ToolsEngine::log("info") << " [Class:Parser] " << " Unserialize properties begin" ;
     //example of string to parse : prop@5875 ver=1 probe=12
     //we parse the first sd-element
     //table to save the equal positions in the first sd-element
@@ -91,19 +93,19 @@ int Parser::unserializeProperties(std::string& strProperties, Wt::Dbo::ptr<Syslo
     
     
     //parse idProbe :
-    idProbeTmp = ToolsEngine::stringToInt(strProperties.substr(tbEquals[1]+1,strProperties.length()-(tbEquals[1]+1)));
+    idProbeTmp = boost::lexical_cast<int>(strProperties.substr(tbEquals[1]+1,strProperties.length()-(tbEquals[1]+1)));
     
     //SQL session
     {
         try 
         {                         
-            Wt::Dbo::Transaction transaction(ToolsEngine::sessionParser);
+            Wt::Dbo::Transaction transaction(*(te->sessionParser));
             //we fill the local copy of the syslo pointer with the id of the received syslog
-            ptrSyslogTmp = ToolsEngine::sessionParser.find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslog.id());
-            ptrSyslogTmp.modify()->version = ToolsEngine::stringToInt(strProperties.substr(tbEquals[0]+1,space-(tbEquals[0]+1)));      
+            ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslog.id());
+            ptrSyslogTmp.modify()->version = boost::lexical_cast<int>(strProperties.substr(tbEquals[0]+1,space-(tbEquals[0]+1)));      
 
             //we find the probe that have the id of the received syslog and get its pointer
-            ptrProbe = ToolsEngine::sessionParser.find<Probe>().where("\"PRB_ID\" = ?").bind(idProbeTmp);             
+            ptrProbe = te->sessionParser->find<Probe>().where("\"PRB_ID\" = ?").bind(idProbeTmp);             
 
             //we modify the probe in the local copy of the syslog pointer with the getted object
             ptrSyslogTmp.modify()->probe = ptrProbe;
@@ -120,6 +122,7 @@ int Parser::unserializeProperties(std::string& strProperties, Wt::Dbo::ptr<Syslo
 
 int Parser::unserializeSDElement(std::string& strSDElement, Wt::Dbo::ptr<Syslog> ptrSyslog)
 {
+    ToolsEngine::log("info") << " [Class:Parser] " << " Unserialize SDElement begin" ;
     //string to parse : res2@5875 offset=15 8-4-5-6-2="543" 8-4-5-6-1="54546"
     int offset=0;
     size_t space=-1; //sucessives positions of the space
@@ -128,6 +131,8 @@ int Parser::unserializeSDElement(std::string& strSDElement, Wt::Dbo::ptr<Syslog>
     idsPlusValue.clear();
     spaces.clear();
     
+    std::cout << "SDElement : " << strSDElement <<"\n";
+    
     //result
     int res = -1;
     
@@ -135,6 +140,7 @@ int Parser::unserializeSDElement(std::string& strSDElement, Wt::Dbo::ptr<Syslog>
     do
     {
         space = strSDElement.find(" ",space+1);
+        std::cout << "position espace : " << space <<"\n";
 
         if ( space != -1 )
         {
@@ -143,7 +149,24 @@ int Parser::unserializeSDElement(std::string& strSDElement, Wt::Dbo::ptr<Syslog>
     }while (space != -1); 
     
     //get the offset
-    offset = ToolsEngine::stringToInt(strSDElement.substr(strSDElement.find("=",spaces.at(0))+1,spaces.at(1)-1));
+    std::cout << "offset :" << strSDElement.substr
+                               (
+                                    strSDElement.find // 17
+                                    (
+                                        "=",
+                                        spaces.at(0)
+                                    )+1, // +1 = 18
+                                    (spaces.at(1)-1)-strSDElement.find("=",spaces.at(0)) // 1 ?
+                                );
+    
+    std::cout << "devrait etre 1  :" << (spaces.at(1)-1)-strSDElement.find("=",spaces.at(0)) << "\n";
+//    strSDElement.substr
+//    strSDElement.find        
+    
+    
+    
+//    offset = boost::lexical_cast<int>(strSDElement.substr(strSDElement.find("=",spaces.at(0))+1,spaces.at(1)-1));
+    offset = boost::lexical_cast<int>(strSDElement.substr(strSDElement.find("=",spaces.at(0))+1,(spaces.at(1)-1)-strSDElement.find("=",spaces.at(0))));
     ToolsEngine::log("info") << " [Class:Parser] "<< "offset : " << offset;
     
     
@@ -190,6 +213,7 @@ int Parser::unserializeSDElement(std::string& strSDElement, Wt::Dbo::ptr<Syslog>
 
 int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Syslog> ptrSyslog)
 {  
+    ToolsEngine::log("info") << " [Class:Parser] " << " Unserialize value begin" ;
     Wt::WDateTime creaDate;
     sValue.clear();
     
@@ -210,10 +234,11 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
     for(int i = 0 ; i < 4 ; i ++)
     {
         dash = strValue.find("-",dash+1);
-        
+        std::cout << "dash : " << dash << "\n";
         if ( dash != -1 )
         {
                 tbDashs[i]=dash ; //we save the position of the space in the list
+                std::cout << "tableau dash : " << tbDashs[i] << "\n";
         }
     }
     
@@ -229,11 +254,18 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
     }
     
       //parsing of the value and the corresponding id(s)
-      idPlugin = ToolsEngine::stringToInt(strValue.substr(0,tbDashs[0]));
-      idAsset = ToolsEngine::stringToInt(strValue.substr(tbDashs[0]+1,tbDashs[1]-(tbDashs[0]+1)));   
-      idSource = ToolsEngine::stringToInt(strValue.substr(tbDashs[1]+1,tbDashs[2]-(tbDashs[1]+1))); 
-      idSearch = ToolsEngine::stringToInt(strValue.substr(tbDashs[2]+1,tbDashs[3]-(tbDashs[2]+1)));
-      valueNum = ToolsEngine::stringToInt(strValue.substr(tbDashs[3]+1,tbDashs[4]-(tbDashs[3]+1)));
+      idPlugin = boost::lexical_cast<int>(strValue.substr(0,tbDashs[0]));
+      std::cout << "idPlugin : " << idPlugin << "\n";
+      idAsset = boost::lexical_cast<int>(strValue.substr(tbDashs[0]+1,tbDashs[1]-(tbDashs[0]+1)));  
+      std::cout << "idAsset : " << idAsset << "\n";
+      idSource = boost::lexical_cast<int>(strValue.substr(tbDashs[1]+1,tbDashs[2]-(tbDashs[1]+1)));
+      std::cout << "idSource : " << idSource << "\n";
+      idSearch = boost::lexical_cast<int>(strValue.substr(tbDashs[2]+1,tbDashs[3]-(tbDashs[2]+1)));
+      std::cout << "idSearch : " << idSearch << "\n";
+      std::cout << "substr 1er arg : " << tbDashs[3]+1 << "\n";
+      std::cout << "substr 2eme arg : " << strValue.length()-(tbDashs[3]+1) << "\n";
+      valueNum = boost::lexical_cast<int>(strValue.substr(tbDashs[3]+1,strValue.find("=",0)-(tbDashs[3]+1)));
+      std::cout << "valueNum : " << valueNum << "\n";
       sValue = Wt::Utils::base64Decode(strValue.substr(tbQuotes[0]+1,tbQuotes[1]-(tbQuotes[0]+1)));
    
    
@@ -241,9 +273,9 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
     { 
         try 
         {   
-            Wt::Dbo::Transaction transaction(ToolsEngine::sessionParser);
+            Wt::Dbo::Transaction transaction(*(te->sessionParser));
             informationValueTmp = new InformationValue();
-            Wt::Dbo::ptr<Information2> ptrInfTmp = ToolsEngine::sessionParser.find<Information2>()
+            Wt::Dbo::ptr<Information2> ptrInfTmp = te->sessionParser->find<Information2>()
                     .where("\"PLG_ID_PLG_ID\" = ?").bind(idPlugin)
                     .where("\"SRC_ID\" = ?").bind(idSource)
                     .where("\"SEA_ID\" = ?").bind(idSearch)
@@ -259,7 +291,7 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
 
             informationValueTmp->syslog = ptrSyslog;
 
-            Wt::Dbo::ptr<Asset> ptrAstTmp = ToolsEngine::sessionParser.find<Asset>()
+            Wt::Dbo::ptr<Asset> ptrAstTmp = te->sessionParser->find<Asset>()
                     .where("\"AST_ID\" = ?").bind(idAsset);
 
             informationValueTmp->asset = ptrAstTmp;
@@ -267,7 +299,7 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
             // state : 0 = pending, 1 = processing, 2 = done    
             informationValueTmp->state = 0;
 
-            ToolsEngine::sessionParser.add(informationValueTmp);
+            te->sessionParser->add(informationValueTmp);
             res = 0;           
         }
         catch (Wt::Dbo::Exception e)

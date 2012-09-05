@@ -13,12 +13,13 @@ boost::thread_group threadsVerifyAlerts;
 //int threadNumber=0;
 //std::vector<pthread_t> threadList;
     boost::mutex::scoped_lock scoped_lock(mutex);
+    Alerts alerts;
     //SQL session
     {
-        Wt::Dbo::Transaction transaction(ToolsEngine::sessionAlertProcessor);        
+        Wt::Dbo::Transaction transaction(*(te->sessionAlertProcessor));        
 
         //we get the list of all defined alerts in the database
-        Alerts alerts = ToolsEngine::sessionAlertProcessor.find<Alert>();
+        alerts = te->sessionAlertProcessor->find<Alert>();
         ToolsEngine::log("info") << " [Class:AlertProcessor] " << "We have " << alerts.size() << " Alert(s) in the database";
 
         for (Alerts::const_iterator i = alerts.begin(); i != alerts.end(); ++i)
@@ -36,7 +37,7 @@ return 0;
 void AlertProcessor::InformationValueLoop(Wt::Dbo::ptr<Alert> alertPtr)
 {
     //creation of a new SQL session
-    Session sessionThread(ToolsEngine::sqlCredentials);
+    Session sessionThread(te->sqlCredentials);
     
     // creation of a criteria and an information unit type enum
     criteria alertCriterias;
@@ -129,6 +130,9 @@ void AlertProcessor::InformationValueLoop(Wt::Dbo::ptr<Alert> alertPtr)
                                     if( boost::lexical_cast<double>(i->get()->value) < valNum)
                                     {
                                         ToolsEngine::log("info") << " [Class:AlertProcessor] " << " Alert generated < "; 
+                                         //we create the sender
+                                        AlertSender alertSender;
+                                        alertSender.send(alertPtr,*i);
                                     }
                                     i->modify()->state = 2;
                                 }
@@ -139,6 +143,9 @@ void AlertProcessor::InformationValueLoop(Wt::Dbo::ptr<Alert> alertPtr)
                                     if( boost::lexical_cast<double>(i->get()->value) <= valNum)
                                     {
                                         ToolsEngine::log("info") << " [Class:AlertProcessor] " << " Alert generated <=";   
+                                         //we create the sender
+                                        AlertSender alertSender;
+                                        alertSender.send(alertPtr,*i);
                                     }
                                     i->modify()->state = 2;
                                 }
@@ -162,6 +169,9 @@ void AlertProcessor::InformationValueLoop(Wt::Dbo::ptr<Alert> alertPtr)
                                     if( boost::lexical_cast<double>(i->get()->value) != valNum)
                                     {
                                         ToolsEngine::log("info") << " [Class:AlertProcessor] " << " Alert generated !=";
+                                         //we create the sender
+                                        AlertSender alertSender;
+                                        alertSender.send(alertPtr,*i);
                                     }
                                     i->modify()->state = 2;                                    
                                 }
@@ -172,6 +182,9 @@ void AlertProcessor::InformationValueLoop(Wt::Dbo::ptr<Alert> alertPtr)
                                     if( boost::lexical_cast<double>(i->get()->value) >= valNum)
                                     {
                                         ToolsEngine::log("info") << " [Class:AlertProcessor] " << " Alert generated >=";
+                                         //we create the sender
+                                        AlertSender alertSender;
+                                        alertSender.send(alertPtr,*i);
                                     }
                                     i->modify()->state = 2;
                                 }
@@ -182,6 +195,9 @@ void AlertProcessor::InformationValueLoop(Wt::Dbo::ptr<Alert> alertPtr)
                                     if( boost::lexical_cast<double>(i->get()->value) > valNum)
                                     {
                                         ToolsEngine::log("info") << " [Class:AlertProcessor] " << " Alert generated >";
+                                         //we create the sender
+                                        AlertSender alertSender;
+                                        alertSender.send(alertPtr,*i);
                                     }
                                     i->modify()->state = 2;
                                 }
@@ -198,8 +214,9 @@ void AlertProcessor::InformationValueLoop(Wt::Dbo::ptr<Alert> alertPtr)
                         ToolsEngine::log("error") << "[Class:AlertProcessor] " << "switch Information unit type check failed";
                         break;               
                 }
-                boost::this_thread::sleep(boost::posix_time::milliseconds(ToolsEngine::sleepThreadMilliSec)); 
+                boost::this_thread::sleep(boost::posix_time::milliseconds(te->sleepThreadCheckAlertMilliSec)); 
                 //sleep(1);
+                transaction.commit();
             }//fin try
             catch (Wt::Dbo::Exception e)
             {

@@ -48,6 +48,7 @@
                    kind="IMPORTANT_FILES_FOLDER">
       <itemPath>Makefile</itemPath>
     </logicalFolder>
+    <itemPath>engine.conf</itemPath>
     <itemPath>plugin.yaml.yml</itemPath>
   </logicalFolder>
   <sourceRootList>
