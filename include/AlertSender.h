@@ -46,7 +46,7 @@ public:
     * @param the media value used to create the alert tracking
     * @return the pointer on the created object
     */ 
-    Wt::Dbo::ptr<AlertTracking> createAlertTrackingNumber(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<MediaValue> mediaValuePtr);
+    Wt::Dbo::ptr<AlertTracking> createAlertTrackingNumber(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<MediaValue> mediaValuePtr, Session *session);
 
    /**
     * method to send an SMS with the call of the API

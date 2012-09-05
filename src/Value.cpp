@@ -4,7 +4,7 @@
 Value::Value(unsigned int mIdPlugin, 
              unsigned int mIdSource, 
              unsigned int mIdSearch,
-             unsigned int mNumSubSearch,  
+             unsigned int mNumSubSearch, //number of the value in the sub search (match with nb value in search)  
              unsigned int mIdAsset, 
              std::string mValueCreatedDate,
              std::string mValue

@@ -13,10 +13,9 @@ MediaValueList AlertSender::checkMediaToSendAlert(Wt::Dbo::ptr<Alert> alertPtr)
     return mvList;
 }
 
-Wt::Dbo::ptr<AlertTracking> AlertSender::createAlertTrackingNumber(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<MediaValue> mediaValuePtr)
+Wt::Dbo::ptr<AlertTracking> AlertSender::createAlertTrackingNumber(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<MediaValue> mediaValuePtr, Session *session)
 {
     //we get the session actually opened
-    Session *session = static_cast<Session*>(alertPtr.session());
     AlertTracking *newAlertTracking = new AlertTracking();
     Wt::WDateTime *now = new Wt::WDateTime();
     
@@ -29,8 +28,8 @@ Wt::Dbo::ptr<AlertTracking> AlertSender::createAlertTrackingNumber(Wt::Dbo::ptr<
     try
     {         
         alertTrackingPtr = session->add<AlertTracking>(newAlertTracking);
-        alertPtr.modify()->name = "prout"; //vérification taille mémoire
-        session->flush();
+//        alertPtr.modify()->name = "prout"; //vérification taille mémoire
+        alertTrackingPtr.flush();
         std::cout << "ptr id : " << alertTrackingPtr.id() << "\n";
         
     }
@@ -86,12 +85,12 @@ int AlertSender::sendSMS(Wt::Dbo::ptr<InformationValue> InformationValuePtr, Wt:
 
 int AlertSender::send(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<InformationValue> InformationValuePtr )
 {
-    
+    Session *session = static_cast<Session*>(InformationValuePtr.session());
     //we get the list of media linked to this alert
     MediaValueList mediaList = AlertSender::checkMediaToSendAlert(alertPtr);
     for (MediaValueList::const_iterator j = mediaList.begin(); j != mediaList.end(); ++j) 
     {
-        Wt::Dbo::ptr<AlertTracking> alertTrackingPtr = AlertSender::createAlertTrackingNumber(alertPtr,*j);
+        Wt::Dbo::ptr<AlertTracking> alertTrackingPtr = AlertSender::createAlertTrackingNumber(alertPtr,*j, session);
         std::cout << "ptr id : " << alertTrackingPtr.id() << "\n";
         //for each media value for this alert we send the corresponding alert over the air
         switch (j->get()->media.id())
