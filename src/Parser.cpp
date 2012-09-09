@@ -140,7 +140,6 @@ int Parser::unserializeSDElement(std::string& strSDElement, Wt::Dbo::ptr<Syslog>
     do
     {
         space = strSDElement.find(" ",space+1);
-        std::cout << "position espace : " << space <<"\n";
 
         if ( space != -1 )
         {
@@ -148,24 +147,6 @@ int Parser::unserializeSDElement(std::string& strSDElement, Wt::Dbo::ptr<Syslog>
         }   
     }while (space != -1); 
     
-    //get the offset
-    std::cout << "offset :" << strSDElement.substr
-                               (
-                                    strSDElement.find // 17
-                                    (
-                                        "=",
-                                        spaces.at(0)
-                                    )+1, // +1 = 18
-                                    (spaces.at(1)-1)-strSDElement.find("=",spaces.at(0)) // 1 ?
-                                );
-    
-    std::cout << "devrait etre 1  :" << (spaces.at(1)-1)-strSDElement.find("=",spaces.at(0)) << "\n";
-//    strSDElement.substr
-//    strSDElement.find        
-    
-    
-    
-//    offset = boost::lexical_cast<int>(strSDElement.substr(strSDElement.find("=",spaces.at(0))+1,spaces.at(1)-1));
     offset = boost::lexical_cast<int>(strSDElement.substr(strSDElement.find("=",spaces.at(0))+1,(spaces.at(1)-1)-strSDElement.find("=",spaces.at(0))));
     ToolsEngine::log("info") << " [Class:Parser] "<< "offset : " << offset;
     
@@ -217,10 +198,12 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
     Wt::WDateTime creaDate;
     sValue.clear();
     
-    //string to parse : 8-4-5-6-2="543"  
+    //string to parse : 
+    // old : 8-4-5-6-2="543"  
+    // new : 2-1-1-2-1-1-1="QXVnIDIxIDEwOg=="
    
     //table to save the dashs positions between the ids
-    size_t tbDashs[3];
+    size_t tbDashs[5];
     size_t dash=-1;
     
     //table to save the quote positions in the value field
@@ -231,7 +214,7 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
     int res = -1;
     
     //we search and save the different positions of the dashs in the strValue
-    for(int i = 0 ; i < 4 ; i ++)
+    for(int i = 0 ; i < 6 ; i ++)
     {
         dash = strValue.find("-",dash+1);
         std::cout << "dash : " << dash << "\n";
@@ -255,17 +238,19 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
     
       //parsing of the value and the corresponding id(s)
       idPlugin = boost::lexical_cast<int>(strValue.substr(0,tbDashs[0]));
-      std::cout << "idPlugin : " << idPlugin << "\n";
+      //std::cout << "idPlugin : " << idPlugin << "\n";
       idAsset = boost::lexical_cast<int>(strValue.substr(tbDashs[0]+1,tbDashs[1]-(tbDashs[0]+1)));  
-      std::cout << "idAsset : " << idAsset << "\n";
+      //std::cout << "idAsset : " << idAsset << "\n";
       idSource = boost::lexical_cast<int>(strValue.substr(tbDashs[1]+1,tbDashs[2]-(tbDashs[1]+1)));
-      std::cout << "idSource : " << idSource << "\n";
+      //std::cout << "idSource : " << idSource << "\n";
       idSearch = boost::lexical_cast<int>(strValue.substr(tbDashs[2]+1,tbDashs[3]-(tbDashs[2]+1)));
-      std::cout << "idSearch : " << idSearch << "\n";
-      std::cout << "substr 1er arg : " << tbDashs[3]+1 << "\n";
-      std::cout << "substr 2eme arg : " << strValue.length()-(tbDashs[3]+1) << "\n";
-      valueNum = boost::lexical_cast<int>(strValue.substr(tbDashs[3]+1,strValue.find("=",0)-(tbDashs[3]+1)));
-      std::cout << "valueNum : " << valueNum << "\n";
+      //std::cout << "idSearch : " << idSearch << "\n";
+      valueNum = boost::lexical_cast<int>(strValue.substr(tbDashs[3]+1,tbDashs[4]-(tbDashs[3]+1)));
+      //std::cout << "valueNum : " << valueNum << "\n";
+      lotNumber = boost::lexical_cast<int>(strValue.substr(tbDashs[4]+1,tbDashs[5]-(tbDashs[4]+1)));
+      //std::cout << "lotNum : " << lotNumber << "\n";      
+      lineNumber = boost::lexical_cast<int>(strValue.substr(tbDashs[5]+1,strValue.find("=",0)-(tbDashs[5]+1)));
+      //std::cout << "lineNum : " << lineNumber << "\n"; 
       sValue = Wt::Utils::base64Decode(strValue.substr(tbQuotes[0]+1,tbQuotes[1]-(tbQuotes[0]+1)));
    
    
@@ -283,13 +268,15 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
 
             informationValueTmp->information = ptrInfTmp;
             informationValueTmp->value = sValue;
-
             //get sent date of the the associated syslog
             creaDate = ptrSyslog.get()->sentDate.addSecs(offset) ;
 
             informationValueTmp->creationDate = creaDate;
 
             informationValueTmp->syslog = ptrSyslog;
+            
+            informationValueTmp->lotNumber = lotNumber;
+            informationValueTmp->lineNumber = lineNumber;            
 
             Wt::Dbo::ptr<Asset> ptrAstTmp = te->sessionParser->find<Asset>()
                     .where("\"AST_ID\" = ?").bind(idAsset);

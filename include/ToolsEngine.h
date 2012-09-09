@@ -49,8 +49,6 @@ public:
     Session *sessionParser;
     Session *sessionAlertProcessor;    
     static Wt::WLogger logger;
-   // static int wstringToInt(std::wstring str);
-   // static int stringToInt(std::string str);
     static Wt::WLogEntry log(std::string criticity);
     std::string sqlCredentials;
     int sleepThreadReadDatasMilliSec; //the milliseconds to wait between each loop in our process (reading the database for new info

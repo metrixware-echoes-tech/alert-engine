@@ -51,8 +51,8 @@ public:
     * @param the pointer of the alert
     * @return code for the parent thread
     */ 
-    void InformationValueLoop(Wt::Dbo::ptr<Alert> alertPtr);
-    
+    //void InformationValueLoop(Wt::Dbo::ptr<Alert> alertPtr);
+    void InformationValueLoop(long long idAlert);
 
     
 private:
@@ -60,7 +60,7 @@ private:
     
     enum criteria{lt = 1,le = 2,eq = 3,ne = 4,ge = 5,gt = 6};
     
-    enum informationUnitType{number = 1,text = 2};
+    enum informationUnitType{number = 0,text = 1};
        
 };
 
