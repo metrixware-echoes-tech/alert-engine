@@ -38,18 +38,18 @@ return 0;
 //TODO: car le state de l'info est passé a 2 ( donc traité) au 1er passage d'une verification d'une alerte, du coup une 2ème alerte ne retraitera pas cette info
 void AlertProcessor::InformationValueLoop(long long idAlert)
 {
+    Wt::WDateTime *now = new Wt::WDateTime();
     
     //the alert that we will re construct with the idAlert param 
     Wt::Dbo::ptr<Alert> alertPtr = new Alert();
      
     //creation of a new SQL session
-   // Session sessionThread(te->sqlCredentials);
-    Session sessionThread("hostaddr=172.16.3.101 port=5432 dbname=echoes user=echoes password=toto");
+    Session sessionThread(te->sqlCredentials);
     // creation of a criteria and an information unit type enum
     criteria alertCriterias;
     informationUnitType alertTypes;
     
-   // ToolsEngine::log("info") << " [Class:AlertProcessor] " << " New Thread created, the Alert : " << alertPtr->name << " is now proccesed by the engine.";
+    ToolsEngine::log("info") << " [Class:AlertProcessor] " << " New Thread created, the Alert : " << alertPtr->name << " is now proccesed by the engine.";
     
     int alertId;
     
@@ -116,6 +116,18 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
         typedef Wt::Dbo::collection<Wt::Dbo::ptr<InformationValue> > tbInformationValue;
         
         int posKey;
+        
+        *now = Wt::WDateTime::currentDateTime(); //for setting the last attempt of the alert;
+    
+        try //SQL transaction
+        {
+            Wt::Dbo::Transaction transaction(sessionThread);
+            alertPtr.modify()->lastAttempt = *now;
+        }
+        catch (Wt::Dbo::Exception e)
+        {
+            ToolsEngine::log("error") << " [Class:AlertProcessor] " << e.what();
+        }
 
         while(1)
         {
