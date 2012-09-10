@@ -23,6 +23,7 @@
 #include <alert/AlertValue.h>
 #include <alert/AlertType.h>
 #include <alert/AlertCriteria.h>
+#include <media/MediaValue.h>
 #include <boost/thread/thread.hpp>
 #include <boost/bind/bind.hpp>
 #include <boost/thread/mutex.hpp>
@@ -48,7 +49,7 @@ public:
     
    /**
     * method to evaluate the InformationValue table with one alert
-    * @param the pointer of the alert
+    * @param the id of the alert
     * @return code for the parent thread
     */ 
     //void InformationValueLoop(Wt::Dbo::ptr<Alert> alertPtr);

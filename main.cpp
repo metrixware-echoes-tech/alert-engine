@@ -14,6 +14,7 @@ void checkNewDatas();
 void checkNewAlerts();
 
 Wt::WLogger ToolsEngine::logger;
+boost::mutex ToolsEngine::mutex;
 
 int main()
 {  
@@ -64,6 +65,7 @@ void checkNewDatas()
             {
                 // state is 0 is "new entry" state = 1 is "processing"
                 receivedSyslog.modify()->state = 1;
+                //TODO : make a transaction 
                 try
                 {
                     res = parser->unserializeStructuredData(receivedSyslog);

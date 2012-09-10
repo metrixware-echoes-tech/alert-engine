@@ -18,10 +18,13 @@
 #include <media/MediaValue.h>
 #include <media/Media.h>
 #include <alert/AlertTracking.h>
+#include <pack/Option.h>
 #include <Wt/Http/Client>
 #include <Wt/Http/Request>
 #include <Wt/Http/Response>
 #include <Wt/WObject>
+#include <Wt/Mail/Client>
+#include <Wt/Mail/Message>
 
 typedef Wt::Dbo::collection< Wt::Dbo::ptr<MediaValue> > MediaValueList;
 
@@ -53,10 +56,21 @@ public:
     * @param the information value that matches the alert
     * @param the alert
     * @param the alert tracking required and concerned by the sms
+    * @param the media value concern by the alert
     * @return error -1 or sucess 0
     */     
-    int sendSMS(Wt::Dbo::ptr<InformationValue> InformationValuePtr,Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<AlertTracking> alertTrackingPtr);
+    int sendSMS(Wt::Dbo::ptr<InformationValue> InformationValuePtr,Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<AlertTracking> alertTrackingPtr, Wt::Dbo::ptr<MediaValue> mediaValuePtr);
 
+   /**
+    * method to send a MAIL 
+    * @param the information value that matches the alert
+    * @param the alert
+    * @param the alert tracking required and concerned by the sms
+    * @param the media value concern by the alert
+    * @param if the user as use all his sms, the value here is 1 if not it's 0
+    * @return error -1 or sucess 0
+    */    
+    int sendMAIL(Wt::Dbo::ptr<InformationValue> InformationValuePtr, Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<AlertTracking> alertTrackingPtr, Wt::Dbo::ptr<MediaValue> mediaValuePtr, int overSMSQuota = 0);
    /**
     * method to send the differents alerts over the air (mail, sms....) linked to an alert
     * @param the alert

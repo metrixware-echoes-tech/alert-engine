@@ -197,6 +197,7 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
     ToolsEngine::log("info") << " [Class:Parser] " << " Unserialize value begin" ;
     Wt::WDateTime creaDate;
     sValue.clear();
+    int posKeyValue;
     
     //string to parse : 
     // old : 8-4-5-6-2="543"  
@@ -253,6 +254,7 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
       //std::cout << "lineNum : " << lineNumber << "\n"; 
       sValue = Wt::Utils::base64Decode(strValue.substr(tbQuotes[0]+1,tbQuotes[1]-(tbQuotes[0]+1)));
    
+      
    
     //SQL session
     { 
@@ -283,8 +285,17 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
 
             informationValueTmp->asset = ptrAstTmp;
             
-            // state : 0 = pending, 1 = processing, 2 = done    
-            informationValueTmp->state = 0;
+            
+            posKeyValue = informationValueTmp->information.get()->pk.search.get()->pos_key_value;
+            if (posKeyValue == 0)
+            {
+                informationValueTmp->state = 0;
+            }
+            else
+            {
+                // state : -1= lot not complete, 0 = pending, 1 = processing, 2 = done    
+                informationValueTmp->state = -1;
+            }
 
             te->sessionParser->add(informationValueTmp);
             res = 0;           

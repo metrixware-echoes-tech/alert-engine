@@ -24,7 +24,7 @@
 #include <fstream>
 #include <sstream>
 #include <set>
-
+#include <boost/thread/mutex.hpp>
 #include <Wt/WIOService>
 
 class ToolsEngine;
@@ -56,6 +56,7 @@ public:
     Wt::WIOService *ioService; //ioservice used for the http client
 protected:
     static bool alreadyCreated;
+    static boost::mutex mutex;
 
 };
 
