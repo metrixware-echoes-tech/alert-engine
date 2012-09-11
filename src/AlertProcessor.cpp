@@ -49,8 +49,6 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
     criteria alertCriterias;
     informationUnitType alertTypes;
     
-    ToolsEngine::log("info") << " [Class:AlertProcessor] " << " New Thread created, the Alert : " << alertPtr->name << " is now proccesed by the engine.";
-    
     int alertId;
     
     //id of the plugin concerned by the alert            
@@ -83,6 +81,7 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
     {
         ToolsEngine::log("error") << " [Class:AlertProcessor] " << e.what();
     }
+    ToolsEngine::log("info") << " [Class:AlertProcessor] " << " New Thread created, the Alert : " << alertPtr->name << " is now proccesed by the engine.";
     //we check if it's a simple or a complex alert (complex <=> AVA_ID doesn't exist)
     if (alertId != -1)//a NULL dbo pointer return -1
     {

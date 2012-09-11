@@ -19,6 +19,8 @@
 #include <media/Media.h>
 #include <alert/AlertTracking.h>
 #include <pack/Option.h>
+#include <pack/OptionValue.h>
+#include <pack/PackOption.h>
 #include <Wt/Http/Client>
 #include <Wt/Http/Request>
 #include <Wt/Http/Response>
@@ -81,7 +83,7 @@ public:
 
 private:
     enum mediaTypes{sms = 0,mail = 1};
-
+    enum options{quotasms = 0};
 };
 
 #endif	/* ALERTSENDER_H */

@@ -53,9 +53,10 @@ int AlertSender::sendSMS(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt:
 
     
     //we check if there is a key and get it if it's the case to put in the sms
-    if (!alertPtr.get()->alertValue.get()->keyValue.empty())
+//    if (!boost::lexical_cast<Wt::WString,boost::optional<Wt::WString> >(alertPtr.get()->alertValue.get()->keyValue).empty())
+    if (alertPtr.get()->alertValue.get()->keyValue)
     {
-        key = alertPtr.get()->alertValue.get()->keyValue;
+        key = alertPtr.get()->alertValue.get()->keyValue.get();
         ToolsEngine::log("info") << " [Class:AlertSender] " << "New SMS for "<< phoneNumber << " : "
                                  << "New alert on " <<  assetConcerned
                                  << " about : " << alertName
@@ -146,9 +147,9 @@ int AlertSender::sendMAIL(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt
         mailRecipient = mediaValuePtr.get()->value;
 
         //we check if there is a key and get it if it's the case to put in the sms
-        if (!alertPtr.get()->alertValue.get()->keyValue.empty())
+        if (alertPtr.get()->alertValue.get()->keyValue)
         {
-            key = alertPtr.get()->alertValue.get()->keyValue;
+            key = alertPtr.get()->alertValue.get()->keyValue.get();
             ToolsEngine::log("info") << " [Class:AlertSender] " << "New MAIL for "<< mailRecipient << " : "
                                     << "New alert on " <<  assetConcerned
                                     << " about : " << alertName
@@ -186,9 +187,9 @@ int AlertSender::sendMAIL(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt
     {
         mailRecipient = mediaValuePtr.get()->user.get()->eMail;
         //we check if there is a key and get it if it's the case to put in the sms
-        if (!alertPtr.get()->alertValue.get()->keyValue.empty())
+        if (alertPtr.get()->alertValue.get()->keyValue)
         {
-            key = alertPtr.get()->alertValue.get()->keyValue;
+            key = alertPtr.get()->alertValue.get()->keyValue.get();
             ToolsEngine::log("info") << " [Class:AlertSender] " << "New MAIL instead of SMS (quota reached) for "<< mailRecipient << " : "
                                     << "New alert on " <<  assetConcerned
                                     << " about : " << alertName
@@ -241,9 +242,8 @@ int AlertSender::send(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<InformationValu
 {
     Session *session = static_cast<Session*>(InformationValuePtr.session());
     int smsQuota;
-    
-    //we will verify the sms quota before sending
-    Wt::Dbo::ptr<Option> optionQuota = new Option();
+    long long idOrg;
+    Wt::Dbo::ptr<OptionValue> optionValue;
     
     //dates used for the snooze
     Wt::WDateTime now = Wt::WDateTime::currentDateTime();
@@ -274,8 +274,11 @@ int AlertSender::send(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<InformationValu
                     ToolsEngine::log("info") << " [Class:AlertSender] " << "Media value SMS choosed for the alert : " << alertPtr.get()->name;
                     
                     //we verify the quota of sms
-                    optionQuota = session->find<Option>().where("\"OPT_ID\" = ?").bind(0);
-                    smsQuota = boost::lexical_cast<int>(optionQuota.get()->name); 
+                    idOrg = j->get()->user.get()->currentOrganization.id();
+                    
+                    optionValue = session->find<OptionValue>().where("\"OPT_ID_OPT_ID\" = ?").bind(quotasms).where("\"ORG_ID_ORG_ID\" = ?").bind(idOrg);
+                    
+                    smsQuota = boost::lexical_cast<int>(optionValue.get()->value); 
                     if ( smsQuota == 0 )   
                     {
                         ToolsEngine::log("info") << " [Class:AlertSender] " << "SMS quota 0 for alert : " <<  alertPtr.get()->name;
@@ -286,8 +289,8 @@ int AlertSender::send(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<InformationValu
                     else
                     {
                         ToolsEngine::log("info") << " [Class:AlertSender] " << "We send a SMS, quota : "<< smsQuota;
-                        optionQuota.modify()->name = boost::lexical_cast<std::string>((smsQuota - 1));
-                        optionQuota.flush();                        
+                        optionValue.modify()->value = boost::lexical_cast<std::string>((smsQuota - 1));
+                        optionValue.flush();                        
                         AlertSender::sendSMS(InformationValuePtr,alertPtr, alertTrackingPtr, (*j)); 
                     }
                     break;
@@ -317,9 +320,13 @@ int AlertSender::send(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<InformationValu
             {
                 case sms:
                     ToolsEngine::log("info") << " [Class:AlertSender] " << "Media value SMS choosed for an alert.";
+                    
                     //we verify the quota of sms
-                    optionQuota = session->find<Option>().where("\"OPT_ID\" = ?").bind(0);
-                    smsQuota = boost::lexical_cast<int>(optionQuota.get()->name); 
+                    idOrg = j->get()->user.get()->currentOrganization.id();
+                    
+                    optionValue = session->find<OptionValue>().where("\"OPT_ID_OPT_ID\" = ?").bind(quotasms).where("\"ORG_ID_ORG_ID\" = ?").bind(idOrg);
+                    
+                    smsQuota = boost::lexical_cast<int>(optionValue.get()->value); 
                     if ( smsQuota == 0 )   
                     {
                         ToolsEngine::log("info") << " [Class:AlertSender] " << "SMS quota 0 for alert : " <<  alertPtr.get()->name;
@@ -329,8 +336,8 @@ int AlertSender::send(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<InformationValu
                     else
                     {
                         ToolsEngine::log("info") << " [Class:AlertSender] " << "We send a SMS, quota : "<< smsQuota;
-                        optionQuota.modify()->name = boost::lexical_cast<std::string>((smsQuota - 1));
-                        optionQuota.flush();
+                        optionValue.modify()->value = boost::lexical_cast<std::string>((smsQuota - 1));
+                        optionValue.flush();
                         AlertSender::sendSMS(InformationValuePtr,alertPtr, alertTrackingPtr, (*j)); 
                     }
                     break;
