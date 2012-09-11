@@ -82,8 +82,8 @@ public:
     int send(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<InformationValue> InformationValuePtr );
 
 private:
-    enum mediaTypes{sms = 0,mail = 1};
-    enum options{quotasms = 0};
+    enum mediaTypes{sms = 2,mail = 1};
+    enum options{quotasms = 2};
 };
 
 #endif	/* ALERTSENDER_H */

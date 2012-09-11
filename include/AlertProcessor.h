@@ -61,7 +61,7 @@ private:
     
     enum criteria{lt = 1,le = 2,eq = 3,ne = 4,ge = 5,gt = 6};
     
-    enum informationUnitType{number = 0,text = 1};
+    enum informationUnitType{number = 2,text = 1};
        
 };
 
