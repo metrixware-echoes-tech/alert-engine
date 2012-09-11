@@ -15,9 +15,10 @@ boost::thread_group threadsVerifyAlerts;
     boost::mutex::scoped_lock scoped_lock(mutex);
     Alerts alerts;
     //SQL session
+    try
     {
         Wt::Dbo::Transaction transaction(*(te->sessionAlertProcessor));        
-
+       
         //we get the list of all defined alerts in the database
         alerts = te->sessionAlertProcessor->find<Alert>();
         ToolsEngine::log("info") << " [Class:AlertProcessor] " << "We have " << alerts.size() << " Alert(s) in the database";
@@ -30,6 +31,10 @@ boost::thread_group threadsVerifyAlerts;
            threadsVerifyAlerts.create_thread(boost::bind(&AlertProcessor::InformationValueLoop,this,(*i).id()));
         }
         threadsVerifyAlerts.join_all();
+    }
+    catch (Wt::Dbo::Exception e)
+    {
+        ToolsEngine::log("error") << " [Class:AlertProcessor] " << e.what();
     }
 return 0;
 }

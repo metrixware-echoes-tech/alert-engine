@@ -27,12 +27,17 @@ int Parser::unserializeStructuredData(Wt::Dbo::ptr<Syslog> ptrSyslog)
     do
     {
         //SQL session
+        try
         {
             Wt::Dbo::Transaction transaction(*(te->sessionParser));
             //we fill the local copy of the syslo pointer with the id of the received syslog
             ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslog.id());
             oBracket = ptrSyslogTmp.get()->sd.value().find('[',oBracket+1);
             cBracket = ptrSyslogTmp.get()->sd.value().find(']',cBracket+1);
+        }
+        catch (Wt::Dbo::Exception e)
+        {
+            ToolsEngine::log("error") << " [Class:Parser] " << e.what();
         }
         
         if ( oBracket != -1 || cBracket != -1 )
@@ -45,9 +50,14 @@ int Parser::unserializeStructuredData(Wt::Dbo::ptr<Syslog> ptrSyslog)
     for (int i = 0 ; i < posBrackets.size() ; i +=2 )
     {   
         //SQL session
+        try
         {
             Wt::Dbo::Transaction transaction(*(te->sessionParser));
             tempString.assign(ptrSyslogTmp.get()->sd.toUTF8().substr(posBrackets.at(i)+1,posBrackets.at(i+1)-posBrackets.at(i)-1));                   
+        }
+        catch (Wt::Dbo::Exception e)
+        {
+            ToolsEngine::log("error") << " [Class:Parser] " << e.what();
         }
         
         if (posBrackets.at(i) == 0 && prop==false )
@@ -131,7 +141,7 @@ int Parser::unserializeSDElement(std::string& strSDElement, Wt::Dbo::ptr<Syslog>
     idsPlusValue.clear();
     spaces.clear();
     
-    std::cout << "SDElement : " << strSDElement <<"\n";
+  //  std::cout << "SDElement : " << strSDElement <<"\n";
     
     //result
     int res = -1;
@@ -218,11 +228,11 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
     for(int i = 0 ; i < 6 ; i ++)
     {
         dash = strValue.find("-",dash+1);
-        std::cout << "dash : " << dash << "\n";
+     //   std::cout << "dash : " << dash << "\n";
         if ( dash != -1 )
         {
                 tbDashs[i]=dash ; //we save the position of the space in the list
-                std::cout << "tableau dash : " << tbDashs[i] << "\n";
+      //          std::cout << "tableau dash : " << tbDashs[i] << "\n";
         }
     }
     

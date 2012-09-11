@@ -17,12 +17,14 @@ Wt::Dbo::ptr<AlertTracking> AlertSender::createAlertTrackingNumber(Wt::Dbo::ptr<
 {
     //we get the session actually opened
     AlertTracking *newAlertTracking = new AlertTracking();
-    Wt::WDateTime *now = new Wt::WDateTime();
+   // Wt::WDateTime *now = new Wt::WDateTime();
+    Wt::WDateTime now = Wt::WDateTime::currentDateTime();
     
     newAlertTracking->alert = alertPtr;
     newAlertTracking->mediaValue = mediaValuePtr;
-    now->currentDateTime();
-    newAlertTracking->sendDate = *now;
+   // now->currentDateTime();
+    //newAlertTracking->sendDate = *now;
+    newAlertTracking->sendDate = now;
     Wt::Dbo::ptr<AlertTracking> alertTrackingPtr;
     
     try
@@ -40,6 +42,7 @@ Wt::Dbo::ptr<AlertTracking> AlertSender::createAlertTrackingNumber(Wt::Dbo::ptr<
 
 int AlertSender::sendSMS(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<AlertTracking> alertTrackingPtr, Wt::Dbo::ptr<MediaValue> mediaValuePtr)
 {
+
     Wt::WString phoneNumber = mediaValuePtr.get()->value;
     Wt::WString assetConcerned = informationValuePtr.get()->asset.get()->name;
     Wt::WString alertName = alertPtr.get()->name;
@@ -89,33 +92,39 @@ int AlertSender::sendSMS(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt:
     }
     
     
-
-    // HTTP Client init
-    Wt::Http::Client *client = new Wt::Http::Client(*te->ioService);       
-
-
-    std::string bodyText = "alertid=" + boost::lexical_cast<std::string>(alertPtr.id()) + "&alerttrackingid=" + boost::lexical_cast<std::string>(alertTrackingPtr.id()) + "&messageText=" + sms.toUTF8() + "&number=" + phoneNumber.toUTF8() + "&login=contact@echoes-tech.com&password=147258369aA";
+    try
+    {
+        // HTTP Client init
+        Wt::Http::Client *client = new Wt::Http::Client(*te->ioService);       
 
 
-    ToolsEngine::log("info") << " [Class:AlertSender] " << bodyText;
+        std::string bodyText = "alertid=" + boost::lexical_cast<std::string>(alertPtr.id()) + "&alerttrackingid=" + boost::lexical_cast<std::string>(alertTrackingPtr.id()) + "&messageText=" + sms.toUTF8() + "&number=" + phoneNumber.toUTF8() + "&login=contact@echoes-tech.com&password=147258369aA";
 
-    /** Message containing the http parameters and the body of the post request */
-    Wt::Http::Message message;
-    message.addBodyText(bodyText);
-    message.setHeader("Content-Type", "application/x-www-form-urlencoded");
 
-    std::string apiAddress = "https://sms/netsize/send";
-    ToolsEngine::log("info") << " [Class:AlertSender] " << "[SMS] Trying to send request to API. Address : " << apiAddress;
-    //client->post(apiAddress, message);
-    
-    
-    //SQL transaction to commit the date
-    Session *session = static_cast<Session*>(informationValuePtr.session());
-        
-    Wt::Dbo::ptr<MediaValue> mediaValueP = session->find<MediaValue>().where("\"MEV_ID\" = ?").bind(mediaValuePtr.id());
+        ToolsEngine::log("info") << " [Class:AlertSender] " << bodyText;
 
-    ToolsEngine::log("info") << " [Class:AlertSender] " << "insert date of last send in db : " << now.toString();
-    mediaValueP.modify()->lastSend = now;
+        /** Message containing the http parameters and the body of the post request */
+        Wt::Http::Message message;
+        message.addBodyText(bodyText);
+        message.setHeader("Content-Type", "application/x-www-form-urlencoded");
+
+        std::string apiAddress = "https://sms/netsize/send";
+        ToolsEngine::log("info") << " [Class:AlertSender] " << "[SMS] Trying to send request to API. Address : " << apiAddress;
+        //client->post(apiAddress, message);
+
+
+        //SQL transaction to commit the date
+        Session *session = static_cast<Session*>(informationValuePtr.session());
+
+        Wt::Dbo::ptr<MediaValue> mediaValueP = session->find<MediaValue>().where("\"MEV_ID\" = ?").bind(mediaValuePtr.id());
+
+        ToolsEngine::log("info") << " [Class:AlertSender] " << "insert date of last send in db : " << now.toString();
+        mediaValueP.modify()->lastSend = now;
+    }
+    catch (Wt::Dbo::Exception e)
+    {
+        ToolsEngine::log("error") << " [Class:AlertSender] " << e.what();
+    }
     
 }
 
@@ -229,12 +238,17 @@ int AlertSender::sendMAIL(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt
     mailMessage.addHtmlBody(mail);
     mailClient.connect("hermes.gayuxweb.fr");
     mailClient.send(mailMessage);
-    
-    
-    Wt::Dbo::ptr<MediaValue> mediaValueP = session->find<MediaValue>().where("\"MEV_ID\" = ?").bind(mediaValuePtr.id());
 
-    ToolsEngine::log("info") << " [Class:AlertSender] " << "insert date of last send in db : " << now.toString();
-    mediaValueP.modify()->lastSend = now;
+    try
+    {
+        Wt::Dbo::ptr<MediaValue> mediaValueP = session->find<MediaValue>().where("\"MEV_ID\" = ?").bind(mediaValuePtr.id());
+        ToolsEngine::log("info") << " [Class:AlertSender] " << "insert date of last send in db : " << now.toString();
+        mediaValueP.modify()->lastSend = now;
+    }
+    catch (Wt::Dbo::Exception e)
+    {
+        ToolsEngine::log("error") << " [Class:AlertSender] " << e.what();
+    }
 }
  
 
@@ -260,7 +274,7 @@ int AlertSender::send(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<InformationValu
     {
         Wt::Dbo::ptr<AlertTracking> alertTrackingPtr = AlertSender::createAlertTrackingNumber(alertPtr,*j, session);
         //for each media value for this alert we send the corresponding alert over the air
-
+        ToolsEngine::log("info") << " [Class:AlertSender] " << "Alert tracking number creation : " << alertTrackingPtr.id();
 
         
         if (!(*j).get()->lastSend.isValid())//it is the first time we send the alert there is no last send date filled
@@ -276,22 +290,29 @@ int AlertSender::send(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<InformationValu
                     //we verify the quota of sms
                     idOrg = j->get()->user.get()->currentOrganization.id();
                     
-                    optionValue = session->find<OptionValue>().where("\"OPT_ID_OPT_ID\" = ?").bind(quotasms).where("\"ORG_ID_ORG_ID\" = ?").bind(idOrg);
-                    
-                    smsQuota = boost::lexical_cast<int>(optionValue.get()->value); 
-                    if ( smsQuota == 0 )   
+                    try
                     {
-                        ToolsEngine::log("info") << " [Class:AlertSender] " << "SMS quota 0 for alert : " <<  alertPtr.get()->name;
-                        ToolsEngine::log("info") << " [Class:AlertSender] " << "Sending e-mail instead." ;
-                        
-                        AlertSender::sendMAIL(InformationValuePtr,alertPtr, alertTrackingPtr,(*j),1);
+                        optionValue = session->find<OptionValue>().where("\"OPT_ID_OPT_ID\" = ?").bind(quotasms).where("\"ORG_ID_ORG_ID\" = ?").bind(idOrg);
+
+                        smsQuota = boost::lexical_cast<int>(optionValue.get()->value); 
+                        if ( smsQuota == 0 )   
+                        {
+                            ToolsEngine::log("info") << " [Class:AlertSender] " << "SMS quota 0 for alert : " <<  alertPtr.get()->name;
+                            ToolsEngine::log("info") << " [Class:AlertSender] " << "Sending e-mail instead." ;
+
+                            AlertSender::sendMAIL(InformationValuePtr,alertPtr, alertTrackingPtr,(*j),1);
+                        }
+                        else
+                        {
+                            ToolsEngine::log("info") << " [Class:AlertSender] " << "We send a SMS, quota : "<< smsQuota;
+                            optionValue.modify()->value = boost::lexical_cast<std::string>((smsQuota - 1));
+                            optionValue.flush();                        
+                            AlertSender::sendSMS(InformationValuePtr,alertPtr, alertTrackingPtr, (*j)); 
+                        }
                     }
-                    else
+                    catch (Wt::Dbo::Exception e)
                     {
-                        ToolsEngine::log("info") << " [Class:AlertSender] " << "We send a SMS, quota : "<< smsQuota;
-                        optionValue.modify()->value = boost::lexical_cast<std::string>((smsQuota - 1));
-                        optionValue.flush();                        
-                        AlertSender::sendSMS(InformationValuePtr,alertPtr, alertTrackingPtr, (*j)); 
+                        ToolsEngine::log("error") << " [Class:AlertSender] " << e.what();
                     }
                     break;
                 }
@@ -324,21 +345,28 @@ int AlertSender::send(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<InformationValu
                     //we verify the quota of sms
                     idOrg = j->get()->user.get()->currentOrganization.id();
                     
-                    optionValue = session->find<OptionValue>().where("\"OPT_ID_OPT_ID\" = ?").bind(quotasms).where("\"ORG_ID_ORG_ID\" = ?").bind(idOrg);
-                    
-                    smsQuota = boost::lexical_cast<int>(optionValue.get()->value); 
-                    if ( smsQuota == 0 )   
+                    try
                     {
-                        ToolsEngine::log("info") << " [Class:AlertSender] " << "SMS quota 0 for alert : " <<  alertPtr.get()->name;
-                        ToolsEngine::log("info") << " [Class:AlertSender] " << "Sending e-mail instead." ;
-                        AlertSender::sendMAIL(InformationValuePtr,alertPtr, alertTrackingPtr, (*j),1);
+                        optionValue = session->find<OptionValue>().where("\"OPT_ID_OPT_ID\" = ?").bind(quotasms).where("\"ORG_ID_ORG_ID\" = ?").bind(idOrg);
+
+                        smsQuota = boost::lexical_cast<int>(optionValue.get()->value); 
+                        if ( smsQuota == 0 )   
+                        {
+                            ToolsEngine::log("info") << " [Class:AlertSender] " << "SMS quota 0 for alert : " <<  alertPtr.get()->name;
+                            ToolsEngine::log("info") << " [Class:AlertSender] " << "Sending e-mail instead." ;
+                            AlertSender::sendMAIL(InformationValuePtr,alertPtr, alertTrackingPtr, (*j),1);
+                        }
+                        else
+                        {
+                            ToolsEngine::log("info") << " [Class:AlertSender] " << "We send a SMS, quota : "<< smsQuota;
+                            optionValue.modify()->value = boost::lexical_cast<std::string>((smsQuota - 1));
+                            optionValue.flush();
+                            AlertSender::sendSMS(InformationValuePtr,alertPtr, alertTrackingPtr, (*j)); 
+                        }
                     }
-                    else
+                    catch (Wt::Dbo::Exception e)
                     {
-                        ToolsEngine::log("info") << " [Class:AlertSender] " << "We send a SMS, quota : "<< smsQuota;
-                        optionValue.modify()->value = boost::lexical_cast<std::string>((smsQuota - 1));
-                        optionValue.flush();
-                        AlertSender::sendSMS(InformationValuePtr,alertPtr, alertTrackingPtr, (*j)); 
+                        ToolsEngine::log("error") << " [Class:AlertSender] " << e.what();
                     }
                     break;
                 case mail:
