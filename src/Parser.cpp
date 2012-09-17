@@ -8,7 +8,7 @@ Parser::~Parser() {
 
 int Parser::unserializeStructuredData(Wt::Dbo::ptr<Syslog> ptrSyslog)
 {
-    ToolsEngine::log("info") << " [Class:Parser] " << " Unserialize StructuredData begin" ;    
+    ToolsEngine::log("debug") << " [Class:Parser] " << " Unserialize StructuredData begin" ;    
     //[prop@5875 ver=1 probe=12]
     //[res2@5875 offset=15 8-4-5-6-2="543" 8-4-5-6-1="54546"][res1@5875 offset=75 8-4-5-6-2="123" 8-4-5-6-1="pojl"]
     
@@ -85,7 +85,7 @@ int Parser::unserializeStructuredData(Wt::Dbo::ptr<Syslog> ptrSyslog)
 
 int Parser::unserializeProperties(std::string& strProperties, Wt::Dbo::ptr<Syslog> ptrSyslog)
 {
-    ToolsEngine::log("info") << " [Class:Parser] " << " Unserialize properties begin" ;
+    ToolsEngine::log("debug") << " [Class:Parser] " << " Unserialize properties begin" ;
     //example of string to parse : prop@5875 ver=1 probe=12
     //we parse the first sd-element
     //table to save the equal positions in the first sd-element
@@ -132,7 +132,7 @@ int Parser::unserializeProperties(std::string& strProperties, Wt::Dbo::ptr<Syslo
 
 int Parser::unserializeSDElement(std::string& strSDElement, Wt::Dbo::ptr<Syslog> ptrSyslog)
 {
-    ToolsEngine::log("info") << " [Class:Parser] " << " Unserialize SDElement begin" ;
+    ToolsEngine::log("debug") << " [Class:Parser] " << " Unserialize SDElement begin" ;
     //string to parse : res2@5875 offset=15 8-4-5-6-2="543" 8-4-5-6-1="54546"
     int offset=0;
     size_t space=-1; //sucessives positions of the space
@@ -158,14 +158,14 @@ int Parser::unserializeSDElement(std::string& strSDElement, Wt::Dbo::ptr<Syslog>
     }while (space != -1); 
     
     offset = boost::lexical_cast<int>(strSDElement.substr(strSDElement.find("=",spaces.at(0))+1,(spaces.at(1)-1)-strSDElement.find("=",spaces.at(0))));
-    ToolsEngine::log("info") << " [Class:Parser] "<< "offset : " << offset;
+    ToolsEngine::log("debug") << " [Class:Parser] "<< "offset : " << offset;
     
     
     //we add the only element to the vector
     if (spaces.size() == 2)
     {
         idsPlusValue.push_back(strSDElement.substr(spaces.back()+1,strSDElement.size()-spaces.back()));
-        ToolsEngine::log("info") << " [Class:Parser] "<< "idsPlusValue : " << strSDElement.substr(spaces.back()+1,strSDElement.size()-spaces.back()); 
+        ToolsEngine::log("debug") << " [Class:Parser] "<< "idsPlusValue : " << strSDElement.substr(spaces.back()+1,strSDElement.size()-spaces.back()); 
     }
     //
     else
@@ -173,10 +173,10 @@ int Parser::unserializeSDElement(std::string& strSDElement, Wt::Dbo::ptr<Syslog>
         for ( int i= 1 ; i < spaces.size()-1 ; i ++)
         {  
             idsPlusValue.push_back(strSDElement.substr(spaces.at(i)+1,spaces.at(i+1)-spaces.at(i)));
-            ToolsEngine::log("info") << " [Class:Parser] " << strSDElement.substr(spaces.at(i)+1,spaces.at(i+1)-spaces.at(i));
+            ToolsEngine::log("debug") << " [Class:Parser] " << strSDElement.substr(spaces.at(i)+1,spaces.at(i+1)-spaces.at(i));
         }
         idsPlusValue.push_back(strSDElement.substr(spaces.back()+1,strSDElement.size()-spaces.back()));
-        ToolsEngine::log("info") << " [Class:Parser] " << strSDElement.substr(spaces.back()+1,strSDElement.size()-spaces.back()); 
+        ToolsEngine::log("debug") << " [Class:Parser] " << strSDElement.substr(spaces.back()+1,strSDElement.size()-spaces.back()); 
     }
    
     //we unserialize each value
@@ -204,7 +204,7 @@ int Parser::unserializeSDElement(std::string& strSDElement, Wt::Dbo::ptr<Syslog>
 
 int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Syslog> ptrSyslog)
 {  
-    ToolsEngine::log("info") << " [Class:Parser] " << " Unserialize value begin" ;
+    ToolsEngine::log("debug") << " [Class:Parser] " << " Unserialize value begin" ;
     Wt::WDateTime creaDate;
     sValue.clear();
     int posKeyValue;

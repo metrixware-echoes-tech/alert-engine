@@ -15,13 +15,17 @@ void checkNewAlerts();
 
 Wt::WLogger ToolsEngine::logger;
 boost::mutex ToolsEngine::mutex;
+//default criticity to log before reading file config : debug = 1 / info = 2 / warning = 3 / secure = 4 / error = 5/ fatal = 6
+int ToolsEngine::criticity = 2;
 
 int main()
 {  
     ToolsEngine::logger.setFile("/tmp/engine.log");
+    //TODO : verif si le dossier n'existe pas le créer
     ToolsEngine::logger.addField("type",false);
     ToolsEngine::logger.addField("datetime",false);
     ToolsEngine::logger.addField("message", true);
+    ToolsEngine::logger.configure("-debug");
     
     te = new ToolsEngine();
 
@@ -29,10 +33,10 @@ int main()
     try 
         {
             te->sessionParser->createTables();
-            std::cerr << "Created database." << std::endl;
+            ToolsEngine::log("debug") << " [Class:Main] " << "Created database.";
         } catch (std::exception& e) {
             std::cerr << e.what() << std::endl;
-            std::cerr << "Using existing database";
+            ToolsEngine::log("info") << " [Class:Main] " << "Using existing database." << e.what();
         }
 
         
@@ -82,7 +86,7 @@ void checkNewDatas()
                 }
                 catch (Wt::Dbo::Exception e)
                 {   
-                        ToolsEngine::log("info") << " [Class:main] "<< e.what();
+                        ToolsEngine::log("error") << " [Class:main] "<< e.what();
                 }      
             }
 

@@ -261,26 +261,29 @@ int AlertSender::send(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<InformationValu
     
     //dates used for the snooze
     Wt::WDateTime now = Wt::WDateTime::currentDateTime();
-    ToolsEngine::log("info") << " [Class:AlertSender] " << "now : " << now.toString();
+    ToolsEngine::log("debug") << " [Class:AlertSender] " << "now : " << now.toString();
     
     //because we have to re read the alert last send date that was just modified, if not we will read the first one commited at the first time alert send.
     alertPtr.reread();
     
-
+    Wt::Dbo::ptr<AlertTracking> alertTrackingPtr;
     
     //we get the list of media linked to this alert
     MediaValueList mediaList = AlertSender::checkMediaToSendAlert(alertPtr);
     for (MediaValueList::const_iterator j = mediaList.begin(); j != mediaList.end(); ++j) 
     {
-        Wt::Dbo::ptr<AlertTracking> alertTrackingPtr = AlertSender::createAlertTrackingNumber(alertPtr,*j, session);
-        //for each media value for this alert we send the corresponding alert over the air
-        ToolsEngine::log("info") << " [Class:AlertSender] " << "Alert tracking number creation : " << alertTrackingPtr.id();
-
+        
         
         if (!(*j).get()->lastSend.isValid())//it is the first time we send the alert there is no last send date filled
-        {
+        {   
+            alertTrackingPtr = AlertSender::createAlertTrackingNumber(alertPtr,*j, session);
+            //for each media value for this alert we send the corresponding alert over the air
+            ToolsEngine::log("info") << " [Class:AlertSender] " << "Alert tracking number creation : " << alertTrackingPtr.id();
+            //TODO : add the feature to modify the media on the alert tracking tuple when the sms quota is 0 ( think to send the mail instead of sms to the appropriate guy instead of the referent user)
+            
+            
             ToolsEngine::log("info") << " [Class:AlertSender] " << "It's the first time we send this alert";
-            ToolsEngine::log("info") << " [Class:AlertSender] " << "snooze = " << j->get()->snoozeDuration;
+            ToolsEngine::log("debug") << " [Class:AlertSender] " << "snooze = " << j->get()->snoozeDuration;
             switch (j->get()->media.id())
             {
                 case sms:
@@ -297,6 +300,7 @@ int AlertSender::send(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<InformationValu
                         smsQuota = boost::lexical_cast<int>(optionValue.get()->value); 
                         if ( smsQuota == 0 )   
                         {
+                            
                             ToolsEngine::log("info") << " [Class:AlertSender] " << "SMS quota 0 for alert : " <<  alertPtr.get()->name;
                             ToolsEngine::log("info") << " [Class:AlertSender] " << "Sending e-mail instead." ;
 
@@ -304,7 +308,7 @@ int AlertSender::send(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<InformationValu
                         }
                         else
                         {
-                            ToolsEngine::log("info") << " [Class:AlertSender] " << "We send a SMS, quota : "<< smsQuota;
+                            ToolsEngine::log("debug") << " [Class:AlertSender] " << "We send a SMS, quota : "<< smsQuota;
                             optionValue.modify()->value = boost::lexical_cast<std::string>((smsQuota - 1));
                             optionValue.flush();                        
                             AlertSender::sendSMS(InformationValuePtr,alertPtr, alertTrackingPtr, (*j)); 
@@ -327,12 +331,16 @@ int AlertSender::send(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<InformationValu
         //we do : date.now() - last_send = nb_secs then, if nb_secs >= snooze of the media, we send the alert
         else if ((*j).get()->lastSend.secsTo(now) >= j->get()->snoozeDuration)
         {
-            ToolsEngine::log("info") << " [Class:AlertSender] " << " last send : " << (*j).get()->lastSend.toString();
-            ToolsEngine::log("info") << " [Class:AlertSender] " << " now : " << now.toString();            
-            ToolsEngine::log("info") << " [Class:AlertSender] " << " last send to now in secs = " << (*j).get()->lastSend.secsTo(now);
+            alertTrackingPtr = AlertSender::createAlertTrackingNumber(alertPtr,*j, session);
+            //for each media value for this alert we send the corresponding alert over the air
+            ToolsEngine::log("info") << " [Class:AlertSender] " << "Alert tracking number creation : " << alertTrackingPtr.id();
             
-            ToolsEngine::log("info") << " [Class:AlertSender] " << "snooze = " << j->get()->snoozeDuration;
-            ToolsEngine::log("info") << " [Class:AlertSender] " 
+            ToolsEngine::log("debug") << " [Class:AlertSender] " << " last send : " << (*j).get()->lastSend.toString();
+            ToolsEngine::log("debug") << " [Class:AlertSender] " << " now : " << now.toString();            
+            ToolsEngine::log("debug") << " [Class:AlertSender] " << " last send to now in secs = " << (*j).get()->lastSend.secsTo(now);
+            
+            ToolsEngine::log("debug") << " [Class:AlertSender] " << "snooze = " << j->get()->snoozeDuration;
+            ToolsEngine::log("debug") << " [Class:AlertSender] " 
                                      << "Last time we send the alert : " << alertPtr.get()->name 
                                      << "was : " << (*j).get()->lastSend.toString()
                                      << "the snooze for the media " << j->get()->media.get()->name 
@@ -358,7 +366,7 @@ int AlertSender::send(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<InformationValu
                         }
                         else
                         {
-                            ToolsEngine::log("info") << " [Class:AlertSender] " << "We send a SMS, quota : "<< smsQuota;
+                            ToolsEngine::log("debug") << " [Class:AlertSender] " << "We send a SMS, quota : "<< smsQuota;
                             optionValue.modify()->value = boost::lexical_cast<std::string>((smsQuota - 1));
                             optionValue.flush();
                             AlertSender::sendSMS(InformationValuePtr,alertPtr, alertTrackingPtr, (*j)); 
@@ -378,7 +386,7 @@ int AlertSender::send(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<InformationValu
             }            
         }
         else{
-            ToolsEngine::log("info") << " [Class:AlertSender] " 
+            ToolsEngine::log("debug") << " [Class:AlertSender] " 
                                      << "Last time we send the alert : " << alertPtr.get()->name 
                                      << "was : " << (*j).get()->lastSend.toString()
                                      << "the snooze for the media " << j->get()->media.get()->name 

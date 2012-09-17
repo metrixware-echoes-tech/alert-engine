@@ -14,6 +14,7 @@
                    projectFiles="true">
     </logicalFolder>
     <logicalFolder name="f1" displayName="Scripts" projectFiles="true">
+      <itemPath>scripts/database_content_production.sql</itemPath>
       <itemPath>scripts/fill_echoes_database_sensor.sql</itemPath>
       <itemPath>scripts/histo_tracking_tsa.sql</itemPath>
       <itemPath>scripts/log-echoes.sh</itemPath>

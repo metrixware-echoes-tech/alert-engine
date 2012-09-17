@@ -7,7 +7,7 @@ bool ToolsEngine::alreadyCreated = false;
 ToolsEngine::ToolsEngine() {
     if (alreadyCreated)
     {
-            std::cout << "Vous ne pouvez pas créer une seconde instance de la classe Singleton.\n";
+            ToolsEngine::log("error") << " [Class:ToolsEngine] " << "Can't create a second instance of the singleton class";
     }
     // Sinon, on construit la classe et on déclare l'objet créé
     alreadyCreated = true;
@@ -28,10 +28,10 @@ ToolsEngine::~ToolsEngine() {
     ioService->stop();
 }
 
-Wt::WLogEntry ToolsEngine::log(std::string criticity)
+Wt::WLogEntry ToolsEngine::log(std::string logCriticity)
 {
     boost::mutex::scoped_lock scoped_lock(ToolsEngine::mutex);
-    return ToolsEngine::logger.entry(criticity) << criticity << Wt::WLogger::sep << Wt::WLogger::timestamp << Wt::WLogger::sep;
+    return ToolsEngine::logger.entry(logCriticity) << logCriticity << Wt::WLogger::sep << Wt::WLogger::timestamp << Wt::WLogger::sep;
     boost::mutex::scoped_lock scoped_unlock(ToolsEngine::mutex);
 }
 
@@ -55,7 +55,7 @@ void ToolsEngine::configFileLoad(std::string fileLocation)
     {
         for(boost::program_options::detail::config_file_iterator i(configFile, options), e; i != e ; ++i)
             {
-                ToolsEngine::log("info") << " [Class:main] "<< " Config file reading :" << i->string_key <<"  " << i->value[0];
+                ToolsEngine::log("debug") << " [Class:main] "<< " Config file reading :" << i->string_key <<"  " << i->value[0];
                 parameters[i->string_key] = i->value[0];
             }
         result = 0;
@@ -73,7 +73,46 @@ void ToolsEngine::configFileLoad(std::string fileLocation)
                        " password=" + parameters["database-password"];
       sleepThreadReadDatasMilliSec = boost::lexical_cast<int>(parameters["sleep-database-reading"]);
       sleepThreadCheckAlertMilliSec = boost::lexical_cast<int>(parameters["sleep-alert-reading"]);
-      
+      criticity = boost::lexical_cast<int>(parameters["log-criticity"]);
+      //set the log criticity
+      switch (criticity)
+      {
+          case debug:
+          {
+                  ToolsEngine::logger.configure("*");
+                  break;
+          }
+          case info:
+          {
+                  ToolsEngine::logger.configure("* -debug");
+                  break;
+          } 
+          case warning:
+          {
+                  ToolsEngine::logger.configure("* -debug - info");
+                  break;
+          } 
+          case secure:
+          {
+                  ToolsEngine::logger.configure("* -debug - info -warning");
+                  break;
+          } 
+          case error:
+          {
+                  ToolsEngine::logger.configure("* -debug - info -warning -secure");
+                  break;
+          }  
+          case fatal:
+          {
+                  ToolsEngine::logger.configure("* -debug - info -warning -secure -error");
+                  break;
+          }
+          default:
+          {
+                  ToolsEngine::logger.configure("* -debug");
+                  break;
+          }               
+      }
 //      ToolsEngine::log("info") << " [Class:main] "<< sqlCredentials;
 //      ToolsEngine::log("info") << " [Class:main] "<< sleepThreadReadDatasMilliSec;
 //      ToolsEngine::log("info") << " [Class:main] "<< sleepThreadCheckAlertMilliSec;
