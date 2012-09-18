@@ -116,7 +116,7 @@ int AlertSender::sendSMS(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt:
         //SQL transaction to commit the date
         Session *session = static_cast<Session*>(informationValuePtr.session());
 
-        Wt::Dbo::ptr<MediaValue> mediaValueP = session->find<MediaValue>().where("\"MEV_ID\" = ?").bind(mediaValuePtr.id());
+        Wt::Dbo::ptr<MediaValue> mediaValueP = session->find<MediaValue>().where("\"MEV_ID\" = ?").bind(mediaValuePtr.id()).limit(1);
 
         ToolsEngine::log("info") << " [Class:AlertSender] " << "insert date of last send in db : " << now.toString();
         mediaValueP.modify()->lastSend = now;
@@ -241,7 +241,7 @@ int AlertSender::sendMAIL(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt
 
     try
     {
-        Wt::Dbo::ptr<MediaValue> mediaValueP = session->find<MediaValue>().where("\"MEV_ID\" = ?").bind(mediaValuePtr.id());
+        Wt::Dbo::ptr<MediaValue> mediaValueP = session->find<MediaValue>().where("\"MEV_ID\" = ?").bind(mediaValuePtr.id()).limit(1);
         ToolsEngine::log("info") << " [Class:AlertSender] " << "insert date of last send in db : " << now.toString();
         mediaValueP.modify()->lastSend = now;
     }
@@ -295,7 +295,7 @@ int AlertSender::send(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<InformationValu
                     
                     try
                     {
-                        optionValue = session->find<OptionValue>().where("\"OPT_ID_OPT_ID\" = ?").bind(quotasms).where("\"ORG_ID_ORG_ID\" = ?").bind(idOrg);
+                        optionValue = session->find<OptionValue>().where("\"OPT_ID_OPT_ID\" = ?").bind(quotasms).where("\"ORG_ID_ORG_ID\" = ?").bind(idOrg).limit(1);
 
                         smsQuota = boost::lexical_cast<int>(optionValue.get()->value); 
                         if ( smsQuota == 0 )   
@@ -355,7 +355,7 @@ int AlertSender::send(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<InformationValu
                     
                     try
                     {
-                        optionValue = session->find<OptionValue>().where("\"OPT_ID_OPT_ID\" = ?").bind(quotasms).where("\"ORG_ID_ORG_ID\" = ?").bind(idOrg);
+                        optionValue = session->find<OptionValue>().where("\"OPT_ID_OPT_ID\" = ?").bind(quotasms).where("\"ORG_ID_ORG_ID\" = ?").bind(idOrg).limit(1);
 
                         smsQuota = boost::lexical_cast<int>(optionValue.get()->value); 
                         if ( smsQuota == 0 )   

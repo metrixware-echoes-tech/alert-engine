@@ -31,7 +31,7 @@ int Parser::unserializeStructuredData(Wt::Dbo::ptr<Syslog> ptrSyslog)
         {
             Wt::Dbo::Transaction transaction(*(te->sessionParser));
             //we fill the local copy of the syslo pointer with the id of the received syslog
-            ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslog.id());
+            ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslog.id()).limit(1);
             oBracket = ptrSyslogTmp.get()->sd.value().find('[',oBracket+1);
             cBracket = ptrSyslogTmp.get()->sd.value().find(']',cBracket+1);
         }
@@ -111,11 +111,11 @@ int Parser::unserializeProperties(std::string& strProperties, Wt::Dbo::ptr<Syslo
         {                         
             Wt::Dbo::Transaction transaction(*(te->sessionParser));
             //we fill the local copy of the syslo pointer with the id of the received syslog
-            ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslog.id());
+            ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslog.id()).limit(1);
             ptrSyslogTmp.modify()->version = boost::lexical_cast<int>(strProperties.substr(tbEquals[0]+1,space-(tbEquals[0]+1)));      
 
             //we find the probe that have the id of the received syslog and get its pointer
-            ptrProbe = te->sessionParser->find<Probe>().where("\"PRB_ID\" = ?").bind(idProbeTmp);             
+            ptrProbe = te->sessionParser->find<Probe>().where("\"PRB_ID\" = ?").bind(idProbeTmp).limit(1);             
 
             //we modify the probe in the local copy of the syslog pointer with the getted object
             ptrSyslogTmp.modify()->probe = ptrProbe;
@@ -276,7 +276,7 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
                     .where("\"PLG_ID_PLG_ID\" = ?").bind(idPlugin)
                     .where("\"SRC_ID\" = ?").bind(idSource)
                     .where("\"SEA_ID\" = ?").bind(idSearch)
-                    .where("\"INF_VALUE_NUM\" = ?").bind(valueNum);
+                    .where("\"INF_VALUE_NUM\" = ?").bind(valueNum).limit(1);
 
             informationValueTmp->information = ptrInfTmp;
             informationValueTmp->value = sValue;
@@ -291,7 +291,7 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
             informationValueTmp->lineNumber = lineNumber;            
 
             Wt::Dbo::ptr<Asset> ptrAstTmp = te->sessionParser->find<Asset>()
-                    .where("\"AST_ID\" = ?").bind(idAsset);
+                    .where("\"AST_ID\" = ?").bind(idAsset).limit(1);
 
             informationValueTmp->asset = ptrAstTmp;
             

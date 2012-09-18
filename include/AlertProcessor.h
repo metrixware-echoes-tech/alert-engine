@@ -73,11 +73,11 @@ public:
     * @return true or false
     */ 
  //   bool ltMethod(double a, double b);
-    bool leMethod(double a, double b);
-    bool eqMethod(double a, double b);
-    bool neMethod(double a, double b);
+ //   bool leMethod(double a, double b);
+ //   bool eqMethod(double a, double b);
+ //   bool neMethod(double a, double b);
  //   bool geMethod(double a, double b);
-    bool gtMethod(double a, double b);
+//    bool gtMethod(double a, double b);
 
     
 private:
