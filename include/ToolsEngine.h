@@ -42,9 +42,10 @@ public:
     
    /**
     * method to load the config file
+    * @param file location
     * @return success 0 or error -1
     */     
-    void configFileLoad(std::string fileLocation);
+    int configFileLoad(std::string fileLocation);
 
     Session *sessionParser;
     Session *sessionAlertProcessor;    

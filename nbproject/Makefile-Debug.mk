@@ -61,7 +61,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=-L../dbo/dist/SharedObject/GNU-Linux-x86 -lboost_system -lpthread -lboost_thread -lboost_serialization -lboost_filesystem -lwt -lwtdbo -ldbo -lboost_program_options
+LDLIBSOPTIONS=-L../dbo/dist/SharedObject/GNU-Linux-x86 -lboost_system -lpthread -lboost_thread -lboost_serialization -lboost_filesystem -lwt -lwtdbo -ldbo -lboost_program_options -lboost_unit_test_framework-mt
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
@@ -101,21 +101,15 @@ ${OBJECTDIR}/src/AlertSender.o: src/AlertSender.cpp
 
 # Build Test Targets
 .build-tests-conf: .build-conf ${TESTFILES}
-${TESTDIR}/TestFiles/f1: ${TESTDIR}/tests/src/TestConnectionTCP.o ${TESTDIR}/tests/main.o ${OBJECTFILES:%.o=%_nomain.o}
+${TESTDIR}/TestFiles/f1: ${TESTDIR}/ToolsEngine-Tests.o ${OBJECTFILES:%.o=%_nomain.o}
 	${MKDIR} -p ${TESTDIR}/TestFiles
 	${LINK.cc}   -o ${TESTDIR}/TestFiles/f1 $^ ${LDLIBSOPTIONS} 
 
 
-${TESTDIR}/tests/src/TestConnectionTCP.o: tests/src/TestConnectionTCP.cpp 
-	${MKDIR} -p ${TESTDIR}/tests/src
+${TESTDIR}/ToolsEngine-Tests.o: ToolsEngine-Tests.cpp 
+	${MKDIR} -p ${TESTDIR}
 	${RM} $@.d
-	$(COMPILE.cc) -g -I. -Iinclude -I../UnitTest++/src -I../dbo/include -MMD -MP -MF $@.d -o ${TESTDIR}/tests/src/TestConnectionTCP.o tests/src/TestConnectionTCP.cpp
-
-
-${TESTDIR}/tests/main.o: tests/main.cpp 
-	${MKDIR} -p ${TESTDIR}/tests
-	${RM} $@.d
-	$(COMPILE.cc) -g -I. -Iinclude -I../UnitTest++/src -I../dbo/include -MMD -MP -MF $@.d -o ${TESTDIR}/tests/main.o tests/main.cpp
+	$(COMPILE.cc) -g -I. -Iinclude -I../UnitTest++/src -I../dbo/include -MMD -MP -MF $@.d -o ${TESTDIR}/ToolsEngine-Tests.o ToolsEngine-Tests.cpp
 
 
 ${OBJECTDIR}/main_nomain.o: ${OBJECTDIR}/main.o main.cpp 

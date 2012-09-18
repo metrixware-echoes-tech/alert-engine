@@ -1,5 +1,27 @@
 #include "AlertProcessor.h"
 
+bool ltMethod(double a, double b)
+{
+   bool res = false;
+   
+   if (a < b)
+   {
+       res = true;
+   }
+   return res;
+}
+
+bool geMethod(double a, double b)
+{
+   bool res = false;
+   
+   if (a >= b)
+   {
+       res = true;
+   }
+   return res;    
+}
+
 AlertProcessor::AlertProcessor() {
 }
 
@@ -63,15 +85,19 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
     // id of the search concerned by the alert
     int searchId;
     //  value number concerned by the alert
-    int valueNum;
+    double valueNum;
     
     //value of the alert set by the user in the database (need to be converted)
     double valNum; 
     
     //the line number we search if the information value has a key
     int lineNumber;
-   
-   // boost::mutex::scoped_lock scoped_lock(mutex);
+    
+    bool (*ltPtr)(double, double);
+    ltPtr = ltMethod;
+    
+    bool (*gePtr)(double, double);
+    gePtr = geMethod;    
     
     try //SQL transaction
     {  
@@ -200,71 +226,83 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
                 ToolsEngine::log("debug") << " [Class:AlertProcessor] "  << "we are entering in the switch of the alert unit type";
                 //get the type of the value
                 ToolsEngine::log("debug") << " [Class:AlertProcessor] "<< "unit type id :"  << alertPtr.get()->alertValue.get()->information.get()->unit.get()->unitType.id();
+                
+                valuesToCheck = sessionThread.find<InformationValue>()
+                                    .where("\"IVA_STATE\" = ?").bind("0") //we verify that the state of the information value is 0
+                                    .where("\"PLG_ID_PLG_ID\" = ?").bind(pluginId)
+                                    .where("\"SRC_ID\" = ?").bind(sourceId)
+                                    .where("\"SEA_ID\" = ?").bind(searchId)
+                                    .where("\"INF_VALUE_NUM\" = ?").bind(valueNum)
+                                    ;
+                ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "valuesToCheck size : " << valuesToCheck.size();
+                        
                 switch(alertPtr.get()->alertValue.get()->information.get()->unit.get()->unitType.id())
                 {
                     case number:
                         ToolsEngine::log("debug") << " [Class:AlertProcessor] "  << "we are entering in the switch of the case number";
                         switch(alertPtr.get()->alertValue.get()->alertCriteria.id())
-                        {
+                        {          
                             case lt:
+                               // AlertProcessor::comparingNumberValue(valuesToCheck,lt, double valueSetInDb, Wt::Dbo::ptr<Alert> alertPtr, int lineNumber)
                                 ToolsEngine::log("debug") << " [Class:AlertProcessor] "  << "we are entering in the switch of the lt comparison";
-                                ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "valuesToCheck size in lt comparison : " << valuesToCheck.size(); 
-                                valuesToCheck = sessionThread.find<InformationValue>()
-                                                                        .where("\"IVA_STATE\" = ?").bind("0") //we verify that the state of the information value is 0
-                                                                        .where("\"PLG_ID_PLG_ID\" = ?").bind(pluginId)
-                                                                        .where("\"SRC_ID\" = ?").bind(sourceId)
-                                                                        .where("\"SEA_ID\" = ?").bind(searchId)
-                                                                        .where("\"INF_VALUE_NUM\" = ?").bind(valueNum)
-                                                                        ; 
-                                for (tbInformationValue::const_iterator i = valuesToCheck.begin(); i != valuesToCheck.end(); ++i) 
-                                {
-                                    ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "processing information name : " << i->get()->information.get()->name;
-                                    ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "begin of the for() lt comparison.";
-                                    ToolsEngine::log("debug") << " [Class:AlertProcessor] "  << "pos key value in the for lt : " 
-                                                                                            << i->get()->information.get()->pk.search.get()->pos_key_value;
-                                    //it concerns an information with a key value
-                                    if (i->get()->information.get()->pk.search.get()->pos_key_value == 0)
-                                    {
-                                        if( boost::lexical_cast<double>(i->get()->value) < valNum)
-                                        {
-                                            ToolsEngine::log("info") << " [Class:AlertProcessor] " << " Alert generated < : " << alertPtr.get()->name; 
-                                            //we create the sender
-                                            AlertSender alertSender;  
-                                            alertSender.send(alertPtr,*i);
-                                            i->modify()->state = 2;
-                                        }
-                                    }
-                                    else if (i->get()->information.get()->pk.search.get()->pos_key_value != 0)
-                                    {
-                                        if( i->get()->lineNumber == lineNumber && boost::lexical_cast<double>(i->get()->value) < valNum)
-                                        {
-                                            ToolsEngine::log("info") << " [Class:AlertProcessor] " << " Alert generated with key value < : " << alertPtr.get()->name; 
-                                            //we create the sender
-                                            AlertSender alertSender;  
-                                            alertSender.send(alertPtr,*i);
-                                            i->modify()->state = 2;
-                                        }
-                                    }
-                                }
-                                ToolsEngine::log("debug") << " [Class:AlertProcessor] "  << "we are at the end of the for() lt comparison";
+//                                ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "valuesToCheck size in lt comparison : " << valuesToCheck.size(); 
+//                                valuesToCheck = sessionThread.find<InformationValue>()
+//                                                                        .where("\"IVA_STATE\" = ?").bind("0") //we verify that the state of the information value is 0
+//                                                                        .where("\"PLG_ID_PLG_ID\" = ?").bind(pluginId)
+//                                                                        .where("\"SRC_ID\" = ?").bind(sourceId)
+//                                                                        .where("\"SEA_ID\" = ?").bind(searchId)
+//                                                                        .where("\"INF_VALUE_NUM\" = ?").bind(valueNum)
+//                                                                        ; 
+//                                for (tbInformationValue::const_iterator i = valuesToCheck.begin(); i != valuesToCheck.end(); ++i) 
+//                                {
+//                                    ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "processing information name : " << i->get()->information.get()->name;
+//                                    ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "begin of the for() lt comparison.";
+//                                    ToolsEngine::log("debug") << " [Class:AlertProcessor] "  << "pos key value in the for lt : " 
+//                                                                                            << i->get()->information.get()->pk.search.get()->pos_key_value;
+//                                    //it concerns an information without a key value
+//                                    if (i->get()->information.get()->pk.search.get()->pos_key_value == 0)
+//                                    {
+//                                        if( boost::lexical_cast<double>(i->get()->value) < valNum)
+//                                        {
+//                                            ToolsEngine::log("info") << " [Class:AlertProcessor] " << " Alert generated < : " << alertPtr.get()->name; 
+//                                            //we create the sender
+//                                            AlertSender alertSender;  
+//                                            alertSender.send(alertPtr,*i);
+//                                            i->modify()->state = 2;
+//                                        }
+//                                    }
+//                                    else if (i->get()->information.get()->pk.search.get()->pos_key_value != 0)
+//                                    {
+//                                        if( i->get()->lineNumber == lineNumber && boost::lexical_cast<double>(i->get()->value) < valNum)
+//                                        {
+//                                            ToolsEngine::log("info") << " [Class:AlertProcessor] " << " Alert generated with key value < : " << alertPtr.get()->name; 
+//                                            //we create the sender
+//                                            AlertSender alertSender;  
+//                                            alertSender.send(alertPtr,*i);
+//                                            i->modify()->state = 2;
+//                                        }
+//                                    }
+//                                }
+                                AlertProcessor::comparingNumberValue(valuesToCheck, ltPtr, valNum, alertPtr, lineNumber);
+                                ToolsEngine::log("debug") << " [Class:AlertProcessor] "  << "we are at the end of the for() lt comparison";  
                                 break;
                             case le:
                                 ToolsEngine::log("debug") << " [Class:AlertProcessor] "  << "we are entering in the switch of the le comparison";
-                                ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "valuesToCheck size in le comparison : " << valuesToCheck.size();                                
-                                valuesToCheck = sessionThread.find<InformationValue>()
-                                                                        .where("\"IVA_STATE\" = ?").bind("0") //we verify that the state of the information value is 0
-                                                                        .where("\"PLG_ID_PLG_ID\" = ?").bind(pluginId)
-                                                                        .where("\"SRC_ID\" = ?").bind(sourceId)
-                                                                        .where("\"SEA_ID\" = ?").bind(searchId)
-                                                                        .where("\"INF_VALUE_NUM\" = ?").bind(valueNum)
-                                                                        ; 
+//                                ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "valuesToCheck size in le comparison : " << valuesToCheck.size();                                
+//                                valuesToCheck = sessionThread.find<InformationValue>()
+//                                                                        .where("\"IVA_STATE\" = ?").bind("0") //we verify that the state of the information value is 0
+//                                                                        .where("\"PLG_ID_PLG_ID\" = ?").bind(pluginId)
+//                                                                        .where("\"SRC_ID\" = ?").bind(sourceId)
+//                                                                        .where("\"SEA_ID\" = ?").bind(searchId)
+//                                                                        .where("\"INF_VALUE_NUM\" = ?").bind(valueNum)
+//                                                                        ; 
                                 for (tbInformationValue::const_iterator i = valuesToCheck.begin(); i != valuesToCheck.end(); ++i) 
                                 {
                                     ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "processing information name : " << i->get()->information.get()->name;
                                     ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "begin of the for() le comparison.";
                                     ToolsEngine::log("debug") << " [Class:AlertProcessor] "  << "pos key value in the for le : " 
                                                                                             << i->get()->information.get()->pk.search.get()->pos_key_value;
-                                    //it concerns an information with a key value
+                                    //it concerns an information without a key value
                                     if (i->get()->information.get()->pk.search.get()->pos_key_value == 0)
                                     {
                                         if( boost::lexical_cast<double>(i->get()->value) <= valNum)
@@ -292,21 +330,21 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
                                 break;
                             case eq:
                                 ToolsEngine::log("debug") << " [Class:AlertProcessor] "  << "we are entering in the switch of the eq comparison";
-                                ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "valuesToCheck size in eq comparison : " << valuesToCheck.size();                                
-                                valuesToCheck = sessionThread.find<InformationValue>()
-                                                                        .where("\"IVA_STATE\" = ?").bind("0") //we verify that the state of the information value is 0
-                                                                        .where("\"PLG_ID_PLG_ID\" = ?").bind(pluginId)
-                                                                        .where("\"SRC_ID\" = ?").bind(sourceId)
-                                                                        .where("\"SEA_ID\" = ?").bind(searchId)
-                                                                        .where("\"INF_VALUE_NUM\" = ?").bind(valueNum)
-                                                                        ; 
+//                                ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "valuesToCheck size in eq comparison : " << valuesToCheck.size();                                
+//                                valuesToCheck = sessionThread.find<InformationValue>()
+//                                                                        .where("\"IVA_STATE\" = ?").bind("0") //we verify that the state of the information value is 0
+//                                                                        .where("\"PLG_ID_PLG_ID\" = ?").bind(pluginId)
+//                                                                        .where("\"SRC_ID\" = ?").bind(sourceId)
+//                                                                        .where("\"SEA_ID\" = ?").bind(searchId)
+//                                                                        .where("\"INF_VALUE_NUM\" = ?").bind(valueNum)
+//                                                                        ; 
                                 for (tbInformationValue::const_iterator i = valuesToCheck.begin(); i != valuesToCheck.end(); ++i) 
                                 {
                                     ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "processing information name : " << i->get()->information.get()->name;
                                     ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "begin of the for() eq comparison.";
                                     ToolsEngine::log("debug") << " [Class:AlertProcessor] "  << "pos key value in the for eq : " 
                                                                                             << i->get()->information.get()->pk.search.get()->pos_key_value;
-                                    //it concerns an information with a key value
+                                    //it concerns an information without a key value
                                     if (i->get()->information.get()->pk.search.get()->pos_key_value == 0)
                                     {
                                         if( boost::lexical_cast<double>(i->get()->value) == valNum)
@@ -334,21 +372,21 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
                                 break;
                             case ne:
                                 ToolsEngine::log("debug") << " [Class:AlertProcessor] "  << "we are entering in the switch of the ne comparison";
-                                ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "valuesToCheck size in ne comparison : " << valuesToCheck.size();                                
-                                valuesToCheck = sessionThread.find<InformationValue>()
-                                                                        .where("\"IVA_STATE\" = ?").bind("0") //we verify that the state of the information value is 0
-                                                                        .where("\"PLG_ID_PLG_ID\" = ?").bind(pluginId)
-                                                                        .where("\"SRC_ID\" = ?").bind(sourceId)
-                                                                        .where("\"SEA_ID\" = ?").bind(searchId)
-                                                                        .where("\"INF_VALUE_NUM\" = ?").bind(valueNum)
-                                                                        ; 
+//                                ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "valuesToCheck size in ne comparison : " << valuesToCheck.size();                                
+//                                valuesToCheck = sessionThread.find<InformationValue>()
+//                                                                        .where("\"IVA_STATE\" = ?").bind("0") //we verify that the state of the information value is 0
+//                                                                        .where("\"PLG_ID_PLG_ID\" = ?").bind(pluginId)
+//                                                                        .where("\"SRC_ID\" = ?").bind(sourceId)
+//                                                                        .where("\"SEA_ID\" = ?").bind(searchId)
+//                                                                        .where("\"INF_VALUE_NUM\" = ?").bind(valueNum)
+//                                                                        ; 
                                 for (tbInformationValue::const_iterator i = valuesToCheck.begin(); i != valuesToCheck.end(); ++i) 
                                 {
                                     ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "processing information name : " << i->get()->information.get()->name;
                                     ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "begin of the for() ne comparison.";
                                     ToolsEngine::log("debug") << " [Class:AlertProcessor] "  << "pos key value in the for ne : " 
                                                                                             << i->get()->information.get()->pk.search.get()->pos_key_value;
-                                    //it concerns an information with a key value
+                                    //it concerns an information without a key value
                                     if (i->get()->information.get()->pk.search.get()->pos_key_value == 0)
                                     {
                                         if( boost::lexical_cast<double>(i->get()->value) != valNum)
@@ -376,63 +414,64 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
                                 break;                            
                             case ge:
                                 ToolsEngine::log("debug") << " [Class:AlertProcessor] "  << "we are entering in the switch of the ge comparison";
-                                ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "valuesToCheck size in ge comparison : " << valuesToCheck.size();                                
-                                valuesToCheck = sessionThread.find<InformationValue>()
-                                                                        .where("\"IVA_STATE\" = ?").bind("0") //we verify that the state of the information value is 0
-                                                                        .where("\"PLG_ID_PLG_ID\" = ?").bind(pluginId)
-                                                                        .where("\"SRC_ID\" = ?").bind(sourceId)
-                                                                        .where("\"SEA_ID\" = ?").bind(searchId)
-                                                                        .where("\"INF_VALUE_NUM\" = ?").bind(valueNum)
-                                                                        ; 
-                                for (tbInformationValue::const_iterator i = valuesToCheck.begin(); i != valuesToCheck.end(); ++i) 
-                                {
-                                    ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "processing information name : " << i->get()->information.get()->name;
-                                    ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "begin of the for() ge comparison.";
-                                    ToolsEngine::log("debug") << " [Class:AlertProcessor] "  << "pos key value in the for ge : " 
-                                                                                            << i->get()->information.get()->pk.search.get()->pos_key_value;
-                                    //it concerns an information with a key value
-                                    if (i->get()->information.get()->pk.search.get()->pos_key_value == 0)
-                                    {
-                                        if( boost::lexical_cast<double>(i->get()->value) >= valNum)
-                                        {
-                                            ToolsEngine::log("info") << " [Class:AlertProcessor] " << " Alert generated >= : " << alertPtr.get()->name; 
-                                            //we create the sender
-                                            AlertSender alertSender;  
-                                            alertSender.send(alertPtr,*i);
-                                            i->modify()->state = 2;
-                                        }
-                                    }
-                                    else if (i->get()->information.get()->pk.search.get()->pos_key_value != 0)
-                                    {
-                                        if( i->get()->lineNumber == lineNumber && boost::lexical_cast<double>(i->get()->value) >= valNum)
-                                        {
-                                            ToolsEngine::log("info") << " [Class:AlertProcessor] " << " Alert generated with key value >= : " << alertPtr.get()->name; 
-                                            //we create the sender
-                                            AlertSender alertSender;  
-                                            alertSender.send(alertPtr,*i);
-                                            i->modify()->state = 2;
-                                        }
-                                    }
-                                }
+//                                ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "valuesToCheck size in ge comparison : " << valuesToCheck.size();                                
+//                                valuesToCheck = sessionThread.find<InformationValue>()
+//                                                                        .where("\"IVA_STATE\" = ?").bind("0") //we verify that the state of the information value is 0
+//                                                                        .where("\"PLG_ID_PLG_ID\" = ?").bind(pluginId)
+//                                                                        .where("\"SRC_ID\" = ?").bind(sourceId)
+//                                                                        .where("\"SEA_ID\" = ?").bind(searchId)
+//                                                                        .where("\"INF_VALUE_NUM\" = ?").bind(valueNum)
+//                                                                        ; 
+//                                for (tbInformationValue::const_iterator i = valuesToCheck.begin(); i != valuesToCheck.end(); ++i) 
+//                                {
+//                                    ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "processing information name : " << i->get()->information.get()->name;
+//                                    ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "begin of the for() ge comparison.";
+//                                    ToolsEngine::log("debug") << " [Class:AlertProcessor] "  << "pos key value in the for ge : " 
+//                                                                                            << i->get()->information.get()->pk.search.get()->pos_key_value;
+//                                    //it concerns an information without a key value
+//                                    if (i->get()->information.get()->pk.search.get()->pos_key_value == 0)
+//                                    {
+//                                        if( boost::lexical_cast<double>(i->get()->value) >= valNum)
+//                                        {
+//                                            ToolsEngine::log("info") << " [Class:AlertProcessor] " << " Alert generated >= : " << alertPtr.get()->name; 
+//                                            //we create the sender
+//                                            AlertSender alertSender;  
+//                                            alertSender.send(alertPtr,*i);
+//                                            i->modify()->state = 2;
+//                                        }
+//                                    }
+//                                    else if (i->get()->information.get()->pk.search.get()->pos_key_value != 0)
+//                                    {
+//                                        if( i->get()->lineNumber == lineNumber && boost::lexical_cast<double>(i->get()->value) >= valNum)
+//                                        {
+//                                            ToolsEngine::log("info") << " [Class:AlertProcessor] " << " Alert generated with key value >= : " << alertPtr.get()->name; 
+//                                            //we create the sender
+//                                            AlertSender alertSender;  
+//                                            alertSender.send(alertPtr,*i);
+//                                            i->modify()->state = 2;
+//                                        }
+//                                    }
+//                                }
+                                AlertProcessor::comparingNumberValue(valuesToCheck, gePtr, valNum, alertPtr, lineNumber);
                                 ToolsEngine::log("debug") << " [Class:AlertProcessor] "  << "we are at the end of the for() ge comparison";
                                 break;
                             case gt:
                                 ToolsEngine::log("debug") << " [Class:AlertProcessor] "  << "we are entering in the switch of the gt comparison";
-                                ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "valuesToCheck size in gt comparison : " << valuesToCheck.size();                                
-                                valuesToCheck = sessionThread.find<InformationValue>()
-                                                                        .where("\"IVA_STATE\" = ?").bind("0") //we verify that the state of the information value is 0
-                                                                        .where("\"PLG_ID_PLG_ID\" = ?").bind(pluginId)
-                                                                        .where("\"SRC_ID\" = ?").bind(sourceId)
-                                                                        .where("\"SEA_ID\" = ?").bind(searchId)
-                                                                        .where("\"INF_VALUE_NUM\" = ?").bind(valueNum)
-                                                                        ; 
+//                                ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "valuesToCheck size in gt comparison : " << valuesToCheck.size();                                
+//                                valuesToCheck = sessionThread.find<InformationValue>()
+//                                                                        .where("\"IVA_STATE\" = ?").bind("0") //we verify that the state of the information value is 0
+//                                                                        .where("\"PLG_ID_PLG_ID\" = ?").bind(pluginId)
+//                                                                        .where("\"SRC_ID\" = ?").bind(sourceId)
+//                                                                        .where("\"SEA_ID\" = ?").bind(searchId)
+//                                                                        .where("\"INF_VALUE_NUM\" = ?").bind(valueNum)
+//                                                                        ; 
                                 for (tbInformationValue::const_iterator i = valuesToCheck.begin(); i != valuesToCheck.end(); ++i) 
                                 {
                                     ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "processing information name : " << i->get()->information.get()->name;
                                     ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "begin of the for() gt comparison.";
                                     ToolsEngine::log("debug") << " [Class:AlertProcessor] "  << "pos key value in the for gt : " 
                                                                                             << i->get()->information.get()->pk.search.get()->pos_key_value;
-                                    //it concerns an information with a key value
+                                    //it concerns an information without a key value
                                     if (i->get()->information.get()->pk.search.get()->pos_key_value == 0)
                                     {
                                         if( boost::lexical_cast<double>(i->get()->value) > valNum)
@@ -466,18 +505,18 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
                     case text:
                         ToolsEngine::log("warning") << "[Class:AlertProcessor] " << "Text Alert not yet implemented";
                         
-                        valuesToCheck = sessionThread.find<InformationValue>()
-                                                                        .where("\"IVA_STATE\" = ?").bind("0") //we verify that the state of the information value is 0
-                                                                        .where("\"PLG_ID_PLG_ID\" = ?").bind(pluginId)
-                                                                        .where("\"SRC_ID\" = ?").bind(sourceId)
-                                                                        .where("\"SEA_ID\" = ?").bind(searchId)
-                                                                        .where("\"INF_VALUE_NUM\" = ?").bind(valueNum)
-                                                                        ; 
-                                for (tbInformationValue::const_iterator i = valuesToCheck.begin(); i != valuesToCheck.end(); ++i) 
-                                {
-                                    ToolsEngine::log("warning") << " [Class:AlertProcessor] " << "processing information name for text alert : " << i->get()->information.get()->name;
-                                    i->modify()->state = 666;//error
-                                }
+//                        valuesToCheck = sessionThread.find<InformationValue>()
+//                                                                        .where("\"IVA_STATE\" = ?").bind("0") //we verify that the state of the information value is 0
+//                                                                        .where("\"PLG_ID_PLG_ID\" = ?").bind(pluginId)
+//                                                                        .where("\"SRC_ID\" = ?").bind(sourceId)
+//                                                                        .where("\"SEA_ID\" = ?").bind(searchId)
+//                                                                        .where("\"INF_VALUE_NUM\" = ?").bind(valueNum)
+//                                                                        ; 
+                        for (tbInformationValue::const_iterator i = valuesToCheck.begin(); i != valuesToCheck.end(); ++i) 
+                        {
+                            ToolsEngine::log("warning") << " [Class:AlertProcessor] " << "processing information name for text alert : " << i->get()->information.get()->name;
+                            i->modify()->state = 666;//error
+                        }
                         break;
                     default:
                         ToolsEngine::log("error") << "[Class:AlertProcessor] " << "switch Information unit type check failed";
@@ -496,4 +535,118 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
     {
         ToolsEngine::log("warning") << " [Class:AlertProcessor] " << " The engine isn't able to compute complex alerts now";
     }
-} 
+}
+
+int AlertProcessor::comparingNumberValue(tbInformationValue valuesToCheck,bool (*mathOperator)(double,double), double valueSetInDb, Wt::Dbo::ptr<Alert> alertPtr, int lineNumber)
+{
+    Session *session = static_cast<Session*>(valuesToCheck.session());
+    
+    ToolsEngine::log("debug") << " [Class:AlertProcessor] "  << "we are entering in the comparingNumberValue method";
+    try
+    {    
+        for (tbInformationValue::const_iterator i = valuesToCheck.begin(); i != valuesToCheck.end(); ++i) 
+        {
+            ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "processing information name : " << i->get()->information.get()->name;
+            ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "begin of the for() comparison";
+            ToolsEngine::log("debug") << " [Class:AlertProcessor] "  << "pos key value in the for : " 
+                                                                    << i->get()->information.get()->pk.search.get()->pos_key_value;
+            //it concerns an information without a key value
+            if (i->get()->information.get()->pk.search.get()->pos_key_value == 0)
+            {
+                ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " alert treatment on an information without a key value ";
+                ToolsEngine::log("debug") << " [Class:AlertProcessor] " << "output of calcul : " 
+                                                                        << mathOperator(boost::lexical_cast<double>(i->get()->value), valueSetInDb)
+                                                                        << " for : " << i->get()->value << " and alert value : " << valueSetInDb
+                                                                        ;
+                
+                if( mathOperator(boost::lexical_cast<double>(i->get()->value), valueSetInDb) == true )
+                {
+                    ToolsEngine::log("info") << " [Class:AlertProcessor] " << " Alert generated  : " << alertPtr.get()->name; 
+                    //we create the sender
+                    AlertSender alertSender;  
+                    alertSender.send(alertPtr,*i);
+                    i->modify()->state = 2;
+                }
+            }
+            else if (i->get()->information.get()->pk.search.get()->pos_key_value != 0)
+            {
+                ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " alert treatment on an information with a key value ";
+                if( i->get()->lineNumber == lineNumber && mathOperator(boost::lexical_cast<double>(i->get()->value),valueSetInDb) == true)
+                {
+                    ToolsEngine::log("info") << " [Class:AlertProcessor] " << " Alert generated with key value < : " << alertPtr.get()->name; 
+                    //we create the sender
+                    AlertSender alertSender;  
+                    alertSender.send(alertPtr,*i);
+                    i->modify()->state = 2;
+                }
+            }
+            else
+            {
+                ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " Alert not generated with the information : " << i->get()->value;
+            }
+        }
+    }
+    catch (Wt::Dbo::Exception e)
+    {
+        ToolsEngine::log("error") << " [Class:AlertProcessor] "<< " comparing numbervalue catch " << e.what();
+    }
+            
+    ToolsEngine::log("debug") << " [Class:AlertProcessor] "  << "we are at the end of the for()";
+}
+
+//bool AlertProcessor::ltMethod(double a, double b)
+//{
+//   bool res = false;
+//   
+//   if (a < b)
+//   {
+//       res = true;
+//   }
+//   return res;
+//}
+
+bool AlertProcessor::leMethod(double a, double b)
+{
+   bool res = false;
+   
+   if (a <= b)
+   {
+       res = true;
+   }
+   return res;   
+}
+
+bool AlertProcessor::eqMethod(double a, double b)
+{
+   bool res = false;
+   
+   if (a = b)
+   {
+       res = true;
+   }
+   return res;   
+}
+
+bool AlertProcessor::neMethod(double a, double b)
+{
+   bool res = false;
+   
+   if (a != b)
+   {
+       res = true;
+   }
+   return res;  
+}
+
+
+
+bool AlertProcessor::gtMethod(double a, double b)
+{
+   bool res = false;
+   
+   if (a > b)
+   {
+       res = true;
+   }
+   return res;    
+}

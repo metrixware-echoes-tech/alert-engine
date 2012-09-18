@@ -13,7 +13,11 @@ ToolsEngine::ToolsEngine() {
     alreadyCreated = true;
     
     //loading config file
-    configFileLoad("engine.conf");
+    if (configFileLoad("engine.conf") == -1)
+    {
+        ToolsEngine::log("fatal") << " [Class:ToolsEngine] " << "Can't load config file";
+        exit(0);
+    }
     //creating SQL sessions
     sessionParser = new Session(sqlCredentials);
     sessionAlertProcessor = new Session(sqlCredentials);
@@ -36,7 +40,7 @@ Wt::WLogEntry ToolsEngine::log(std::string logCriticity)
 }
 
 
-void ToolsEngine::configFileLoad(std::string fileLocation)
+int ToolsEngine::configFileLoad(std::string fileLocation)
 {
     int result = -1;
     
@@ -117,5 +121,5 @@ void ToolsEngine::configFileLoad(std::string fileLocation)
 //      ToolsEngine::log("info") << " [Class:main] "<< sleepThreadReadDatasMilliSec;
 //      ToolsEngine::log("info") << " [Class:main] "<< sleepThreadCheckAlertMilliSec;
       
-   //   return result;
+      return result;
 }

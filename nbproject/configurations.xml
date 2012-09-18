@@ -39,8 +39,7 @@
                      displayName="New Test 1"
                      projectFiles="true"
                      kind="TEST">
-        <itemPath>tests/src/TestConnectionTCP.cpp</itemPath>
-        <itemPath>tests/main.cpp</itemPath>
+        <itemPath>ToolsEngine-Tests.cpp</itemPath>
       </logicalFolder>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
@@ -84,6 +83,7 @@
             <linkerLibLibItem>wtdbo</linkerLibLibItem>
             <linkerLibLibItem>dbo</linkerLibLibItem>
             <linkerLibLibItem>boost_program_options</linkerLibLibItem>
+            <linkerLibLibItem>boost_unit_test_framework-mt</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>
@@ -121,6 +121,20 @@
         <asmTool>
           <developmentMode>5</developmentMode>
         </asmTool>
+        <linkerTool>
+          <linkerLibItems>
+            <linkerLibLibItem>boost_system</linkerLibLibItem>
+            <linkerLibLibItem>pthread</linkerLibLibItem>
+            <linkerLibLibItem>boost_thread</linkerLibLibItem>
+            <linkerLibLibItem>boost_serialization</linkerLibLibItem>
+            <linkerLibLibItem>boost_filesystem</linkerLibLibItem>
+            <linkerLibLibItem>wt</linkerLibLibItem>
+            <linkerLibLibItem>wtdbo</linkerLibLibItem>
+            <linkerLibLibItem>dbo</linkerLibLibItem>
+            <linkerLibLibItem>boost_program_options</linkerLibLibItem>
+            <linkerLibLibItem>boost_unit_test_framework-mt</linkerLibLibItem>
+          </linkerLibItems>
+        </linkerTool>
       </compileType>
     </conf>
   </confs>
