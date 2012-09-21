@@ -35,7 +35,7 @@ ToolsEngine::~ToolsEngine() {
 Wt::WLogEntry ToolsEngine::log(std::string logCriticity)
 {
     boost::mutex::scoped_lock scoped_lock(ToolsEngine::mutex);
-    return ToolsEngine::logger.entry(logCriticity) << logCriticity << Wt::WLogger::sep << Wt::WLogger::timestamp << Wt::WLogger::sep;
+    return ToolsEngine::logger.entry(logCriticity) << logCriticity << Wt::WLogger::sep << Wt::WLogger::timestamp << Wt::WLogger::sep << (unsigned int)pthread_self() << Wt::WLogger::sep;
     boost::mutex::scoped_lock scoped_unlock(ToolsEngine::mutex);
 }
 
@@ -58,10 +58,10 @@ int ToolsEngine::configFileLoad(std::string fileLocation)
     try
     {
         for(boost::program_options::detail::config_file_iterator i(configFile, options), e; i != e ; ++i)
-            {
-                ToolsEngine::log("debug") << " [Class:main] "<< " Config file reading :" << i->string_key <<"  " << i->value[0];
-                parameters[i->string_key] = i->value[0];
-            }
+        {
+            ToolsEngine::log("debug") << " [Class:main] "<< " Config file reading :" << i->string_key <<"  " << i->value[0];
+            parameters[i->string_key] = i->value[0];
+        }
         result = 0;
     }
     catch(std::exception& e)

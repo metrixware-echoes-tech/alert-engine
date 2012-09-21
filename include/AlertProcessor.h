@@ -12,6 +12,7 @@
 
 #include <tools/Session.h>
 #include <string>
+#include <vector>
 #include <queue>
 #include <iostream>
 #include <Wt/Dbo/Dbo>
@@ -45,7 +46,7 @@ public:
     * method that create a thread for each alert resgistered in the database
     * @return error or success
     */
-    int VerifyAlerts();  
+    int verifyAlerts();  
     
     
    /**
@@ -56,6 +57,24 @@ public:
     void InformationValueLoop(long long idAlert);
     
     /**
+    * Method to get the pos key from an information pk.
+    * @param pluginId
+    * @param sourceId
+    * @param searchId
+    * @param valueNum
+    * @return pos key value ; -1 if error
+    */
+    int getPosKey(Session *sessionThread, int pluginId,int sourceId,int searchId,double valueNum, std::string assetList);
+    
+    /**
+    * Method to get an asset list to put it in a "in" sql request
+    * @param assets
+    * @return asset list
+    */
+    std::string getAssetListSqlPrepared(Wt::Dbo::collection<Wt::Dbo::ptr<Asset> > assets);
+    std::string getInformationValueListSqlPrepared(Wt::Dbo::collection<Wt::Dbo::ptr<InformationValue> > informationValues, int state);
+    
+    /**
     * method compare a numerical value with an alert value and a mathematics operator
     * @param the table of informationvalue received and ready to be checked
     * @param the operator method
@@ -64,7 +83,7 @@ public:
     * @param optionnal, the line number if we have a value linked to a key transmitted
     * @return void
     */ 
-    int comparingNumberValue(tbInformationValue valuesToCheck,bool (*mathOperator)(double,double), double valueSetInDb, Wt::Dbo::ptr<Alert> alertPtr, int lineNumber=0);
+    int compareNumberValue(std::string valuesToCheck,bool (*mathOperator)(double,double), double valueSetInDb, Wt::Dbo::ptr<Alert> alertPtr, int lineNumber=0);
 
     /**
     * method to compute the value of the alerts, implentation of the mathematics operators

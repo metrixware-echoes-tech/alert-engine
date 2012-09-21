@@ -252,8 +252,9 @@ int AlertSender::sendMAIL(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt
 }
  
 
-int AlertSender::send(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<InformationValue> InformationValuePtr )
+int AlertSender::send(Wt::Dbo::ptr<Alert> oldAlertPtr, Wt::Dbo::ptr<InformationValue> InformationValuePtr )
 {
+    ToolsEngine::log("debug") << " [Class:AlertSender] " << "Entering send";
     Session *session = static_cast<Session*>(InformationValuePtr.session());
     int smsQuota;
     long long idOrg;
@@ -264,7 +265,7 @@ int AlertSender::send(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<InformationValu
     ToolsEngine::log("debug") << " [Class:AlertSender] " << "now : " << now.toString();
     
     //because we have to re read the alert last send date that was just modified, if not we will read the first one commited at the first time alert send.
-    alertPtr.reread();
+    Wt::Dbo::ptr<Alert> alertPtr = session->find<Alert>().where("\"ALE_ID\" = ?").bind(oldAlertPtr.id());
     
     Wt::Dbo::ptr<AlertTracking> alertTrackingPtr;
     

@@ -97,6 +97,6 @@ void checkNewDatas()
 
 void checkNewAlerts()
 {
-    AlertProcessor alertProcessor;
-    alertProcessor.VerifyAlerts();
+    AlertProcessor *alertProcessor = new AlertProcessor();
+    alertProcessor->verifyAlerts();
 }
