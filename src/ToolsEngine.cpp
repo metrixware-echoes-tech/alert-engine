@@ -21,6 +21,7 @@ ToolsEngine::ToolsEngine() {
     //creating SQL sessions
     sessionParser = new Session(sqlCredentials);
     sessionAlertProcessor = new Session(sqlCredentials);
+    sessionOldValues = new Session(sqlCredentials);
     
     ioService = new Wt::WIOService();
     ioService->start();
@@ -68,54 +69,55 @@ int ToolsEngine::configFileLoad(std::string fileLocation)
     {
             ToolsEngine::log("error") << " [Class:main] "<< "Config file reading failed : " << e.what();
     }  
-      //filling variables with the collected datas in the config file
-      //parcourir la map !!       
-      sqlCredentials = "hostaddr=" + parameters["database-hostname"] + 
-                       " port=" + parameters["database-port"] + 
-                       " dbname=" + parameters["database-name"] +
-                       " user=" + parameters["database-login"] +
-                       " password=" + parameters["database-password"];
-      sleepThreadReadDatasMilliSec = boost::lexical_cast<int>(parameters["sleep-database-reading"]);
-      sleepThreadCheckAlertMilliSec = boost::lexical_cast<int>(parameters["sleep-alert-reading"]);
-      criticity = boost::lexical_cast<int>(parameters["log-criticity"]);
-      //set the log criticity
-      switch (criticity)
-      {
-          case debug:
-          {
-                  ToolsEngine::logger.configure("*");
-                  break;
-          }
-          case info:
-          {
-                  ToolsEngine::logger.configure("* -debug");
-                  break;
-          } 
-          case warning:
-          {
-                  ToolsEngine::logger.configure("* -debug - info");
-                  break;
-          } 
-          case secure:
-          {
-                  ToolsEngine::logger.configure("* -debug - info -warning");
-                  break;
-          } 
-          case error:
-          {
-                  ToolsEngine::logger.configure("* -debug - info -warning -secure");
-                  break;
-          }  
-          case fatal:
-          {
-                  ToolsEngine::logger.configure("* -debug - info -warning -secure -error");
-                  break;
-          }
-          default:
-          {
-                  ToolsEngine::logger.configure("* -debug");
-                  break;
-          }               
+    //filling variables with the collected datas in the config file
+    //parcourir la map !!       
+    sqlCredentials = "hostaddr=" + parameters["database-hostname"] + 
+                     " port=" + parameters["database-port"] + 
+                     " dbname=" + parameters["database-name"] +
+                     " user=" + parameters["database-login"] +
+                     " password=" + parameters["database-password"];
+    sleepThreadReadDatasMilliSec = boost::lexical_cast<int>(parameters["sleep-database-reading"]);
+    sleepThreadCheckAlertMilliSec = boost::lexical_cast<int>(parameters["sleep-alert-reading"]);
+    sleepThreadRemoveOldValues = boost::lexical_cast<int>(parameters["sleep-remove-old-values"]);
+    criticity = boost::lexical_cast<int>(parameters["log-criticity"]);
+    //set the log criticity
+    switch (criticity)
+    {
+        case debug:
+        {
+                ToolsEngine::logger.configure("*");
+                break;
+        }
+        case info:
+        {
+                ToolsEngine::logger.configure("* -debug");
+                break;
+        } 
+        case warning:
+        {
+                ToolsEngine::logger.configure("* -debug - info");
+                break;
+        } 
+        case secure:
+        {
+                ToolsEngine::logger.configure("* -debug - info -warning");
+                break;
+        } 
+        case error:
+        {
+                ToolsEngine::logger.configure("* -debug - info -warning -secure");
+                break;
+        }  
+        case fatal:
+        {
+                ToolsEngine::logger.configure("* -debug - info -warning -secure -error");
+                break;
+        }
+        default:
+        {
+                ToolsEngine::logger.configure("* -debug");
+                break;
+        }               
       }
 //      ToolsEngine::log("info") << " [Class:main] "<< sqlCredentials;
 //      ToolsEngine::log("info") << " [Class:main] "<< sleepThreadReadDatasMilliSec;

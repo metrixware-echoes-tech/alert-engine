@@ -12,6 +12,7 @@ ToolsEngine *te;
 
 void checkNewDatas();
 void checkNewAlerts();
+void removeOldValues();
 
 Wt::WLogger ToolsEngine::logger;
 boost::mutex ToolsEngine::mutex;
@@ -43,9 +44,10 @@ int main()
     // thread's creation
     boost::thread_group threadsEngine;
     
-    // execute the method checkNewDatas() et checkNewAlerts() in parallel
+    // execute the method checkNewDatas() removeOldValues() checkNewAlerts() in parallel
     threadsEngine.create_thread(&checkNewDatas);
     threadsEngine.create_thread(&checkNewAlerts);
+    threadsEngine.create_thread(&removeOldValues);
  
     // wait the end of the created thread
    threadsEngine.join_all();
@@ -99,4 +101,25 @@ void checkNewAlerts()
 {
     AlertProcessor *alertProcessor = new AlertProcessor();
     alertProcessor->verifyAlerts();
+}
+
+void removeOldValues()
+{
+    while (true)
+    {
+        boost::this_thread::sleep(boost::posix_time::milliseconds(te->sleepThreadRemoveOldValues));
+        try
+        {
+            Wt::Dbo::Transaction transaction(*(te->sessionOldValues));
+            std::string queryString = "UPDATE \"T_INFORMATION_VALUE_IVA\" SET \"IVA_STATE\" = 4 WHERE"
+                                        " \"IVA_STATE\" = 0"
+                                        " AND \"IVA_CREA_DATE\" < (NOW() - interval '1 hour')";
+            te->sessionOldValues->execute(queryString);
+            transaction.commit();
+        }
+        catch(Wt::Dbo::Exception e)
+        {
+            ToolsEngine::log("error") << " [Class:main] "<< e.what();
+        }
+    };
 }

@@ -48,13 +48,15 @@ public:
     int configFileLoad(std::string fileLocation);
 
     Session *sessionParser;
-    Session *sessionAlertProcessor;    
+    Session *sessionAlertProcessor;
+    Session *sessionOldValues;
     static Wt::WLogger logger;
     static Wt::WLogEntry log(std::string criticity);
     static int criticity; //log criticity
     std::string sqlCredentials;
-    int sleepThreadReadDatasMilliSec; //the milliseconds to wait between each loop in our process (reading the database for new info
+    int sleepThreadReadDatasMilliSec; //the milliseconds to wait between each loop in our process (reading the database for new info)
     int sleepThreadCheckAlertMilliSec; //the milliseconds to wait between each loop in our process ( calculate alerts)
+    int sleepThreadRemoveOldValues; //the milliseconds to wait between each old values cleaning
     Wt::WIOService *ioService; //ioservice used for the http client
 protected:
     static bool alreadyCreated;
