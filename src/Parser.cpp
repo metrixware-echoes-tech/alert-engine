@@ -34,6 +34,7 @@ int Parser::unserializeStructuredData(Wt::Dbo::ptr<Syslog> ptrSyslog)
             ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslog.id()).limit(1);
             oBracket = ptrSyslogTmp.get()->sd.value().find('[',oBracket+1);
             cBracket = ptrSyslogTmp.get()->sd.value().find(']',cBracket+1);
+            transaction.commit();
         }
         catch (Wt::Dbo::Exception e)
         {
@@ -53,7 +54,8 @@ int Parser::unserializeStructuredData(Wt::Dbo::ptr<Syslog> ptrSyslog)
         try
         {
             Wt::Dbo::Transaction transaction(*(te->sessionParser));
-            tempString.assign(ptrSyslogTmp.get()->sd.toUTF8().substr(posBrackets.at(i)+1,posBrackets.at(i+1)-posBrackets.at(i)-1));                   
+            tempString.assign(ptrSyslogTmp.get()->sd.toUTF8().substr(posBrackets.at(i)+1,posBrackets.at(i+1)-posBrackets.at(i)-1));
+            transaction.commit();
         }
         catch (Wt::Dbo::Exception e)
         {
@@ -120,6 +122,7 @@ int Parser::unserializeProperties(std::string& strProperties, Wt::Dbo::ptr<Syslo
             //we modify the probe in the local copy of the syslog pointer with the getted object
             ptrSyslogTmp.modify()->probe = ptrProbe;
             res = 0;
+            transaction.commit();
         }
         catch (Wt::Dbo::Exception e)
         {
@@ -308,7 +311,8 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
             }
 
             te->sessionParser->add(informationValueTmp);
-            res = 0;           
+            res = 0; 
+            transaction.commit();
         }
         catch (Wt::Dbo::Exception e)
         {

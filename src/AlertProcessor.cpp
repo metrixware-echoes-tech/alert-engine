@@ -16,26 +16,30 @@ int AlertProcessor::verifyAlerts()
     boost::mutex::scoped_lock scoped_lock(mutex);
     Alerts alerts;
     //SQL session
-    try
+    while (true)
     {
-        Wt::Dbo::Transaction transaction(*(te->sessionAlertProcessor));        
-       
-        //we get the list of all defined alerts in the database
-        alerts = te->sessionAlertProcessor->find<Alert>();
-        ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << "We have " << alerts.size() << " Alert(s) in the database";
-
-        for (Alerts::const_iterator i = alerts.begin(); i != alerts.end(); ++i)
+        try
         {
-           ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << " the Alert : " << (*i)->name << " is in the database.";
-           //we instanciate a thread for each alert           
-           //this : instance de la classe (l'objet lui même) dans laquelle est exécuté bind()
-           threadsVerifyAlerts.create_thread(boost::bind(&AlertProcessor::InformationValueLoop,this,(*i).id()));
+            Wt::Dbo::Transaction transaction(*(te->sessionAlertProcessor));        
+
+            //we get the list of all defined alerts in the database
+            alerts = te->sessionAlertProcessor->find<Alert>();
+            ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << "We have " << alerts.size() << " Alert(s) in the database";
+
+            for (Alerts::const_iterator i = alerts.begin(); i != alerts.end(); ++i)
+            {
+               ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << " the Alert : " << (*i)->name << " is in the database.";
+               //we instanciate a thread for each alert           
+               //this : instance de la classe (l'objet lui même) dans laquelle est exécuté bind()
+               threadsVerifyAlerts.create_thread(boost::bind(&AlertProcessor::InformationValueLoop,this,(*i).id()));
+            }
+            transaction.commit();
+            threadsVerifyAlerts.join_all();
         }
-        threadsVerifyAlerts.join_all();
-    }
-    catch (Wt::Dbo::Exception e)
-    {
-        ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << e.what();
+        catch (Wt::Dbo::Exception e)
+        {
+            ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << e.what();
+        }
     }
     return 0;
 }
@@ -52,7 +56,7 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
     //creation of a new SQL session
     Session sessionThread(te->sqlCredentials);
     
-    int alertId;
+//    int alertId;
     
     //parameters from the alert         
     int pluginId;            
@@ -98,13 +102,13 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
         ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << " Getting alert data";
         Wt::Dbo::Transaction transaction(sessionThread);
         alertPtr = sessionThread.find<Alert>().where("\"ALE_ID\" = ?").bind(idAlert).limit(1);
-        alertId = alertPtr.get()->alertValue.id();
-        // Check whether the pointer is actually pointing on something
-        if (alertId == -1)//a NULL dbo pointer return -1
-        {
-    //        ToolsEngine::log("warning") << " [Class:AlertProcessor] " << " - " << " The engine isn't able to compute complex alerts now";
-            ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << " Nothing in the pointer";
-        }
+//        alertId = alertPtr.get()->alertValue.id();
+//        // Check whether the pointer is actually pointing on something
+//        if (alertId == -1)//a NULL dbo pointer return -1
+//        {
+//    //        ToolsEngine::log("warning") << " [Class:AlertProcessor] " << " - " << " The engine isn't able to compute complex alerts now";
+//            ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << " Nothing in the pointer";
+//        }
         ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << " Alert fetched";
      //   ToolsEngine::log("info") << "[Class:AlertProcessor] " << "simple alert processing";
         //value of the alert that will be processed
@@ -112,7 +116,7 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
         Wt::WString val =  alertPtr.get()->alertValue.get()->value;
         alertValueToCompare = boost::lexical_cast<double>(val);
         //critieria that will be used of the alert process
-        Wt::WString criteria = alertPtr.get()->alertValue.get()->alertCriteria.get()->name;
+//        Wt::WString criteria = alertPtr.get()->alertValue.get()->alertCriteria.get()->name;
 
         //id of the plugin concerned by the alert            
         pluginId = alertPtr.get()->alertValue.get()->information.get()->pk.search.get()->pk.source.get()->pk.plugin.id();            
@@ -124,6 +128,11 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
         infValueNum = alertPtr.get()->alertValue.get()->information.get()->pk.subSearchNumber;
         // list of assets for a specific alert
         assets = alertPtr.get()->assets;
+        
+        ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "plid = " << pluginId
+                                    << "souid = " << sourceId
+                                    << "seaid = " << searchId
+                                    << "ivn = " << infValueNum;
         if (assets.size() < 1)
         {
             ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << "Impossible to send an alert : no asset associated";
@@ -132,6 +141,9 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
             return;
         }
         assetList = getAssetListSqlPrepared(assets);
+        
+        ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "assetList = " << assetList;
+        
         ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << " Alert data fetched";
         transaction.commit();
     }
@@ -160,14 +172,19 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
         Wt::Dbo::Transaction transaction(sessionThread);
         alertPtr = sessionThread.find<Alert>().where("\"ALE_ID\" = ?").bind(idAlert).limit(1);
         alertPtr.modify()->lastAttempt = *now;
+        transaction.commit();
     }
     catch (Wt::Dbo::Exception e)
     {
         ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << e.what();
     }
 
-    while(1)
+    int loopCount = 0;
+    
+    ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << " Launching loop";
+    while(loopCount < 100)
     {
+        loopCount++;
         // TSA : maybe put the sleep at the beginning to avoid any risk to miss it in a unexpected case
         posKey = getPosKey(&sessionThread, pluginId,sourceId,searchId,infValueNum, assetList);
         std::string informationValueListSqlPrepared = "()";
@@ -177,36 +194,38 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
         {
             //we have a pos_key_value, so we have to find the value concerned by the alert
             //for the case if there is a key, we need a collection to stock the list of the keys
-            try
-            {
-                Wt::Dbo::Transaction transaction(sessionThread);
-                std::string queryString = "SELECT iva FROM \"T_INFORMATION_VALUE_IVA\" iva "
-                    " WHERE \"IVA_STATE\" = 0 "
-                    " AND \"PLG_ID_PLG_ID\" = " + boost::lexical_cast<std::string>(pluginId) + ""
-                    " AND \"SRC_ID\" = " + boost::lexical_cast<std::string>(sourceId) + ""
-                    " AND \"SEA_ID\" = " + boost::lexical_cast<std::string>(searchId) + ""
-                    " AND \"INF_VALUE_NUM\" = " + boost::lexical_cast<std::string>(posKey) + ""
-                    " AND \"IVA_AST_AST_ID\" IN " + assetList + "";
-                tbInformationValue keyToCheck = sessionThread.query<Wt::Dbo::ptr<InformationValue> >(queryString).limit(50);
-
-                //TODO : a transformer en while ?
-                for (tbInformationValue::const_iterator k = keyToCheck.begin(); k != keyToCheck.end(); ++k) 
-                {
-
-                    if (k->get()->value == alertPtr.get()->alertValue.get()->keyValue /*eth0 for example*/)
-                    {
-                        lineNumber = k->get()->lineNumber;
-                        ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "We have found the line number corresponding to the key " << k->get()->value << " at position : "
-                                                                                << posKey << " line : "<< lineNumber;                          
-                        break;// we have find one match so we leave
-                    }
-                }
-                transaction.commit();
-            }
-            catch (Wt::Dbo::Exception e)
-            {
-                ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << "Failed to find the line corresponding to posKey";
-            }
+//            try
+//            {
+//                Wt::Dbo::Transaction transaction(sessionThread);
+//                std::string queryString = "SELECT iva FROM \"T_INFORMATION_VALUE_IVA\" iva "
+//                    " WHERE \"IVA_STATE\" = 0 "
+//                    " AND \"PLG_ID_PLG_ID\" = " + boost::lexical_cast<std::string>(pluginId) + ""
+//                    " AND \"SRC_ID\" = " + boost::lexical_cast<std::string>(sourceId) + ""
+//                    " AND \"SEA_ID\" = " + boost::lexical_cast<std::string>(searchId) + ""
+//                    " AND \"INF_VALUE_NUM\" = " + boost::lexical_cast<std::string>(posKey) + ""
+//                    " AND \"IVA_AST_AST_ID\" IN " + assetList + "";
+//                tbInformationValue keyToCheck = sessionThread.query<Wt::Dbo::ptr<InformationValue> >(queryString).limit(1);
+//
+//                //TODO : a transformer en while ?
+//                for (tbInformationValue::const_iterator k = keyToCheck.begin(); k != keyToCheck.end(); ++k) 
+//                {
+//
+//                    if (k->get()->value == alertPtr.get()->alertValue.get()->keyValue /*eth0 for example*/)
+//                    {
+//                        lineNumber = k->get()->lineNumber;
+//                        ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "We have found the line number corresponding to the key " << k->get()->value << " at position : "
+//                                                                                << posKey << " line : "<< lineNumber;                          
+//                        break;// we have find one match so we leave
+//                    }
+//                }
+//                transaction.commit();
+//            }
+//            catch (Wt::Dbo::Exception e)
+//            {
+//                ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << "Failed to find the line corresponding to posKey";
+//            }
+            //TODO
+            lineNumber = 0;
         } 
         else if (posKey == 0)
         {
@@ -216,7 +235,7 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
         }
         else //posKey < 0 
         {
-            ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << "Couldn't get pos key value";
+            ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << "Couldn't get pos key value";
             boost::this_thread::sleep(boost::posix_time::milliseconds(te->sleepThreadCheckAlertMilliSec));
             continue;
         }
@@ -240,7 +259,7 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
                     " AND \"SEA_ID\" = " + boost::lexical_cast<std::string>(searchId) + ""
                     " AND \"INF_VALUE_NUM\" = " + boost::lexical_cast<std::string>(infValueNum) + ""
                     " AND \"IVA_AST_AST_ID\" IN " + assetList + "";
-            tbInformationValue valuesToCheck = sessionThread.query<Wt::Dbo::ptr<InformationValue> >(queryString).limit(50);
+            tbInformationValue valuesToCheck = sessionThread.query<Wt::Dbo::ptr<InformationValue> >(queryString).limit(1);
             
             ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "valuesToCheck size : " << valuesToCheck.size();
             if (valuesToCheck.size() < 1)
@@ -255,7 +274,7 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
         }//fin try
         catch (Wt::Dbo::Exception e)
         {
-            ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << "While 1 InformationValueLoop()" << e.what();
+            ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << "getting iva list : " << e.what();
         }
         
         int unitType = alertPtr.get()->alertValue.get()->information.get()->unit.get()->unitType.id();
@@ -313,6 +332,7 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
                         ToolsEngine::log("warning") << " [Class:AlertProcessor] " << " - " << "processing information name for text alert : " << i->get()->information.get()->name;
                         i->modify()->state = 666;//error
                     }
+                    transaction.commit();
                 }
                 catch (Wt::Dbo::Exception e)
                 {
@@ -369,7 +389,7 @@ int AlertProcessor::getPosKey(Session *sessionThread, int pluginId,int sourceId,
     }
     catch (Wt::Dbo::Exception e)
     {
-        ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << "Couldn't get pos key value" << e.what();;
+        ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << "Couldn't get pos key value : " << e.what();;
     }
     return res;
 }
@@ -395,6 +415,7 @@ std::string AlertProcessor::getInformationValueListSqlPrepared(Wt::Dbo::collecti
         i->modify()->state = state;
         ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << " For iva list : " << (*i).id();
         res += boost::lexical_cast<std::string,long long>((*i).id()) + ",";
+        i->flush();
     }
     res.replace(res.size()-1, 1, "");
     res += ")";

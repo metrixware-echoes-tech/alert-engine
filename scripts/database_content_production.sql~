@@ -45,7 +45,7 @@ SELECT pg_catalog.setval('"T_INFORMATION_VALUE_IVA_IVA_ID_seq"', 1, false);
 
 SELECT pg_catalog.setval('"T_MEDIA_MED_MED_ID_seq"', 2, true);
 
-SELECT pg_catalog.setval('"T_MEDIA_VALUE_MEV_MEV_ID_seq"', 3, true);
+SELECT pg_catalog.setval('"T_MEDIA_VALUE_MEV_MEV_ID_seq"', 2, true);
 
 SELECT pg_catalog.setval('"T_OPTION_OPT_OPT_ID_seq"', 1, true);
 

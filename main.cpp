@@ -91,7 +91,7 @@ void checkNewDatas()
                         ToolsEngine::log("error") << " [Class:main] "<< e.what();
                 }      
             }
-
+            transaction.commit();
         }
         boost::this_thread::sleep(boost::posix_time::milliseconds(te->sleepThreadCheckAlertMilliSec));
     };

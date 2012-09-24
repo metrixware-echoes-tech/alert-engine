@@ -43,7 +43,8 @@ public:
     * @param the alert that we want to kow the media linked
     * @return the list of the medias 
     */ 
-    MediaValueList checkMediaToSendAlert(Wt::Dbo::ptr<Alert> alertPtr);
+//    MediaValueList checkMediaToSendAlert(Wt::Dbo::ptr<Alert> alertPtr);
+    Wt::Dbo::collection<Wt::Dbo::ptr<AlertMediaSpecialization> > checkMediaToSendAlert(Wt::Dbo::ptr<Alert> alertPtr);
     
    /**
     * method to create a new alert tracking number
@@ -51,7 +52,7 @@ public:
     * @param the media value used to create the alert tracking
     * @return the pointer on the created object
     */ 
-    Wt::Dbo::ptr<AlertTracking> createAlertTrackingNumber(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<MediaValue> mediaValuePtr, Session *session);
+    Wt::Dbo::ptr<AlertTracking> createAlertTrackingNumber(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<AlertMediaSpecialization> amsPtr, Session *session);
 
    /**
     * method to send an SMS with the call of the API
@@ -61,7 +62,7 @@ public:
     * @param the media value concern by the alert
     * @return error -1 or sucess 0
     */     
-    int sendSMS(Wt::Dbo::ptr<InformationValue> InformationValuePtr,Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<AlertTracking> alertTrackingPtr, Wt::Dbo::ptr<MediaValue> mediaValuePtr);
+    int sendSMS(Wt::Dbo::ptr<InformationValue> InformationValuePtr,Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<AlertTracking> alertTrackingPtr, Wt::Dbo::ptr<AlertMediaSpecialization> amsPtr);
 
    /**
     * method to send a MAIL 
@@ -72,7 +73,7 @@ public:
     * @param if the user as use all his sms, the value here is 1 if not it's 0
     * @return error -1 or sucess 0
     */    
-    int sendMAIL(Wt::Dbo::ptr<InformationValue> InformationValuePtr, Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<AlertTracking> alertTrackingPtr, Wt::Dbo::ptr<MediaValue> mediaValuePtr, int overSMSQuota = 0);
+    int sendMAIL(Wt::Dbo::ptr<InformationValue> InformationValuePtr, Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<AlertTracking> alertTrackingPtr, Wt::Dbo::ptr<AlertMediaSpecialization> amsPtr, int overSMSQuota = 0);
    /**
     * method to send the differents alerts over the air (mail, sms....) linked to an alert
     * @param the alert

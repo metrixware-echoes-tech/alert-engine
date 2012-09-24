@@ -72,7 +72,7 @@
         </ccTool>
         <linkerTool>
           <linkerAddLib>
-            <pElem>../dbo/dist/SharedObject/GNU-Linux-x86</pElem>
+            <pElem>../dbo/dist/Debug_SharedObject/GNU-Linux-x86</pElem>
           </linkerAddLib>
           <linkerLibItems>
             <linkerLibLibItem>boost_system</linkerLibLibItem>
