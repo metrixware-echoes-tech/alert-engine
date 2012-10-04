@@ -30,16 +30,14 @@ Wt::Dbo::ptr<AlertTracking> AlertSender::createAlertTrackingNumber(Wt::Dbo::ptr<
 {
     //we get the session actually opened
     AlertTracking *newAlertTracking = new AlertTracking();
-   // Wt::WDateTime *now = new Wt::WDateTime();
-    Wt::WDateTime now = Wt::WDateTime::currentDateTime();
     
     newAlertTracking->alert = alertPtr;
     newAlertTracking->mediaValue = amsPtr.get()->mediaValue;
-   // now->currentDateTime();
-    //newAlertTracking->sendDate = *now;
-    newAlertTracking->sendDate = now;
+
+    // WARNING : SendDate must be set by the API when the alert was sent, not before
+    newAlertTracking->sendDate = *(new Wt::WDateTime());
     Wt::Dbo::ptr<AlertTracking> alertTrackingPtr;
-    
+
     try
     {         
         alertTrackingPtr = session->add<AlertTracking>(newAlertTracking);
