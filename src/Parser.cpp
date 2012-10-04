@@ -217,18 +217,20 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
     // new : 2-1-1-2-1-1-1="QXVnIDIxIDEwOg=="
    
     //table to save the dashs positions between the ids
-    size_t tbDashs[5];
+    int const tbDashsLength(6);
+    size_t tbDashs[tbDashsLength];
     size_t dash=-1;
     
     //table to save the quote positions in the value field
-    size_t tbQuotes[1]; 
+    int const tbQuotesLength(2);
+    size_t tbQuotes[tbQuotesLength]; 
     size_t quote=-1; 
     
     //result
     int res = -1;
     
     //we search and save the different positions of the dashs in the strValue
-    for(int i = 0 ; i < 6 ; i ++)
+    for(int i = 0 ; i < tbDashsLength ; i ++)
     {
         dash = strValue.find("-",dash+1);
      //   std::cout << "dash : " << dash << "\n";
@@ -240,7 +242,7 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
     }
     
     //we search and save the different positions of the quotes in the strValue
-    for(int i = 0 ; i < 2 ; i ++)
+    for(int i = 0 ; i < tbQuotesLength ; i ++)
     {
         quote = strValue.find("\"",quote+1);
         
