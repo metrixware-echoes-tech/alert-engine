@@ -269,19 +269,26 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
       //std::cout << "lineNum : " << lineNumber << "\n"; 
       sValue = Wt::Utils::base64Decode(strValue.substr(tbQuotes[0]+1,tbQuotes[1]-(tbQuotes[0]+1)));
    
-      
-   
     //SQL session
     { 
         try 
         {   
+            //we verify the unit of the collected information before saving it linked ton an information entry.   
+            Wt::Dbo::Transaction transaction(*(te->sessionParser));
+            Wt::Dbo::ptr<SearchUnit> ptrSearchUnit = te->sessionParser->find<SearchUnit>()
+                    .where("\"PLG_ID_PLG_ID\" = ?").bind(idPlugin)
+                    .where("\"SRC_ID\" = ?").bind(idSource)
+                    .where("\"SEA_ID\" = ?").bind(idSearch)
+                    .where("\"INF_VALUE_NUM\" = ?").bind(valueNum).limit(1); 
+        
             Wt::Dbo::Transaction transaction(*(te->sessionParser));
             informationValueTmp = new InformationValue();
             Wt::Dbo::ptr<Information2> ptrInfTmp = te->sessionParser->find<Information2>()
                     .where("\"PLG_ID_PLG_ID\" = ?").bind(idPlugin)
                     .where("\"SRC_ID\" = ?").bind(idSource)
                     .where("\"SEA_ID\" = ?").bind(idSearch)
-                    .where("\"INF_VALUE_NUM\" = ?").bind(valueNum).limit(1);
+                    .where("\"INF_VALUE_NUM\" = ?").bind(valueNum)
+                    .where("\"INU_ID_INU_ID\" = ?").bind(ptrSearchUnit.get()->informationUnit).limit(1);
 
             informationValueTmp->information = ptrInfTmp;
             informationValueTmp->value = sValue;

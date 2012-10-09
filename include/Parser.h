@@ -24,6 +24,7 @@
 #include <information/InformationValue.h>
 #include <information/Information.h>
 #include <asset/Asset.h>
+#include <plugin/SearchUnit.h>
 
 class Parser {
 public:

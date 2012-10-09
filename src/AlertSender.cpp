@@ -58,7 +58,7 @@ int AlertSender::sendSMS(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt:
     Wt::WString assetConcerned = informationValuePtr.get()->asset.get()->name;
     Wt::WString alertName = alertPtr.get()->name;
     Wt::WString informationReceived = informationValuePtr.get()->value;
-    Wt::WString unit = alertPtr.get()->alertValue.get()->information.get()->unit.get()->name;
+    Wt::WString unit = alertPtr.get()->alertValue.get()->information.get()->pk.unit.get()->name;
     Wt::WString alertValue = alertPtr.get()->alertValue.get()->value;
     Wt::WString date = informationValuePtr.get()->creationDate.toString();
     Wt::WDateTime now = Wt::WDateTime::currentDateTime(); //for setting the send date of the alert
@@ -134,7 +134,7 @@ int AlertSender::sendSMS(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt:
     }
     catch (Wt::Dbo::Exception e)
     {
-        ToolsEngine::log("error") << " [Class:AlertSender] " << e.what();
+        ToolsEngine::log("error") << " [Class:AlertSender] " << e.what(); 
     }
     
 }
@@ -148,7 +148,7 @@ int AlertSender::sendMAIL(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt
     Wt::WString assetConcerned = informationValuePtr.get()->asset.get()->name;
     Wt::WString alertName = alertPtr.get()->name;
     Wt::WString informationReceived = informationValuePtr.get()->value;
-    Wt::WString unit = alertPtr.get()->alertValue.get()->information.get()->unit.get()->name;
+    Wt::WString unit = alertPtr.get()->alertValue.get()->information.get()->pk.unit.get()->name;
     Wt::WString alertValue = alertPtr.get()->alertValue.get()->value;
     Wt::WString date = informationValuePtr.get()->creationDate.toString();
     Wt::WDateTime now = Wt::WDateTime::currentDateTime(); //for setting the send date of the alert

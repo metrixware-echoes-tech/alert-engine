@@ -35,8 +35,8 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
-	${OBJECTDIR}/src/Parser.o \
 	${OBJECTDIR}/main.o \
+	${OBJECTDIR}/src/Parser.o \
 	${OBJECTDIR}/src/ToolsEngine.o \
 	${OBJECTDIR}/src/AlertProcessor.o \
 	${OBJECTDIR}/src/AlertSender.o
@@ -72,15 +72,15 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engine: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engine ${OBJECTFILES} ${LDLIBSOPTIONS} 
 
-${OBJECTDIR}/src/Parser.o: src/Parser.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/Parser.o src/Parser.cpp
-
 ${OBJECTDIR}/main.o: main.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
 	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/main.o main.cpp
+
+${OBJECTDIR}/src/Parser.o: src/Parser.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/Parser.o src/Parser.cpp
 
 ${OBJECTDIR}/src/ToolsEngine.o: src/ToolsEngine.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
@@ -113,19 +113,6 @@ ${TESTDIR}/ToolsEngine-Tests.o: ToolsEngine-Tests.cpp
 	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${TESTDIR}/ToolsEngine-Tests.o ToolsEngine-Tests.cpp
 
 
-${OBJECTDIR}/src/Parser_nomain.o: ${OBJECTDIR}/src/Parser.o src/Parser.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	@NMOUTPUT=`${NM} ${OBJECTDIR}/src/Parser.o`; \
-	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
-	then  \
-	    ${RM} $@.d;\
-	    $(COMPILE.cc) -O2 -Dmain=__nomain -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/Parser_nomain.o src/Parser.cpp;\
-	else  \
-	    ${CP} ${OBJECTDIR}/src/Parser.o ${OBJECTDIR}/src/Parser_nomain.o;\
-	fi
-
 ${OBJECTDIR}/main_nomain.o: ${OBJECTDIR}/main.o main.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	@NMOUTPUT=`${NM} ${OBJECTDIR}/main.o`; \
@@ -137,6 +124,19 @@ ${OBJECTDIR}/main_nomain.o: ${OBJECTDIR}/main.o main.cpp
 	    $(COMPILE.cc) -O2 -Dmain=__nomain -MMD -MP -MF $@.d -o ${OBJECTDIR}/main_nomain.o main.cpp;\
 	else  \
 	    ${CP} ${OBJECTDIR}/main.o ${OBJECTDIR}/main_nomain.o;\
+	fi
+
+${OBJECTDIR}/src/Parser_nomain.o: ${OBJECTDIR}/src/Parser.o src/Parser.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	@NMOUTPUT=`${NM} ${OBJECTDIR}/src/Parser.o`; \
+	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
+	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
+	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
+	then  \
+	    ${RM} $@.d;\
+	    $(COMPILE.cc) -O2 -Dmain=__nomain -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/Parser_nomain.o src/Parser.cpp;\
+	else  \
+	    ${CP} ${OBJECTDIR}/src/Parser.o ${OBJECTDIR}/src/Parser_nomain.o;\
 	fi
 
 ${OBJECTDIR}/src/ToolsEngine_nomain.o: ${OBJECTDIR}/src/ToolsEngine.o src/ToolsEngine.cpp 

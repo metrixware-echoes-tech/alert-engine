@@ -248,7 +248,7 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
             Wt::Dbo::Transaction transaction(sessionThread);
             ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are entering in the switch of the alert unit type";
             //get the type of the value
-            ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "unit type id :"  << alertPtr.get()->alertValue.get()->information.get()->unit.get()->unitType.id();
+            ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "unit type id :"  << alertPtr.get()->alertValue.get()->information.get()->pk.unit.get()->unitType.get();
             
             
             ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "asset list : " << assetList;
@@ -277,7 +277,7 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
             ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << "getting iva list : " << e.what();
         }
         
-        int unitType = alertPtr.get()->alertValue.get()->information.get()->unit.get()->unitType.id();
+        int unitType = alertPtr.get()->alertValue.get()->information.get()->pk.unit.get()->unitType.id();
         int alertCriteria = alertPtr.get()->alertValue.get()->alertCriteria.id();
         switch(unitType)
         {
