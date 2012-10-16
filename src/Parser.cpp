@@ -273,15 +273,26 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
     { 
         try 
         {   
-            //we verify the unit of the collected information before saving it linked ton an information entry.   
             Wt::Dbo::Transaction transaction(*(te->sessionParser));
+            // we have to check wether the asset exists or not (been deleted ?)
+            Wt::Dbo::ptr<Asset> ptrAstTmp = te->sessionParser->find<Asset>()
+                    .where("\"AST_ID\" = ?").bind(idAsset).where("\"AST_DELETE\" IS NULL").limit(1);
+            
+            if (!ptrAstTmp)
+            {
+                ToolsEngine::log("error") << " [Class:Parser] " << "Asset with id : " << idAsset << " doesn't exist." ;
+                res = -1;
+                return res;
+            }
+            
+            //we verify the unit of the collected information before saving it linked ton an information entry.   
             Wt::Dbo::ptr<SearchUnit> ptrSearchUnit = te->sessionParser->find<SearchUnit>()
                     .where("\"PLG_ID_PLG_ID\" = ?").bind(idPlugin)
                     .where("\"SRC_ID\" = ?").bind(idSource)
                     .where("\"SEA_ID\" = ?").bind(idSearch)
                     .where("\"INF_VALUE_NUM\" = ?").bind(valueNum).limit(1); 
         
-            Wt::Dbo::Transaction transaction(*(te->sessionParser));
+//            Wt::Dbo::Transaction transaction(*(te->sessionParser));
             informationValueTmp = new InformationValue();
             Wt::Dbo::ptr<Information2> ptrInfTmp = te->sessionParser->find<Information2>()
                     .where("\"PLG_ID_PLG_ID\" = ?").bind(idPlugin)
@@ -301,9 +312,6 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
             
             informationValueTmp->lotNumber = lotNumber;
             informationValueTmp->lineNumber = lineNumber;            
-
-            Wt::Dbo::ptr<Asset> ptrAstTmp = te->sessionParser->find<Asset>()
-                    .where("\"AST_ID\" = ?").bind(idAsset).limit(1);
 
             informationValueTmp->asset = ptrAstTmp;
             

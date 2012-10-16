@@ -23,7 +23,7 @@ int AlertProcessor::verifyAlerts()
             Wt::Dbo::Transaction transaction(*(te->sessionAlertProcessor));        
 
             //we get the list of all defined alerts in the database
-            alerts = te->sessionAlertProcessor->find<Alert>();
+            alerts = te->sessionAlertProcessor->find<Alert>().where("\"ALE_DELETE\" IS NULL");
             ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << "We have " << alerts.size() << " Alert(s) in the database";
 
             for (Alerts::const_iterator i = alerts.begin(); i != alerts.end(); ++i)
@@ -101,7 +101,7 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
     {
         ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << " Getting alert data";
         Wt::Dbo::Transaction transaction(sessionThread);
-        alertPtr = sessionThread.find<Alert>().where("\"ALE_ID\" = ?").bind(idAlert).limit(1);
+        alertPtr = sessionThread.find<Alert>().where("\"ALE_ID\" = ?").bind(idAlert).where("\"ALE_DELETE\" IS NULL").limit(1);
 //        alertId = alertPtr.get()->alertValue.id();
 //        // Check whether the pointer is actually pointing on something
 //        if (alertId == -1)//a NULL dbo pointer return -1
@@ -170,7 +170,7 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
     {
         ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << " Updating last attempt";
         Wt::Dbo::Transaction transaction(sessionThread);
-        alertPtr = sessionThread.find<Alert>().where("\"ALE_ID\" = ?").bind(idAlert).limit(1);
+        alertPtr = sessionThread.find<Alert>().where("\"ALE_ID\" = ?").bind(idAlert).where("\"ALE_DELETE\" IS NULL").limit(1);
         alertPtr.modify()->lastAttempt = *now;
         transaction.commit();
     }
