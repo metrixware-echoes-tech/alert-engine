@@ -32,13 +32,13 @@ int main()
 
     //création des tables de la bdd (to remove)    
     try 
-        {
-            te->sessionParser->createTables();
-            ToolsEngine::log("debug") << " [Class:Main] " << "Created database.";
-        } catch (std::exception& e) {
-            std::cerr << e.what() << std::endl;
-            ToolsEngine::log("info") << " [Class:Main] " << "Using existing database." << e.what();
-        }
+    {
+        te->sessionParser->createTables();
+        ToolsEngine::log("debug") << " [Class:Main] " << "Created database.";
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        ToolsEngine::log("info") << " [Class:Main] " << "Using existing database." << e.what();
+    }
 
         
     // thread's creation
@@ -64,26 +64,24 @@ void checkNewDatas()
     while (true)
     {
         //SQL session
+        try
         {
             Wt::Dbo::Transaction transaction(*(te->sessionParser));
-            Wt::Dbo::ptr<Syslog> receivedSyslog = te->sessionParser->find<Syslog>().where("\"SLO_STATE\" = ?").limit(1).bind("0");
-            if (receivedSyslog )
+            Wt::Dbo::collection<Wt::Dbo::ptr<Syslog> > receivedSyslogCollection = te->sessionParser->find<Syslog>().where("\"SLO_STATE\" = ? FOR UPDATE").limit(100).bind("0");
+            for (Wt::Dbo::collection<Wt::Dbo::ptr<Syslog> > ::const_iterator j = receivedSyslogCollection.begin(); j != receivedSyslogCollection.end(); ++j) 
             {
-                // state is 0 is "new entry" state = 1 is "processing"
-                receivedSyslog.modify()->state = 1;
-                //TODO : make a transaction 
                 try
                 {
-                    res = parser->unserializeStructuredData(receivedSyslog);
+                    res = parser->unserializeStructuredData(*(j));
                     if (res == 0)
                     {
                         //state = 2 is "processing complete"
-                        receivedSyslog.modify()->state = 2;                     
+                        j->modify()->state = 2;                     
                     }
                     else if ( res == -1)
                     {
                         //state = 3 is "error"
-                        receivedSyslog.modify()->state = 3;
+                        j->modify()->state = 3;
                     }
                 }
                 catch (Wt::Dbo::Exception e)
@@ -92,6 +90,10 @@ void checkNewDatas()
                 }      
             }
             transaction.commit();
+        }
+        catch(Wt::Dbo::Exception e)
+        {
+            ToolsEngine::log("error") << " [Class:main] "<< e.what();
         }
         boost::this_thread::sleep(boost::posix_time::milliseconds(te->sleepThreadCheckAlertMilliSec));
     };
@@ -107,7 +109,7 @@ void removeOldValues()
 {
     while (true)
     {
-        boost::this_thread::sleep(boost::posix_time::milliseconds(te->sleepThreadRemoveOldValues));
+        //change the status for old values to avoid to send alert on old data
         try
         {
             Wt::Dbo::Transaction transaction(*(te->sessionOldValues));
@@ -121,5 +123,38 @@ void removeOldValues()
         {
             ToolsEngine::log("error") << " [Class:main] "<< e.what();
         }
+        
+        //remove values older than 1 day from information_value (duplicated in T_INFORMATION_HISTORICAL_VALUE_IHV)
+        try
+        {
+            Wt::Dbo::Transaction transaction(*(te->sessionOldValues));
+            std::string queryString = "DELETE \"T_INFORMATION_VALUE_IVA\""
+                                        " WHERE"
+                                        " \"IVA_STATE\" = 0"
+                                        " AND \"IVA_CREA_DATE\" < (NOW() - interval '1 day')";
+            te->sessionOldValues->execute(queryString);
+            transaction.commit();
+        }
+        catch(Wt::Dbo::Exception e)
+        {
+            ToolsEngine::log("error") << " [Class:main] "<< e.what();
+        }
+        
+        //remove values older than 1 day from t_syslog_slo (duplicated in T_INFORMATION_HISTORICAL_VALUE_IHV)
+        try
+        {
+            Wt::Dbo::Transaction transaction(*(te->sessionOldValues));
+            std::string queryString = "DELETE \"T_SYSLOG_SLO\""
+                                        " WHERE SLO_STATE != 0"
+                                        " AND \"SLO_RCPT_DATE\" < (NOW() - interval '1 day')";
+            te->sessionOldValues->execute(queryString);
+            transaction.commit();
+        }
+        catch(Wt::Dbo::Exception e)
+        {
+            ToolsEngine::log("error") << " [Class:main] "<< e.what();
+        }
+        
+        boost::this_thread::sleep(boost::posix_time::milliseconds(te->sleepThreadRemoveOldValues));
     };
 }

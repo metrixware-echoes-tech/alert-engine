@@ -74,7 +74,6 @@ public:
 private:
       
       //concerning value
-      InformationValue *informationValueTmp;
       int idAsset;
       int idPlugin;
       int idSearch;

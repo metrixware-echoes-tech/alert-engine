@@ -170,7 +170,7 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
     {
         ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << " Updating last attempt";
         Wt::Dbo::Transaction transaction(sessionThread);
-        alertPtr = sessionThread.find<Alert>().where("\"ALE_ID\" = ?").bind(idAlert).where("\"ALE_DELETE\" IS NULL").limit(1);
+        alertPtr = sessionThread.find<Alert>().where("\"ALE_ID\" = ?").bind(idAlert).where("\"ALE_DELETE\" IS NULL FOR UPDATE").limit(1);
         alertPtr.modify()->lastAttempt = *now;
         transaction.commit();
     }
@@ -259,7 +259,7 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
                     " AND \"SEA_ID\" = " + boost::lexical_cast<std::string>(searchId) + ""
                     " AND \"INF_VALUE_NUM\" = " + boost::lexical_cast<std::string>(infValueNum) + ""
                     " AND \"IVA_AST_AST_ID\" IN " + assetList + "";
-            tbInformationValue valuesToCheck = sessionThread.query<Wt::Dbo::ptr<InformationValue> >(queryString).limit(1);
+            tbInformationValue valuesToCheck = sessionThread.query<Wt::Dbo::ptr<InformationValue> >(queryString).limit(10);
             
             ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "valuesToCheck size : " << valuesToCheck.size();
             if (valuesToCheck.size() < 1)
@@ -430,7 +430,7 @@ int AlertProcessor::compareNumberValue(std::string stringValuesToCheck,bool (*ma
     try
     {
         Wt::Dbo::Transaction transaction(compareSession);
-        std::string queryString = "SELECT iva FROM \"T_INFORMATION_VALUE_IVA\" iva WHERE \"IVA_ID\" IN " + stringValuesToCheck;
+        std::string queryString = "SELECT iva FROM \"T_INFORMATION_VALUE_IVA\" iva WHERE \"IVA_ID\" IN " + stringValuesToCheck + " FOR UPDATE";
         tbInformationValue valuesToCheck = compareSession.query<Wt::Dbo::ptr<InformationValue> >(queryString);
         for (tbInformationValue::const_iterator i = valuesToCheck.begin(); i != valuesToCheck.end(); ++i) 
         {

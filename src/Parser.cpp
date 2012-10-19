@@ -113,14 +113,15 @@ int Parser::unserializeProperties(std::string& strProperties, Wt::Dbo::ptr<Syslo
         {                         
             Wt::Dbo::Transaction transaction(*(te->sessionParser));
             //we fill the local copy of the syslo pointer with the id of the received syslog
-            ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslog.id()).limit(1);
+            ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ? FOR UPDATE").bind(ptrSyslog.id()).limit(1);
             ptrSyslogTmp.modify()->version = boost::lexical_cast<int>(strProperties.substr(tbEquals[0]+1,space-(tbEquals[0]+1)));      
 
             //we find the probe that have the id of the received syslog and get its pointer
-            ptrProbe = te->sessionParser->find<Probe>().where("\"PRB_ID\" = ?").bind(idProbeTmp).limit(1);             
+            ptrProbe = te->sessionParser->find<Probe>().where("\"PRB_ID\" = ? FOR UPDATE").bind(idProbeTmp).limit(1);             
 
             //we modify the probe in the local copy of the syslog pointer with the getted object
             ptrSyslogTmp.modify()->probe = ptrProbe;
+            
             res = 0;
             transaction.commit();
         }
@@ -293,7 +294,8 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
                     .where("\"INF_VALUE_NUM\" = ?").bind(valueNum).limit(1); 
         
 //            Wt::Dbo::Transaction transaction(*(te->sessionParser));
-            informationValueTmp = new InformationValue();
+            InformationValue *informationValueToAdd = new InformationValue();
+            InformationHistoricalValue *informationHistoricalValueToAdd = new InformationHistoricalValue();
             Wt::Dbo::ptr<Information2> ptrInfTmp = te->sessionParser->find<Information2>()
                     .where("\"PLG_ID_PLG_ID\" = ?").bind(idPlugin)
                     .where("\"SRC_ID\" = ?").bind(idSource)
@@ -301,33 +303,38 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
                     .where("\"INF_VALUE_NUM\" = ?").bind(valueNum)
                     .where("\"INU_ID_INU_ID\" = ?").bind(ptrSearchUnit.get()->informationUnit).limit(1);
 
-            informationValueTmp->information = ptrInfTmp;
-            informationValueTmp->value = sValue;
             //get sent date of the the associated syslog
             creaDate = ptrSyslog.get()->sentDate.addSecs(offset) ;
-
-            informationValueTmp->creationDate = creaDate;
-
-            informationValueTmp->syslog = ptrSyslog;
+            informationValueToAdd->information = ptrInfTmp;
+            informationValueToAdd->value = sValue;
+            informationValueToAdd->creationDate = creaDate;
+            informationValueToAdd->syslog = ptrSyslog;
+            informationValueToAdd->lotNumber = lotNumber;
+            informationValueToAdd->lineNumber = lineNumber;            
+            informationValueToAdd->asset = ptrAstTmp;
             
-            informationValueTmp->lotNumber = lotNumber;
-            informationValueTmp->lineNumber = lineNumber;            
-
-            informationValueTmp->asset = ptrAstTmp;
+            informationHistoricalValueToAdd->information = ptrInfTmp;
+            informationHistoricalValueToAdd->value = sValue;
+            informationHistoricalValueToAdd->creationDate = creaDate;
+            informationHistoricalValueToAdd->syslog = ptrSyslog;
+            informationHistoricalValueToAdd->lotNumber = lotNumber;
+            informationHistoricalValueToAdd->lineNumber = lineNumber;            
+            informationHistoricalValueToAdd->asset = ptrAstTmp;
+            informationHistoricalValueToAdd->state = 0;
             
-            
-            posKeyValue = informationValueTmp->information.get()->pk.search.get()->pos_key_value;
+            posKeyValue = informationValueToAdd->information.get()->pk.search.get()->pos_key_value;
             if (posKeyValue == 0)
             {
-                informationValueTmp->state = 0;
+                informationValueToAdd->state = 0;
             }
             else
             {
                 // state : -1= lot not complete, 0 = pending, 1 = processing, 2 = done    
-                informationValueTmp->state = -1;
+                informationValueToAdd->state = -1;
             }
 
-            te->sessionParser->add(informationValueTmp);
+            te->sessionParser->add<InformationValue>(informationValueToAdd);
+            te->sessionParser->add<InformationHistoricalValue>(informationHistoricalValueToAdd);
             res = 0; 
             transaction.commit();
         }
