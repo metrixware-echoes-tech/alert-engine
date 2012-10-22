@@ -34,7 +34,40 @@ int main()
     try 
     {
         te->sessionParser->createTables();
+        Wt::Dbo::Transaction transaction(*(te->sessionParser));
         ToolsEngine::log("debug") << " [Class:Main] " << "Created database.";
+        te->sessionParser->execute(
+                  "CREATE OR REPLACE FUNCTION trg_slo_slh()"
+                  "  RETURNS trigger AS"
+                  " $BODY$"
+                  " BEGIN"
+                  " INSERT INTO \"T_SYSLOG_HISTORY_SLH\" "
+                  " VALUES (NEW.\"SLO_ID\","
+                      "NEW.\"version\","
+                      "NEW.\"SLO_APP_NAME\","
+                      "NEW.\"SLO_HOSTNAME\","
+                      "NEW.\"SLO_MSG_ID\","
+                      "NEW.\"SLO_SD\","
+                      "NEW.\"SLO_DELETE\","
+                      "NEW.\"SLO_RCPT_DATE\","
+                      "NEW.\"SLO_SENT_DATE\","
+                      "NEW.\"SLO_PRI\","
+                      "NEW.\"SLO_PROC_ID\","
+                      "NEW.\"SLO_STATE\","
+                      "NEW.\"SLO_VERSION\","
+                      "NEW.\"SLO_PRB_PRB_ID\") ;"
+                  " RETURN NULL;"
+                  " END;"
+                  " $BODY$"
+                    " LANGUAGE plpgsql VOLATILE;"
+        );
+        te->sessionParser->execute(
+                    "CREATE TRIGGER insert_slo"
+                    " AFTER INSERT"
+                    " ON \"T_SYSLOG_SLO\""
+                    " FOR EACH ROW"
+                    " EXECUTE PROCEDURE trg_slo_slh();"
+        );
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
         ToolsEngine::log("info") << " [Class:Main] " << "Using existing database." << e.what();

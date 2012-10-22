@@ -99,6 +99,7 @@ int Parser::unserializeProperties(std::string& strProperties, Wt::Dbo::ptr<Syslo
     Wt::Dbo::ptr<Probe> ptrProbe;
     int idProbeTmp;
     Wt::Dbo::ptr<Syslog> ptrSyslogTmp;
+    Wt::Dbo::ptr<SyslogHistory> ptrSyslogHistoryTmp;
     
     //result
     int res = -1;
@@ -121,6 +122,28 @@ int Parser::unserializeProperties(std::string& strProperties, Wt::Dbo::ptr<Syslo
 
             //we modify the probe in the local copy of the syslog pointer with the getted object
             ptrSyslogTmp.modify()->probe = ptrProbe;
+            
+            res = 0;
+            transaction.commit();
+        }
+        catch (Wt::Dbo::Exception e)
+        {
+            res = -1;
+            ToolsEngine::log("error") << " [Class:Parser] " << e.what();           
+        }
+        
+        try 
+        {                         
+            Wt::Dbo::Transaction transaction(*(te->sessionParser));
+            //we fill the local copy of the syslo pointer with the id of the received syslog : possible thx to the trigger insert_slo
+            ptrSyslogHistoryTmp = te->sessionParser->find<SyslogHistory>().where("\"SLH_ID\" = ? FOR UPDATE").bind(ptrSyslog.id()).limit(1);
+            ptrSyslogHistoryTmp.modify()->version = boost::lexical_cast<int>(strProperties.substr(tbEquals[0]+1,space-(tbEquals[0]+1)));      
+
+            //we find the probe that have the id of the received syslog and get its pointer
+            ptrProbe = te->sessionParser->find<Probe>().where("\"PRB_ID\" = ? FOR UPDATE").bind(idProbeTmp).limit(1);             
+
+            //we modify the probe in the local copy of the syslog pointer with the getted object
+            ptrSyslogHistoryTmp.modify()->probe = ptrProbe;
             
             res = 0;
             transaction.commit();
