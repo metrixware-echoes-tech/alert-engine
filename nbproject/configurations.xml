@@ -119,7 +119,7 @@
         <linkerTool>
           <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engine</output>
           <linkerAddLib>
-            <pElem>/var/lib.jenkins/jobs/ea-dbo/workspace/default/dist/Release_SharedObject/GNU-Linux-x86</pElem>
+            <pElem>/var/lib/jenkins/jobs/ea-dbo/workspace/default/dist/Release_SharedObject/GNU-Linux-x86</pElem>
             <pElem>../dbo/dist/Release_SharedObject/GNU-Linux-x86</pElem>
           </linkerAddLib>
           <stripSymbols>true</stripSymbols>
