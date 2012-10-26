@@ -255,6 +255,8 @@ int AlertSender::sendMAIL(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt
         Wt::Dbo::ptr<AlertMediaSpecialization> amsP = session->find<AlertMediaSpecialization>().where("\"AMS_ID\" = ? FOR UPDATE").bind(amsPtr.id()).limit(1);
         ToolsEngine::log("info") << " [Class:AlertSender] " << "insert date of last send in db : " << now.toString();
         amsP.modify()->lastSend = now;
+        
+        alertTrackingPtr.modify()->sendDate = now;
     }
     catch (Wt::Dbo::Exception e)
     {
