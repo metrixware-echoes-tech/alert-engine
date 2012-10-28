@@ -68,11 +68,10 @@
             <pElem>include</pElem>
             <pElem>../UnitTest++/src</pElem>
             <pElem>../dbo/include</pElem>
-            <pElem>.</pElem>
           </incDir>
         </ccTool>
         <linkerTool>
-          <output>${TESTDIR}/TestFiles/f1</output>
+          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engine</output>
           <linkerAddLib>
             <pElem>../dbo/dist/Debug_SharedObject/GNU-Linux-x86</pElem>
           </linkerAddLib>

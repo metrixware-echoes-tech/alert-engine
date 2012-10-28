@@ -170,7 +170,8 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
     {
         ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << " Updating last attempt";
         Wt::Dbo::Transaction transaction(sessionThread);
-        alertPtr = sessionThread.find<Alert>().where("\"ALE_ID\" = ?").bind(idAlert).where("\"ALE_DELETE\" IS NULL FOR UPDATE").limit(1);
+//        alertPtr = sessionThread.find<Alert>().where("\"ALE_ID\" = ?").bind(idAlert).where("\"ALE_DELETE\" IS NULL FOR UPDATE").limit(1);
+        alertPtr = sessionThread.find<Alert>().where("\"ALE_ID\" = ?").bind(idAlert).where("\"ALE_DELETE\" IS NULL").limit(1);
         alertPtr.modify()->lastAttempt = *now;
         transaction.commit();
     }
