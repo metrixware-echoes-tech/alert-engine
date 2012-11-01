@@ -78,8 +78,8 @@ int main()
     boost::thread_group threadsEngine;
     
     // execute the method checkNewDatas() removeOldValues() checkNewAlerts() in parallel
-    threadsEngine.create_thread(&checkNewDatas);
-//    threadsEngine.create_thread(&checkNewAlerts);
+//    threadsEngine.create_thread(&checkNewDatas);
+    threadsEngine.create_thread(&checkNewAlerts);
     //threadsEngine.create_thread(&removeOldValues);
  
     // wait the end of the created thread
@@ -106,13 +106,14 @@ void checkNewDatas()
         {
             Wt::Dbo::Transaction transaction0(*(te->sessionParserGlobal));
 //            Wt::Dbo::collection<Wt::Dbo::ptr<Syslog> > receivedSyslogCollection = te->sessionParser->find<Syslog>().where("\"SLO_STATE\" = ?) FOR UPDATE ").limit(100).bind("0");
-            Wt::Dbo::collection<Wt::Dbo::ptr<Syslog> > receivedSyslogCollection = te->sessionParserGlobal->query<Wt::Dbo::ptr<Syslog> >("SELECT slo FROM \"T_SYSLOG_SLO\" slo WHERE \"SLO_STATE\" = 0 LIMIT 100;");
+            Wt::Dbo::collection<Wt::Dbo::ptr<Syslog> > receivedSyslogCollection = te->sessionParserGlobal->query<Wt::Dbo::ptr<Syslog> >("SELECT slo FROM \"T_SYSLOG_SLO\" slo WHERE \"SLO_STATE\" = 0 FOR UPDATE LIMIT 100;");
             
             ToolsEngine::log("debug") << " [Class:main] avant for";
             int idx = 0;
             
             for (Wt::Dbo::collection<Wt::Dbo::ptr<Syslog> > ::const_iterator j = receivedSyslogCollection.begin(); j != receivedSyslogCollection.end(); ++j) 
             {
+                te->sessionParserGlobal->execute("UPDATE \"T_SYSLOG_SLO\" SET \"SLO_STATE\" = ? WHERE \"SLO_ID\" = ?").bind(1).bind(j->id());
                 syslogId[idx] = j->id();
                 idx++;
             }
