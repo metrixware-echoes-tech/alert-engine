@@ -20,6 +20,7 @@ ToolsEngine::ToolsEngine() {
     }
     //creating SQL sessions
     sessionParser = new Session(sqlCredentials);
+    sessionParserGlobal = new Session(sqlCredentials);
     sessionAlertProcessor = new Session(sqlCredentials);
     sessionOldValues = new Session(sqlCredentials);
     

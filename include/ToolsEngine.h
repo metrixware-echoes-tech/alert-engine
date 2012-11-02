@@ -48,6 +48,7 @@ public:
     int configFileLoad(std::string fileLocation);
 
     Session *sessionParser;
+    Session *sessionParserGlobal;
     Session *sessionAlertProcessor;
     Session *sessionOldValues;
     static Wt::WLogger logger;

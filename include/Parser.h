@@ -44,7 +44,7 @@ public:
      * @param the pointer to the syslog we want to parse
      * @return error or success
      */
-    int unserializeStructuredData(Wt::Dbo::ptr<Syslog> ptrSyslog);
+    int unserializeStructuredData(long long id);
     
     /**
      * method to unserialize the SD Elements included in a rawStructuredData
@@ -52,7 +52,7 @@ public:
      * @param the pointer to the syslog we want to parse
      * @return error or success
      */
-    int unserializeSDElement(std::string& strSDElement, Wt::Dbo::ptr<Syslog> ptrSyslog);
+    int unserializeSDElement(std::string& strSDElement, long long ptrSyslogId);
     
     /**
      * method to unserialize a value included in a SDElement
@@ -61,7 +61,7 @@ public:
      * @param the pointer to the syslog we want to parse
      * @return error or success
      */
-    int unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Syslog> ptrSyslog);
+    int unserializeValue(std::string& strValue, int offset, long long ptrSyslogId);
     
     /**
      * method to unserialize the sd-element concerning the properties
@@ -69,12 +69,11 @@ public:
      * @param the pointer to the syslog we want to parse, to fill the properties inside
      * @return error or success
      */
-    int unserializeProperties(std::string& strProperties, Wt::Dbo::ptr<Syslog> ptrSyslog);
+    int unserializeProperties(std::string& strProperties, long long ptrSyslogId);
     
 private:
       
       //concerning value
-      InformationValue *informationValueTmp;
       int idAsset;
       int idPlugin;
       int idSearch;

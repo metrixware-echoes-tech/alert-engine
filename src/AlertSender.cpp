@@ -127,6 +127,7 @@ int AlertSender::sendSMS(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt:
         //SQL transaction to commit the date
         Session *session = static_cast<Session*>(informationValuePtr.session());
 
+//        Wt::Dbo::ptr<AlertMediaSpecialization> amsP = session->find<AlertMediaSpecialization>().where("\"AMS_ID\" = ? FOR UPDATE").bind(amsPtr.id()).limit(1);
         Wt::Dbo::ptr<AlertMediaSpecialization> amsP = session->find<AlertMediaSpecialization>().where("\"AMS_ID\" = ?").bind(amsPtr.id()).limit(1);
 
         ToolsEngine::log("info") << " [Class:AlertSender] " << "insert date of last send in db : " << now.toString();
@@ -252,9 +253,12 @@ int AlertSender::sendMAIL(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt
 
     try
     {
+//        Wt::Dbo::ptr<AlertMediaSpecialization> amsP = session->find<AlertMediaSpecialization>().where("\"AMS_ID\" = ? FOR UPDATE").bind(amsPtr.id()).limit(1);
         Wt::Dbo::ptr<AlertMediaSpecialization> amsP = session->find<AlertMediaSpecialization>().where("\"AMS_ID\" = ?").bind(amsPtr.id()).limit(1);
         ToolsEngine::log("info") << " [Class:AlertSender] " << "insert date of last send in db : " << now.toString();
         amsP.modify()->lastSend = now;
+        
+        alertTrackingPtr.modify()->sendDate = now;
     }
     catch (Wt::Dbo::Exception e)
     {
@@ -308,6 +312,7 @@ int AlertSender::send(Wt::Dbo::ptr<Alert> oldAlertPtr, Wt::Dbo::ptr<InformationV
                     
                     try
                     {
+//                        optionValue = session->find<OptionValue>().where("\"OPT_ID_OPT_ID\" = ?").bind(quotasms).where("\"ORG_ID_ORG_ID\" = ? FOR UPDATE").bind(idOrg).limit(1);
                         optionValue = session->find<OptionValue>().where("\"OPT_ID_OPT_ID\" = ?").bind(quotasms).where("\"ORG_ID_ORG_ID\" = ?").bind(idOrg).limit(1);
 
                         smsQuota = boost::lexical_cast<int>(optionValue.get()->value); 
@@ -368,6 +373,7 @@ int AlertSender::send(Wt::Dbo::ptr<Alert> oldAlertPtr, Wt::Dbo::ptr<InformationV
                     
                     try
                     {
+//                        optionValue = session->find<OptionValue>().where("\"OPT_ID_OPT_ID\" = ?").bind(quotasms).where("\"ORG_ID_ORG_ID\" = ? FOR UPDATE").bind(idOrg).limit(1);
                         optionValue = session->find<OptionValue>().where("\"OPT_ID_OPT_ID\" = ?").bind(quotasms).where("\"ORG_ID_ORG_ID\" = ?").bind(idOrg).limit(1);
 
                         smsQuota = boost::lexical_cast<int>(optionValue.get()->value); 

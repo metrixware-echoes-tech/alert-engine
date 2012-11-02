@@ -1,5 +1,6 @@
-# Modifié par FPO
-# 21/04/2012
+# 21/04/2012 Modifié par FPO
+# 23/10/2012 TSA : ajout de .dep.inc et de ce qui concerne la release
+#
 
 # on enlève tout ce qui est lié à la compilation (on ne laisse que les sources)
 /bin/
@@ -7,3 +8,6 @@
 /nbproject/private/
 /build/Debug/
 /dist/Debug/
+/build/Release/
+/dist/Release/
+.dep.inc
