@@ -39,7 +39,7 @@ SELECT pg_catalog.setval('"T_ALERT_ACKNOWLEDGE_ACK_ACK_ID_seq"', 1, false);
 -- Name: T_ALERT_ALE_ALE_ID_seq; Type: SEQUENCE SET; Schema: public; Owner: echoes
 --
 
-SELECT pg_catalog.setval('"T_ALERT_ALE_ALE_ID_seq"', 19, true);
+SELECT pg_catalog.setval('"T_ALERT_ALE_ALE_ID_seq"', 1, false);
 
 
 --
@@ -57,7 +57,7 @@ SELECT pg_catalog.setval('"T_ALERT_CRITERIA_ACR_ACR_ID_seq"', 6, true);
 -- Name: T_ALERT_MEDIA_SPECIALIZATION_AMS_AMS_ID_seq; Type: SEQUENCE SET; Schema: public; Owner: echoes
 --
 
-SELECT pg_catalog.setval('"T_ALERT_MEDIA_SPECIALIZATION_AMS_AMS_ID_seq"', 28, true);
+SELECT pg_catalog.setval('"T_ALERT_MEDIA_SPECIALIZATION_AMS_AMS_ID_seq"', 1, false);
 
 
 --
@@ -75,7 +75,7 @@ SELECT pg_catalog.setval('"T_ALERT_SEQUENCE_ASE_ASE_ID_seq"', 1, false);
 -- Name: T_ALERT_TRACKING_ATR_ATR_ID_seq; Type: SEQUENCE SET; Schema: public; Owner: echoes
 --
 
-SELECT pg_catalog.setval('"T_ALERT_TRACKING_ATR_ATR_ID_seq"', 6451, true);
+SELECT pg_catalog.setval('"T_ALERT_TRACKING_ATR_ATR_ID_seq"', 1, false);
 
 
 --
@@ -84,7 +84,7 @@ SELECT pg_catalog.setval('"T_ALERT_TRACKING_ATR_ATR_ID_seq"', 6451, true);
 -- Name: T_ALERT_TRACKING_EVENT_ATE_ATE_ID_seq; Type: SEQUENCE SET; Schema: public; Owner: echoes
 --
 
-SELECT pg_catalog.setval('"T_ALERT_TRACKING_EVENT_ATE_ATE_ID_seq"', 103, true);
+SELECT pg_catalog.setval('"T_ALERT_TRACKING_EVENT_ATE_ATE_ID_seq"', 1, false);
 
 
 --
@@ -93,7 +93,7 @@ SELECT pg_catalog.setval('"T_ALERT_TRACKING_EVENT_ATE_ATE_ID_seq"', 103, true);
 -- Name: T_ALERT_VALUE_AVA_AVA_ID_seq; Type: SEQUENCE SET; Schema: public; Owner: echoes
 --
 
-SELECT pg_catalog.setval('"T_ALERT_VALUE_AVA_AVA_ID_seq"', 19, true);
+SELECT pg_catalog.setval('"T_ALERT_VALUE_AVA_AVA_ID_seq"', 1, false);
 
 
 --
@@ -102,7 +102,7 @@ SELECT pg_catalog.setval('"T_ALERT_VALUE_AVA_AVA_ID_seq"', 19, true);
 -- Name: T_ASSET_AST_AST_ID_seq; Type: SEQUENCE SET; Schema: public; Owner: echoes
 --
 
-SELECT pg_catalog.setval('"T_ASSET_AST_AST_ID_seq"', 18, true);
+SELECT pg_catalog.setval('"T_ASSET_AST_AST_ID_seq"', 1, false);
 
 
 --
@@ -138,7 +138,7 @@ SELECT pg_catalog.setval('"T_INFORMATION_UNIT_TYPE_UTY_IUT_ID_seq"', 2, true);
 -- Name: T_INFORMATION_UNIT_UNT_INU_ID_seq; Type: SEQUENCE SET; Schema: public; Owner: echoes
 --
 
-SELECT pg_catalog.setval('"T_INFORMATION_UNIT_UNT_INU_ID_seq"', 7, true);
+SELECT pg_catalog.setval('"T_INFORMATION_UNIT_UNT_INU_ID_seq"', 6, true);
 
 
 --
@@ -165,7 +165,7 @@ SELECT pg_catalog.setval('"T_MEDIA_MED_MED_ID_seq"', 2, true);
 -- Name: T_MEDIA_VALUE_MEV_MEV_ID_seq; Type: SEQUENCE SET; Schema: public; Owner: echoes
 --
 
-SELECT pg_catalog.setval('"T_MEDIA_VALUE_MEV_MEV_ID_seq"', 95, true);
+SELECT pg_catalog.setval('"T_MEDIA_VALUE_MEV_MEV_ID_seq"', 1, false);
 
 
 --
@@ -174,7 +174,7 @@ SELECT pg_catalog.setval('"T_MEDIA_VALUE_MEV_MEV_ID_seq"', 95, true);
 -- Name: T_OPTION_OPT_OPT_ID_seq; Type: SEQUENCE SET; Schema: public; Owner: echoes
 --
 
-SELECT pg_catalog.setval('"T_OPTION_OPT_OPT_ID_seq"', 1, true);
+SELECT pg_catalog.setval('"T_OPTION_OPT_OPT_ID_seq"', 2, true);
 
 
 --
@@ -219,7 +219,7 @@ SELECT pg_catalog.setval('"T_PACK_PCK_PCK_ID_seq"', 1, true);
 -- Name: T_PLUGIN_PLG_PLG_ID_seq; Type: SEQUENCE SET; Schema: public; Owner: echoes
 --
 
-SELECT pg_catalog.setval('"T_PLUGIN_PLG_PLG_ID_seq"', 2, true);
+SELECT pg_catalog.setval('"T_PLUGIN_PLG_PLG_ID_seq"', 3, true);
 
 
 --
@@ -228,7 +228,7 @@ SELECT pg_catalog.setval('"T_PLUGIN_PLG_PLG_ID_seq"', 2, true);
 -- Name: T_PROBE_PRB_PRB_ID_seq; Type: SEQUENCE SET; Schema: public; Owner: echoes
 --
 
-SELECT pg_catalog.setval('"T_PROBE_PRB_PRB_ID_seq"', 20, true);
+SELECT pg_catalog.setval('"T_PROBE_PRB_PRB_ID_seq"', 1, false);
 
 
 --
@@ -372,7 +372,7 @@ SELECT pg_catalog.setval('auth_info_id_seq', 42, true);
 -- Name: auth_token_id_seq; Type: SEQUENCE SET; Schema: public; Owner: echoes
 --
 
-SELECT pg_catalog.setval('auth_token_id_seq', 909, true);
+SELECT pg_catalog.setval('auth_token_id_seq', 1, false);
 
 
 --
@@ -421,10 +421,10 @@ INSERT INTO "TJ_ACR_IUT" ("T_ALERT_CRITERIA_ACR_ACR_ID", "T_INFORMATION_UNIT_TYP
 -- Data for Name: T_ADDON_ADO; Type: TABLE DATA; Schema: public; Owner: echoes
 --
 
+INSERT INTO "T_ADDON_ADO" ("ADO_ID", version, "ADO_NAME", "ADO_DELETE") VALUES (1, 0, 'system(non exist)', NULL);
 INSERT INTO "T_ADDON_ADO" ("ADO_ID", version, "ADO_NAME", "ADO_DELETE") VALUES (2, 0, 'file', NULL);
 INSERT INTO "T_ADDON_ADO" ("ADO_ID", version, "ADO_NAME", "ADO_DELETE") VALUES (3, 0, 'log', NULL);
 INSERT INTO "T_ADDON_ADO" ("ADO_ID", version, "ADO_NAME", "ADO_DELETE") VALUES (4, 0, 'mysql', NULL);
-INSERT INTO "T_ADDON_ADO" ("ADO_ID", version, "ADO_NAME", "ADO_DELETE") VALUES (1, 0, 'system(non exist)', NULL);
 
 
 --
@@ -1154,84 +1154,6 @@ INSERT INTO auth_identity (id, version, auth_info_id, provider, identity) VALUES
 -- Data for Name: auth_token; Type: TABLE DATA; Schema: public; Owner: echoes
 --
 
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (550, 0, 3, 'fIMcZ.KEUza.2ojrV1YLvQ==', '2012-10-01 11:21:49.030862');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (5, 0, 3, 'G8aPniWU2L3u1hUPbFbFGQ==', '2012-09-27 00:23:06.032625');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (552, 0, 3, 'H7JLr0GVlQPqRME7TL2qrw==', '2012-10-01 11:23:03.671532');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (553, 0, 9, 'YfZbuq8femsVpFF31.ef2Q==', '2012-10-01 11:48:55.179964');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (849, 0, 40, 'R13G29GUhE8hELo6xcqdCg==', '2012-10-25 13:07:45.392387');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (559, 0, 3, '6tS2IITpvn7ycHTtewELvw==', '2012-10-01 12:34:32.154405');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (561, 0, 4, 'DdvehhnaA32QZQkIeec7Vg==', '2012-10-01 12:35:53.564204');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (622, 0, 4, 'UCeSj6e4ndRQSF4hvxuG7Q==', '2012-10-02 15:25:45.996531');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (772, 0, 20, 'dY7XSUfT8IdT.isuE66zAw==', '2012-10-19 15:07:51.417043');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (774, 0, 20, 'IAa0af6CiP8i2gI6/Us5ew==', '2012-10-19 15:10:24.276143');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (778, 0, 7, '.w9uy6LB0jFXwComto/3YQ==', '2012-10-19 15:22:55.095429');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (858, 0, 38, 'OcJciPtDgqaIeaPoIhWF5g==', '2012-10-26 11:25:30.233386');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (631, 0, 18, '0ubd8g4G3lTu44bWyQXedA==', '2012-10-04 07:43:40.471104');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (635, 0, 4, 'bh1ygXXd47HhSuWElzzFHg==', '2012-10-04 09:30:37.588066');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (862, 0, 38, '/g1DXCUi3moKevzBA3GrtQ==', '2012-10-26 15:24:36.343028');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (637, 0, 7, '1emjnLPIFnUTNxeuczwlIQ==', '2012-10-04 11:40:24.01641');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (34, 0, 4, '3pNAkCVtqgIplwEy0tl8UA==', '2012-09-27 09:01:47.325999');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (639, 0, 4, '5yTrrfm2UoVyrp70QJVqXQ==', '2012-10-04 17:35:40.437832');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (640, 0, 3, 'YMnCU3k2Pm8J5r8JVaVSkg==', '2012-10-05 07:39:33.281458');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (718, 0, 3, 'kaa3SrI6rHFfHzG5HbkyWA==', '2012-10-12 07:28:33.261604');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (644, 0, 3, 'y6QBUMF8kQGATmMWSDegdg==', '2012-10-09 18:13:38.282883');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (787, 0, 38, 'c67vKMmD..kCEEww8HaE3Q==', '2012-10-20 09:19:32.245095');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (721, 0, 3, '1wQ/z8F9AKwqZMXJED7B6g==', '2012-10-12 16:28:45.311966');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (722, 0, 6, 'nYFpIphVPhOStbQLYqz25g==', '2012-10-12 16:58:47.553704');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (589, 0, 4, '6Xj3Fhvd1EfKB3p97BPkkw==', '2012-10-01 23:21:29.461682');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (650, 0, 3, 'z2YfbB6hIbVsUI9KZ.bD3A==', '2012-10-09 18:17:32.10024');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (869, 0, 18, 'eGrYluXbEaUOXtmvJLr5oA==', '2012-10-29 13:41:59.089799');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (595, 0, 4, 'bAIIgzD1slVSBpXG0XmiUw==', '2012-10-01 23:26:18.034887');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (727, 0, 7, 'CVIJkWY75JEFdKKAFu83ag==', '2012-10-15 07:25:33.051263');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (656, 0, 3, 'fAdTROH9.5UFEMNAqqoIfw==', '2012-10-09 18:20:34.716211');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (657, 0, 4, 'kGOnOCxwMb9e2/ZCPcB7Pg==', '2012-10-09 18:20:52.272939');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (733, 0, 4, '2pHPSs2cAnR7AY22sL/ONQ==', '2012-10-16 14:02:34.508228');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (661, 0, 3, 'B/v1q31SEesVQQ2i1wmfEQ==', '2012-10-09 18:22:20.344865');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (877, 0, 38, 'daa45x7ozUMugNhNmbuZQA==', '2012-10-30 09:32:58.437461');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (738, 0, 3, 'qUsYm0zqD6xa21vjxarskQ==', '2012-10-17 06:58:31.220202');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (800, 0, 3, 'yS9Wci1tbo5Smo2x6NOhHg==', '2012-10-20 12:31:47.300508');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (665, 0, 4, 'b4fWvUovCIMrPtCwdyOEuw==', '2012-10-09 18:33:47.000478');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (666, 0, 4, 'WVqHxUylHIyqEfo8a4UwhQ==', '2012-10-09 18:33:54.19768');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (743, 0, 17, '6y4KSt.Fj9NEuOW6A8m3XA==', '2012-10-17 08:19:30.411135');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (804, 0, 38, '6araRWHplvtqC6aHQ6iUOQ==', '2012-10-20 14:38:02.84048');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (883, 0, 38, 'OthIjQAmiJwMXbStMx/XJQ==', '2012-11-01 13:28:32.711669');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (673, 0, 4, 'Bov.1JLFggcXTEwdUd1JuA==', '2012-10-09 20:33:17.451898');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (746, 0, 19, 'lq2gDEKi60i9kPov/eeZCQ==', '2012-10-17 09:17:59.535444');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (808, 0, 38, 'AyIfcwILREW/5yO3MeOlpw==', '2012-10-20 15:06:49.053859');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (815, 0, 4, 'blAyzDgdufqtjdm.ND0CPA==', '2012-10-20 15:40:19.242691');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (756, 0, 6, 'cKJldoKuu1kGAbUhAujuNw==', '2012-10-19 09:27:20.772908');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (898, 0, 20, '6rZqrBJnLvggxtgHuE6JiQ==', '2012-11-06 09:02:20.704749');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (825, 0, 21, 'c3g7rXGDBigBBvoeZqniXA==', '2012-10-21 14:23:46.176994');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (826, 0, 17, 'MKDLA0UI/7c/WlyKM/V/GA==', '2012-10-22 07:09:20.700425');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (832, 0, 38, '.iTZIAHfHEn96PXCx.oAEw==', '2012-10-22 10:35:01.366507');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (905, 0, 6, 'sg/z170GV62A0MYRUNwAYg==', '2012-11-07 10:18:25.711456');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (834, 0, 38, '8HbeT2sr91cqC9RVg4wP3g==', '2012-10-22 13:47:43.535347');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (907, 0, 19, '974e0qXvwpd9y8Q6e4Tsag==', '2012-11-08 10:01:33.151095');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (908, 0, 3, 'nwr4./aEbrc2PlCE0.dcVw==', '2012-11-08 15:13:53.673339');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (909, 0, 4, '8rqBKI4brwhtrDndAS8dwg==', '2012-11-09 09:59:10.147385');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (99, 0, 6, '6RZTVHWAFfOTnz9Ra1UOAw==', '2012-09-27 09:59:32.776988');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (102, 0, 7, 'b3rmmXVc1lp93Ecg3TlYAA==', '2012-09-27 10:00:45.863651');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (103, 0, 8, 'hW.dh2lyCTVxxqN.efvKaw==', '2012-09-27 10:00:48.332579');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (104, 0, 4, 'AVkG0qkpjrxtNUPaeX.Pig==', '2012-09-27 10:03:22.301355');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (144, 0, 3, '283gM8loxHXEKf7lWT69DA==', '2012-09-27 11:51:30.843337');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (163, 0, 10, '7nOL90.q/h1rvH/Ow0XgFw==', '2012-09-27 12:44:10.831373');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (182, 0, 4, 'cckRARFgy/WbDgf9zk1oOw==', '2012-09-27 14:03:41.242165');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (276, 0, 9, '3jL.BZeugejApFwAfUILXg==', '2012-09-27 18:32:29.837069');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (290, 0, 9, 'jZz2uUgBst8oG8Y27QUg2w==', '2012-09-27 19:06:48.841854');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (370, 0, 6, 'TrpzfLksg9djPhRutKmSMQ==', '2012-09-27 22:28:45.50984');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (384, 0, 12, 'b8D5x758b2LXkx.ZH6k68g==', '2012-09-27 23:04:14.09465');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (400, 0, 13, 'VPu29wKx6q.C32Ln1yYWvw==', '2012-09-28 08:47:59.647278');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (479, 0, 8, 'O0MVneGKyIzBdZ8z.8c06Q==', '2012-09-28 14:35:48.93408');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (499, 0, 10, 'u8bTyAMHxlgOe5gs15FZxQ==', '2012-09-28 23:56:36.081845');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (519, 0, 4, 'cK8HDKGyjoFESh3z8yXY/g==', '2012-10-01 09:09:02.224095');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (520, 0, 4, 'rHcPOc8Xdt5pqPmw1Ew6cw==', '2012-10-01 09:10:33.496749');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (527, 0, 3, 'OY41hXI0/ZNpQb85dNTXEA==', '2012-10-01 09:15:34.84708');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (528, 0, 4, 'NJ.WqvUiHdwFuxhOGo8qJg==', '2012-10-01 09:16:23.649036');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (529, 0, 3, 'uOV/pINRAUejkeeYzQA3nQ==', '2012-10-01 09:22:34.436392');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (541, 0, 4, 'EFVwNxQ0APechzQkLXYWYA==', '2012-10-01 10:05:22.471906');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (543, 0, 4, '0qciV6Nn1BnHdgsJNMnGHg==', '2012-10-01 10:52:18.692107');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (544, 0, 3, 'tO/UBJho/O.y0FgD0n5ucw==', '2012-10-01 11:06:45.664899');
-INSERT INTO auth_token (id, version, auth_info_id, value, expires) VALUES (547, 0, 3, '9NKZbXkn6AOjs/igRiEEWQ==', '2012-10-01 11:14:15.843231');
 
 
 -- Completed on 2012-10-28 19:39:46 CET
