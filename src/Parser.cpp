@@ -302,7 +302,7 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
         InformationValue *informationValueToAdd = new InformationValue();
         InformationHistoricalValue *informationHistoricalValueToAdd = new InformationHistoricalValue();
         long long ivaAddedId = -1;
-        bool calculate = false;
+        Wt::WString calculate = Wt::WString::Empty;
         try 
         {   
             ToolsEngine::log("debug") << " [Class:Parser] " << "Starting transaction to get values to process." ;
@@ -369,7 +369,10 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
                         << valueNum << "-"
                         << ptrSearchUnit.get()->informationUnit.id();
                 ToolsEngine::log("debug") << " [Class:Parser] " << "calculate found : " << ptrInfTmp.get()->calculate;
-                calculate = ptrInfTmp.get()->calculate;
+                if (ptrInfTmp.get()->calculate)
+                {
+                    calculate = ptrInfTmp.get()->calculate.get();
+                }
             }
             else
             {
@@ -397,7 +400,7 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
             informationHistoricalValueToAdd->lineNumber = lineNumber;            
             informationHistoricalValueToAdd->asset = ptrAstTmp;
             
-            if (calculate)
+            if (!calculate.empty())
             {
                 informationHistoricalValueToAdd->state = 9;
                 posKeyValue = ptrInfTmp.get()->pk.search.get()->pos_key_value;
@@ -445,7 +448,7 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
         
         ToolsEngine::log("debug") << " [Class:Parser] " << "Calculate or not ?" ;
         
-        if (calculate)
+        if (!calculate.empty())
         {
             try
             {
@@ -453,15 +456,18 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
                 Wt::Dbo::ptr<InformationValue> ptrIva = te->sessionParser->find<InformationValue>().where("\"IVA_ID\" = ?").bind(ivaAddedId);
                 if (ptrIva)
                 {
-                    std::string queryStr = "SELECT calculate_avg_iva(" + boost::lexical_cast<std::string>(ptrIva.get()->information.get()->pk.search.get()->pk.id)
+                    std::string queryStr = "SELECT " + calculate.toUTF8() + "(" + boost::lexical_cast<std::string>(ptrIva.get()->information.get()->pk.search.get()->pk.id)
                                         + "," + boost::lexical_cast<std::string>(ptrIva.get()->information.get()->pk.search.get()->pk.source.get()->pk.id)
                                         + "," + boost::lexical_cast<std::string>(ptrIva.get()->information.get()->pk.search.get()->pk.source.get()->pk.plugin.id())
                                         + "," + boost::lexical_cast<std::string>(ptrIva.get()->information.get()->pk.subSearchNumber)
                                         + "," + boost::lexical_cast<std::string>(ptrIva.get()->information.get()->pk.unit.id())
-                                        + ",9"
+                                        + "," + boost::lexical_cast<std::string>(ptrIva.get()->lotNumber)
+                                        + ",9" //state
                                         + "," + boost::lexical_cast<std::string>(ptrIva.get()->lineNumber)
                                         + "," + boost::lexical_cast<std::string>(ptrIva.get()->asset.id())
-                                        + ",10);";
+                                        + ",10"; // limit
+                                        + "," + boost::lexical_cast<std::string>(ptrIva.id())
+                                        + ");";
                     ToolsEngine::log("debug") << " [Class:Parser] calc query : " << queryStr;
                     te->sessionParser->execute(queryStr);
                 }
