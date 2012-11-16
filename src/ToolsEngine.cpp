@@ -84,7 +84,7 @@ int ToolsEngine::configFileLoad(std::string fileLocation)
     //criticity = boost::lexical_cast<int>(parameters["log-criticity"]);
     //set the log criticity
     
-    switch (criticity)
+    switch (ToolsEngine::criticity)
     {
         case debug:
         {
@@ -98,22 +98,22 @@ int ToolsEngine::configFileLoad(std::string fileLocation)
         } 
         case warning:
         {
-                ToolsEngine::logger.configure("* -debug - info");
+                ToolsEngine::logger.configure("* -debug -info");
                 break;
         } 
         case secure:
         {
-                ToolsEngine::logger.configure("* -debug - info -warning");
+                ToolsEngine::logger.configure("* -debug -info -warning");
                 break;
         } 
         case error:
         {
-                ToolsEngine::logger.configure("* -debug - info -warning -secure");
+                ToolsEngine::logger.configure("* -debug -info -warning -secure");
                 break;
         }  
         case fatal:
         {
-                ToolsEngine::logger.configure("* -debug - info -warning -secure -error");
+                ToolsEngine::logger.configure("* -debug -info -warning -secure -error");
                 break;
         }
         default:
