@@ -17,8 +17,8 @@
 #include <Wt/WLogger>
 
 //include for config file
-#include <boost/config.hpp>
 #include <boost/program_options/detail/config_file.hpp>
+#include <boost/config.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <iostream>
 #include <fstream>
@@ -37,7 +37,7 @@ public:
     /**
      * class' builder
      */       
-    ToolsEngine();
+    ToolsEngine(std::string confFile);
     virtual ~ToolsEngine();
     
    /**
@@ -55,6 +55,8 @@ public:
     static Wt::WLogEntry log(std::string criticity);
     static int criticity; //log criticity
     std::string sqlCredentials;
+    std::string apiUrl;
+    std::string logFile;
     int sleepThreadReadDatasMilliSec; //the milliseconds to wait between each loop in our process (reading the database for new info)
     int sleepThreadCheckAlertMilliSec; //the milliseconds to wait between each loop in our process ( calculate alerts)
     int sleepThreadRemoveOldValues; //the milliseconds to wait between each old values cleaning

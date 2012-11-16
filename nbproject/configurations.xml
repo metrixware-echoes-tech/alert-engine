@@ -108,6 +108,7 @@
             <pElem>../dbo/include</pElem>
             <pElem>/var/lib/jenkins/jobs/ea-dbo/workspace/include</pElem>
           </incDir>
+          <commandLine>-DNDEBUG</commandLine>
         </ccTool>
         <fortranCompilerTool>
           <developmentMode>5</developmentMode>

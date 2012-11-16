@@ -119,9 +119,9 @@ int AlertSender::sendSMS(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt:
         message.addBodyText(bodyText);
         message.setHeader("Content-Type", "application/x-www-form-urlencoded");
 
-        std::string apiAddress = "https://sms/netsize/send";
+        std::string apiAddress = te->apiUrl;
         ToolsEngine::log("info") << " [Class:AlertSender] " << "[SMS] Trying to send request to API. Address : " << apiAddress;
-        //client->post(apiAddress, message);
+        client->post(apiAddress, message);
 
 
         //SQL transaction to commit the date

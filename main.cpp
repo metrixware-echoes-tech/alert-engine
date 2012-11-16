@@ -6,6 +6,8 @@
 #include <tools/Session.h>
 #include "ToolsEngine.h"
 #include <boost/thread/thread.hpp>
+#include <boost/program_options.hpp>
+#include <boost/program_options/variables_map.hpp>
 
 
 ToolsEngine *te;
@@ -17,18 +19,74 @@ void removeOldValues();
 Wt::WLogger ToolsEngine::logger;
 boost::mutex ToolsEngine::mutex;
 //default criticity to log before reading file config : debug = 1 / info = 2 / warning = 3 / secure = 4 / error = 5/ fatal = 6
-int ToolsEngine::criticity = 2;
+int ToolsEngine::criticity = 1;
 
-int main()
+int main(int argc, char *argv[])
 {  
-    ToolsEngine::logger.setFile("/tmp/engine.log");
+    // Declare the supported options.
+    boost::program_options::options_description desc("Allowed options");
+    desc.add_options()
+        ("help", "That is where you are, it displays help and quits.")
+        ("logfile", boost::program_options::value<std::string>(), "logfile path")
+        ("logcriticity", boost::program_options::value<int>(), "log criticity level : debug = 1 / info = 2 / warning = 3 / secure = 4 / error = 5/ fatal = 6")
+        ("conffile", boost::program_options::value<std::string>(), "conffile path")
+    ;
+
+    boost::program_options::variables_map vm;
+    boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
+    boost::program_options::notify(vm);    
+    std::string confFile = "engine.conf";
+    
+    if (vm.count("help")) {
+        std::cout << desc << "\n";
+        return 0;
+    }
+
+    if (vm.count("logfile")) 
+    {
+        ToolsEngine::logger.setFile(vm["logfile"].as<std::string>());
+    } 
+    else 
+    {
+        ToolsEngine::logger.setFile("/tmp/engine.log");
+    }
+    
+    if (vm.count("logcriticity")) 
+    {
+        ToolsEngine::criticity = vm["logcriticity"].as<int>();
+    } 
+    std::cout << "INFO: log criticity = " << ToolsEngine::criticity << "\n"; 
+    
+    if (vm.count("conffile")) 
+    {
+        confFile = vm["conffile"].as<std::string>();
+    } 
+    std::cout << "INFO: conf file = " << confFile << "\n"; 
+
+    
+    /* Daemonization */
+    #ifdef NDEBUG
+        if(chdir("/") != 0)
+        {
+            std::cerr << "failed to reach root \n";
+            return EXIT_FAILURE;
+        }
+        if(fork() != 0)
+            exit(EXIT_SUCCESS);
+        setsid();
+        if(fork() != 0)
+            exit(EXIT_SUCCESS);
+    #endif
+    
+    
     //TODO : verif si le dossier n'existe pas le créer
     ToolsEngine::logger.addField("type",false);
     ToolsEngine::logger.addField("datetime",false);
     ToolsEngine::logger.addField("message", true);
     ToolsEngine::logger.configure("-debug");
     
-    te = new ToolsEngine();
+    te = new ToolsEngine(confFile);
+    
 
     //création des tables de la bdd (to remove)    
     try 

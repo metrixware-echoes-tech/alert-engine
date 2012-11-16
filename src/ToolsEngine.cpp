@@ -4,7 +4,7 @@
 bool ToolsEngine::alreadyCreated = false;
 
 
-ToolsEngine::ToolsEngine() {
+ToolsEngine::ToolsEngine(std::string confFile) {
     if (alreadyCreated)
     {
             ToolsEngine::log("error") << " [Class:ToolsEngine] " << "Can't create a second instance of the singleton class";
@@ -13,7 +13,7 @@ ToolsEngine::ToolsEngine() {
     alreadyCreated = true;
     
     //loading config file
-    if (configFileLoad("engine.conf") == -1)
+    if (configFileLoad(confFile) == -1)
     {
         ToolsEngine::log("fatal") << " [Class:ToolsEngine] " << "Can't load config file";
         exit(0);
@@ -77,11 +77,13 @@ int ToolsEngine::configFileLoad(std::string fileLocation)
                      " dbname=" + parameters["database-name"] +
                      " user=" + parameters["database-login"] +
                      " password=" + parameters["database-password"];
+    apiUrl = parameters["api-url"];
     sleepThreadReadDatasMilliSec = boost::lexical_cast<int>(parameters["sleep-database-reading"]);
     sleepThreadCheckAlertMilliSec = boost::lexical_cast<int>(parameters["sleep-alert-reading"]);
     sleepThreadRemoveOldValues = boost::lexical_cast<int>(parameters["sleep-remove-old-values"]);
-    criticity = boost::lexical_cast<int>(parameters["log-criticity"]);
+    //criticity = boost::lexical_cast<int>(parameters["log-criticity"]);
     //set the log criticity
+    
     switch (criticity)
     {
         case debug:
