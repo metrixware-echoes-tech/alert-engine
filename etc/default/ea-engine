@@ -1,2 +1,2 @@
 # Additional options that are passed to the Daemon.
-DAEMON_ARGS="--conffile /opt/echoes-alert/etc/engine.conf --logfile /var/log/echoes-alert/engine.log --logcriticity 3"
+DAEMON_ARGS="--conffile /opt/echoes-alert/engine/etc/engine.conf --logfile /var/log/echoes-alert/engine.log --logcriticity 3"
