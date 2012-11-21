@@ -16,7 +16,7 @@ ToolsEngine::ToolsEngine(std::string confFile) {
     if (configFileLoad(confFile) == -1)
     {
         ToolsEngine::log("fatal") << " [Class:ToolsEngine] " << "Can't load config file";
-        exit(0);
+        exit(1);
     }
     //creating SQL sessions
     sessionParser = new Session(sqlCredentials);
@@ -46,44 +46,32 @@ int ToolsEngine::configFileLoad(std::string fileLocation)
 {
     int result = -1;
     
-    //load the config file
-    std::ifstream configFile(fileLocation.data());
-    if(!configFile)
-    {
-        ToolsEngine::log("error") << " [Class:ToolsEngine] "<< " Config file not found";
-    }
-    std::set<std::string> options;
-    std::map<std::string, std::string> parameters;
-    options.insert("*");
+    // Create an empty property tree object
+    using boost::property_tree::ptree;
+    ptree pt;
     
-    //reading the config file
+    // Load the INI file into the property tree. If reading fails
+    // (cannot open file, parse error), an exception is thrown.
     try
     {
-        for(boost::program_options::detail::config_file_iterator i(configFile, options), e; i != e ; ++i)
-        {
-            ToolsEngine::log("debug") << " [Class:main] "<< " Config file reading :" << i->string_key <<"  " << i->value[0];
-            parameters[i->string_key] = i->value[0];
-        }
-        result = 0;
+        boost::property_tree::read_ini(fileLocation, pt);
+        sqlCredentials = "hostaddr=" + pt.get<std::string>("database-hostname") + 
+                     " port=" + pt.get<std::string>("database-port") + 
+                     " dbname=" + pt.get<std::string>("database-name") +
+                     " user=" + pt.get<std::string>("database-login") +
+                     " password=" + pt.get<std::string>("database-password");
+        apiUrl = pt.get<std::string>("api-url");
+        sleepThreadReadDatasMilliSec = pt.get<int>("sleep-database-reading");
+        sleepThreadCheckAlertMilliSec =pt.get<int>("sleep-alert-reading");
+        sleepThreadRemoveOldValues = pt.get<int>("sleep-remove-old-values");
+        result = 1;
     }
-    catch(std::exception& e)
+    catch (boost::property_tree::ini_parser_error e)
     {
-            ToolsEngine::log("error") << " [Class:main] "<< "Config file reading failed : " << e.what();
-    }  
-    //filling variables with the collected datas in the config file
-    //parcourir la map !!       
-    sqlCredentials = "hostaddr=" + parameters["database-hostname"] + 
-                     " port=" + parameters["database-port"] + 
-                     " dbname=" + parameters["database-name"] +
-                     " user=" + parameters["database-login"] +
-                     " password=" + parameters["database-password"];
-    apiUrl = parameters["api-url"];
-    sleepThreadReadDatasMilliSec = boost::lexical_cast<int>(parameters["sleep-database-reading"]);
-    sleepThreadCheckAlertMilliSec = boost::lexical_cast<int>(parameters["sleep-alert-reading"]);
-    sleepThreadRemoveOldValues = boost::lexical_cast<int>(parameters["sleep-remove-old-values"]);
-    //criticity = boost::lexical_cast<int>(parameters["log-criticity"]);
-    //set the log criticity
+        Wt::log("error") << "[TE] " << e.what();
+    }
     
+
     switch (ToolsEngine::criticity)
     {
         case debug:

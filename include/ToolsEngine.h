@@ -27,6 +27,9 @@
 #include <boost/thread/mutex.hpp>
 #include <Wt/WIOService>
 
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/ini_parser.hpp>
+
 class ToolsEngine;
 
 extern ToolsEngine *te;
