@@ -136,9 +136,9 @@ int main(int argc, char *argv[])
     boost::thread_group threadsEngine;
     
     // execute the method checkNewDatas() removeOldValues() checkNewAlerts() in parallel
-//    threadsEngine.create_thread(&checkNewDatas);
+    threadsEngine.create_thread(&checkNewDatas);
     threadsEngine.create_thread(&checkNewAlerts);
-    //threadsEngine.create_thread(&removeOldValues);
+    threadsEngine.create_thread(&removeOldValues);
  
     // wait the end of the created thread
    threadsEngine.join_all();
@@ -260,7 +260,7 @@ void removeOldValues()
         try
         {
             Wt::Dbo::Transaction transaction(*(te->sessionOldValues));
-            std::string queryString = "DELETE \"T_INFORMATION_VALUE_IVA\""
+            std::string queryString = "DELETE FROM \"T_INFORMATION_VALUE_IVA\""
                                         " WHERE"
                                         " \"IVA_STATE\" = 0"
                                         " AND \"IVA_CREA_DATE\" < (NOW() - interval '1 day')";
@@ -276,8 +276,8 @@ void removeOldValues()
         try
         {
             Wt::Dbo::Transaction transaction(*(te->sessionOldValues));
-            std::string queryString = "DELETE \"T_SYSLOG_SLO\""
-                                        " WHERE SLO_STATE != 0"
+            std::string queryString = "DELETE FROM \"T_SYSLOG_SLO\""
+                                        " WHERE \"SLO_STATE\" != 0"
                                         " AND \"SLO_RCPT_DATE\" < (NOW() - interval '1 day')";
             te->sessionOldValues->execute(queryString);
             transaction.commit();

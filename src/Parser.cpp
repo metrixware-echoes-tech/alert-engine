@@ -78,6 +78,22 @@ int Parser::unserializeStructuredData(long long ptrSyslogId)
                 //we have parsed the properties sd-element
                 prop=true;
             }
+            else
+            {
+                try
+                {
+                    Wt::Dbo::Transaction transaction(*(te->sessionParser));
+                    ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslogId).limit(1);
+                    ptrSyslogTmp.modify()->state = 12;
+                    transaction.commit();
+                    return res;
+                }
+                catch (Wt::Dbo::Exception e)
+                {
+                    ToolsEngine::log("error") << " [Class:Parser] " << e.what();
+                    return res;
+                }
+            }
             
         }
         else
@@ -87,6 +103,10 @@ int Parser::unserializeStructuredData(long long ptrSyslogId)
                 tempString.clear();
                 res = 0;
             }
+            else
+            {
+                return res;
+            }
         }
     }
     return res;
@@ -95,69 +115,115 @@ int Parser::unserializeStructuredData(long long ptrSyslogId)
 int Parser::unserializeProperties(std::string& strProperties, long long ptrSyslogId)
 {
     ToolsEngine::log("debug") << " [Class:Parser] " << " Unserialize properties begin" ;
-    //example of string to parse : prop@5875 ver=1 probe=12 token
+    //example of string to parse : prop@5875 ver=1 probe=12 token="tokentokentokentokentoken"
+    
     //we parse the first sd-element
-    //table to save the equal positions in the first sd-element
-    size_t tbEquals[1];
-    size_t space;
-    tbEquals[0] = strProperties.find('=',0);
-    space = strProperties.find(' ',tbEquals[0]+1);
-    tbEquals[1] = strProperties.find('=',space);
+    std::vector<std::string> globalSplitResult;
+    boost::split(globalSplitResult, strProperties, boost::is_any_of(" "), boost::token_compress_on);
+    
+    // 0 prop@5875
+    // 1 ver=1 
+    //2 probe=12 
+    //3 token="tokentokentokentokentoken"
+    
+    std::vector<std::string> keyValueProbeIdSplitResult;
+    boost::split(keyValueProbeIdSplitResult, globalSplitResult[2], boost::is_any_of("="), boost::token_compress_on);
+    
+    std::vector<std::string> keyValueVersionSplitResult;
+    boost::split(keyValueVersionSplitResult, globalSplitResult[1], boost::is_any_of("="), boost::token_compress_on);
+    
+    std::vector<std::string> keyValueTokenSplitResult;
+    boost::split(keyValueTokenSplitResult, globalSplitResult[3], boost::is_any_of("="), boost::token_compress_on);
+    
     Wt::Dbo::ptr<Probe> ptrProbe;
     int idProbeTmp;
+    std::string probeToken;
     Wt::Dbo::ptr<Syslog> ptrSyslogTmp;
     Wt::Dbo::ptr<SyslogHistory> ptrSyslogHistoryTmp;
     
     //result
     int res = -1;
-    
-    
+
     //parse idProbe :
-    idProbeTmp = boost::lexical_cast<int>(strProperties.substr(tbEquals[1]+1,strProperties.length()-(tbEquals[1]+1)));
+    idProbeTmp = boost::lexical_cast<int>(keyValueProbeIdSplitResult[1]);
+    probeToken = boost::lexical_cast<std::string>(keyValueTokenSplitResult[1]);
     
     //SQL session
+    try 
     {
-        try 
+        ToolsEngine::log("debug") << " [Class:Parser] " << " check token" ;
+        Wt::Dbo::Transaction transaction(*(te->sessionParser));
+        Wt::Dbo::ptr<Probe> ptrProbe = te->sessionParser->find<Probe>().where("\"PRB_ID\" = ?").bind(idProbeTmp).limit(1);
+        
+        if (ptrProbe.id() < 0)
         {
-            ToolsEngine::log("debug") << " [Class:Parser] " << " transaction update slo opened" ;
-            Wt::Dbo::Transaction transaction3(*(te->sessionParser));
-            //we fill the local copy of the syslo pointer with the id of the received syslog
-//            ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ? FOR UPDATE").bind(ptrSyslog.id()).limit(1);
-            ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslogId).limit(1);
-            ptrSyslogTmp.modify()->version = boost::lexical_cast<int>(strProperties.substr(tbEquals[0]+1,space-(tbEquals[0]+1)));      
-
-            //we find the probe that have the id of the received syslog and get its pointer
-//            ptrProbe = te->sessionParser->find<Probe>().where("\"PRB_ID\" = ? FOR UPDATE").bind(idProbeTmp).limit(1);
-            ptrProbe = te->sessionParser->find<Probe>().where("\"PRB_ID\" = ?").bind(idProbeTmp).limit(1);
-
-            //we modify the probe in the local copy of the syslog pointer with the getted object
-            ptrSyslogTmp.modify()->probe = ptrProbe;
-            
-            ptrSyslogHistoryTmp = te->sessionParser->find<SyslogHistory>().where("\"SLH_ID\" = ?").bind(ptrSyslogId).limit(1);
-            if (ptrSyslogHistoryTmp)
-            {
-                ptrSyslogHistoryTmp.modify()->version = boost::lexical_cast<int>(strProperties.substr(tbEquals[0]+1,space-(tbEquals[0]+1)));      
-                //we modify the probe in the local copy of the syslog pointer with the getted object
-                ptrSyslogHistoryTmp.modify()->probe = ptrProbe;
-
-                res = 0;
-            }
-            else
-            {
-                ToolsEngine::log("error") << " [Class:Parser] " << " slhnot found, id : " << ptrSyslogId ;
-            }
-            
-            res = 0;
-            transaction3.commit();
-            ToolsEngine::log("debug") << " [Class:Parser] " << " transaction update slo commited" ;
+            ToolsEngine::log("error") << " [Class:Parser] Unknown probe.";
+            transaction.commit();
+            return res;
         }
-        catch (Wt::Dbo::Exception e)
+        ToolsEngine::log("debug") << " [Class:Parser] Token received : " << probeToken;
+        ToolsEngine::log("debug") << " [Class:Parser] Token organization : " << ptrProbe.get()->organization.get()->token.toUTF8();
+                
+        if (probeToken.compare("\"" + ptrProbe.get()->organization.get()->token.toUTF8() + "\"") != 0)
         {
-            res = -1;
-            ToolsEngine::log("error") << " [Class:Parser] " << e.what();           
+            ToolsEngine::log("error") << " [Class:Parser] Token not matching organization token.";
+            transaction.commit();
+            return res;
+        }
+        else
+        {
+            ToolsEngine::log("debug") << " [Class:Parser] Token matching.";
         }
         
-    } 
+        transaction.commit();
+    }
+    catch (Wt::Dbo::Exception e)
+    {
+        res = -1;
+        ToolsEngine::log("error") << " [Class:Parser] " << e.what();           
+    }
+    
+    //SQL session
+    try 
+    {
+        ToolsEngine::log("debug") << " [Class:Parser] " << " transaction update slo opened" ;
+        Wt::Dbo::Transaction transaction3(*(te->sessionParser));
+        //we fill the local copy of the syslo pointer with the id of the received syslog
+//            ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ? FOR UPDATE").bind(ptrSyslog.id()).limit(1);
+        ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslogId).limit(1);
+        ptrSyslogTmp.modify()->version = boost::lexical_cast<int>(keyValueVersionSplitResult[1]);      
+
+        //we find the probe that have the id of the received syslog and get its pointer
+//            ptrProbe = te->sessionParser->find<Probe>().where("\"PRB_ID\" = ? FOR UPDATE").bind(idProbeTmp).limit(1);
+        ptrProbe = te->sessionParser->find<Probe>().where("\"PRB_ID\" = ?").bind(idProbeTmp).limit(1);
+
+        //we modify the probe in the local copy of the syslog pointer with the getted object
+        ptrSyslogTmp.modify()->probe = ptrProbe;
+
+        ptrSyslogHistoryTmp = te->sessionParser->find<SyslogHistory>().where("\"SLH_ID\" = ?").bind(ptrSyslogId).limit(1);
+        if (ptrSyslogHistoryTmp)
+        {
+            ptrSyslogHistoryTmp.modify()->version = boost::lexical_cast<int>(keyValueVersionSplitResult[1]);      
+            //we modify the probe in the local copy of the syslog pointer with the getted object
+            ptrSyslogHistoryTmp.modify()->probe = ptrProbe;
+
+            res = 0;
+        }
+        else
+        {
+            ToolsEngine::log("error") << " [Class:Parser] " << " slhnot found, id : " << ptrSyslogId ;
+        }
+
+        res = 0;
+        transaction3.commit();
+        ToolsEngine::log("debug") << " [Class:Parser] " << " transaction update slo commited" ;
+    }
+    catch (Wt::Dbo::Exception e)
+    {
+        res = -1;
+        ToolsEngine::log("error") << " [Class:Parser] " << e.what();           
+    }
+        
     return res;
 }
 
@@ -368,9 +434,10 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
                         << idPlugin << "-"
                         << valueNum << "-"
                         << ptrSearchUnit.get()->informationUnit.id();
-                ToolsEngine::log("debug") << " [Class:Parser] " << "calculate found : " << ptrInfTmp.get()->calculate;
+                ToolsEngine::log("debug") << " [Class:Parser] " << "calculate found.";
                 if (ptrInfTmp.get()->calculate)
                 {
+                    ToolsEngine::log("debug") << " [Class:Parser] " << "calculate value : " << ptrInfTmp.get()->calculate;
                     calculate = ptrInfTmp.get()->calculate.get();
                 }
             }

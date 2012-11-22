@@ -7,7 +7,7 @@ bool ToolsEngine::alreadyCreated = false;
 ToolsEngine::ToolsEngine(std::string confFile) {
     if (alreadyCreated)
     {
-            ToolsEngine::log("error") << " [Class:ToolsEngine] " << "Can't create a second instance of the singleton class";
+        ToolsEngine::log("error") << " [Class:ToolsEngine] " << "Can't create a second instance of the singleton class";
     }
     // Sinon, on construit la classe et on déclare l'objet créé
     alreadyCreated = true;
@@ -17,6 +17,10 @@ ToolsEngine::ToolsEngine(std::string confFile) {
     {
         ToolsEngine::log("fatal") << " [Class:ToolsEngine] " << "Can't load config file";
         exit(1);
+    }
+    else
+    {
+        ToolsEngine::log("info") << " [Class:ToolsEngine] " << "conf file loaded";
     }
     //creating SQL sessions
     sessionParser = new Session(sqlCredentials);
