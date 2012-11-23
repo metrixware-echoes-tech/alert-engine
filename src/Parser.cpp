@@ -426,6 +426,8 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
             //here we check whether we have to calculate something about the information
             ToolsEngine::log("debug") << " [Class:Parser] " << "Calculate this info ? : "<< ptrInfTmp.get();
             ToolsEngine::log("debug") << " [Class:Parser] " << "Calculate?";
+
+
             if (ptrInfTmp.get())
             {
                 ToolsEngine::log("debug") << " [Class:Parser] " << "Info exists. Looking for : " 
@@ -437,8 +439,10 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
                 ToolsEngine::log("debug") << " [Class:Parser] " << "calculate found.";
                 if (ptrInfTmp.get()->calculate)
                 {
-                    ToolsEngine::log("debug") << " [Class:Parser] " << "calculate value : " << ptrInfTmp.get()->calculate;
-                    calculate = ptrInfTmp.get()->calculate.get();
+                    if (!ptrInfTmp.get()->calculate.get().empty())
+                    {
+                        calculate = ptrInfTmp.get()->calculate.get();
+                    }
                 }
             }
             else
@@ -513,47 +517,7 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
             return res;
         }
         
-        ToolsEngine::log("debug") << " [Class:Parser] " << "Calculate or not ?" ;
         
-        if (!calculate.empty())
-        {
-            try
-            {
-                Wt::Dbo::Transaction transaction6(*(te->sessionParser));
-                Wt::Dbo::ptr<InformationValue> ptrIva = te->sessionParser->find<InformationValue>().where("\"IVA_ID\" = ?").bind(ivaAddedId);
-                if (ptrIva)
-                {
-                    std::string queryStr = "SELECT " + calculate.toUTF8() + "(" + boost::lexical_cast<std::string>(ptrIva.get()->information.get()->pk.search.get()->pk.id)
-                                        + "," + boost::lexical_cast<std::string>(ptrIva.get()->information.get()->pk.search.get()->pk.source.get()->pk.id)
-                                        + "," + boost::lexical_cast<std::string>(ptrIva.get()->information.get()->pk.search.get()->pk.source.get()->pk.plugin.id())
-                                        + "," + boost::lexical_cast<std::string>(ptrIva.get()->information.get()->pk.subSearchNumber)
-                                        + "," + boost::lexical_cast<std::string>(ptrIva.get()->information.get()->pk.unit.id())
-                                        + "," + boost::lexical_cast<std::string>(ptrIva.get()->lotNumber)
-                                        + ",9" //state
-                                        + "," + boost::lexical_cast<std::string>(ptrIva.get()->lineNumber)
-                                        + "," + boost::lexical_cast<std::string>(ptrIva.get()->asset.id())
-                                        + ",10"; // limit
-                                        + "," + boost::lexical_cast<std::string>(ptrIva.id())
-                                        + ");";
-                    ToolsEngine::log("debug") << " [Class:Parser] calc query : " << queryStr;
-                    te->sessionParser->execute(queryStr);
-                }
-                else
-                {
-                    ToolsEngine::log("error") << " [Class:Parser] " << "IVA not found. Id : " + ivaAddedId ;
-                    res = -1;
-                    return res;
-                }
-                transaction6.commit();
-            }
-            catch (Wt::Dbo::Exception e)
-            {
-                ToolsEngine::log("error") << " [Class:Parser] " << e.what() ;
-                res = -1;
-                return res;
-            }
-            res = res + 0;
-        }
     } 
     ToolsEngine::log("debug") << " [Class:Parser] " << "End of value unserialization." ;  
     return res;

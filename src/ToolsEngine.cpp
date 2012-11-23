@@ -27,6 +27,7 @@ ToolsEngine::ToolsEngine(std::string confFile) {
     sessionParserGlobal = new Session(sqlCredentials);
     sessionAlertProcessor = new Session(sqlCredentials);
     sessionOldValues = new Session(sqlCredentials);
+    sessionCalculate = new Session(sqlCredentials);
     
     ioService = new Wt::WIOService();
     ioService->start();
@@ -68,6 +69,11 @@ int ToolsEngine::configFileLoad(std::string fileLocation)
         sleepThreadReadDatasMilliSec = pt.get<int>("sleep-database-reading");
         sleepThreadCheckAlertMilliSec =pt.get<int>("sleep-alert-reading");
         sleepThreadRemoveOldValues = pt.get<int>("sleep-remove-old-values");
+        sleepThreadCalculate = pt.get<int>("sleep-calculate");
+        parser = pt.get<bool>("parser");
+        alerter = pt.get<bool>("alerter");
+        cleaner = pt.get<bool>("cleaner");
+        calculator = pt.get<bool>("calculator");
         result = 1;
     }
     catch (boost::property_tree::ini_parser_error e)
@@ -119,4 +125,21 @@ int ToolsEngine::configFileLoad(std::string fileLocation)
 //      ToolsEngine::log("info") << " [Class:main] "<< sleepThreadCheckAlertMilliSec;
       
       return result;
+}
+
+bool ToolsEngine::isParser()
+{
+    return this->parser;
+}
+bool ToolsEngine::isAlerter()
+{
+    return this->alerter;
+}
+bool ToolsEngine::isCleaner()
+{
+    return this->cleaner;
+}
+bool ToolsEngine::isCalculator()
+{
+    return this->calculator;
 }

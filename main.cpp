@@ -15,6 +15,7 @@ ToolsEngine *te;
 void checkNewDatas();
 void checkNewAlerts();
 void removeOldValues();
+void calculate();
 
 Wt::WLogger ToolsEngine::logger;
 boost::mutex ToolsEngine::mutex;
@@ -136,12 +137,25 @@ int main(int argc, char *argv[])
     boost::thread_group threadsEngine;
     
     // execute the method checkNewDatas() removeOldValues() checkNewAlerts() in parallel
-    threadsEngine.create_thread(&checkNewDatas);
-    threadsEngine.create_thread(&checkNewAlerts);
-    threadsEngine.create_thread(&removeOldValues);
+    if (te->isParser())
+    {
+        threadsEngine.create_thread(&checkNewDatas);
+    }
+    if (te->isAlerter())
+    {
+        threadsEngine.create_thread(&checkNewAlerts);
+    }
+    if (te->isCleaner())
+    {
+        threadsEngine.create_thread(&removeOldValues);
+    }
+    if (te->isCalculator())
+    {
+        threadsEngine.create_thread(&calculate);
+    }
  
     // wait the end of the created thread
-   threadsEngine.join_all();
+    threadsEngine.join_all();
     
     return 0;
 }
@@ -151,11 +165,11 @@ void checkNewDatas()
     Parser *parser = new Parser();
     //result
     int res = -1;
-    
+    int syslogSize = 50;
     while (true)
     {
-        long long syslogId[100];
-        for (int i = 0 ; i < 100 ; i++)
+        long long syslogId[syslogSize];
+        for (int i = 0 ; i < syslogSize ; i++)
         {
             syslogId[i] = -1;
         }
@@ -164,7 +178,10 @@ void checkNewDatas()
         {
             Wt::Dbo::Transaction transaction0(*(te->sessionParserGlobal));
 //            Wt::Dbo::collection<Wt::Dbo::ptr<Syslog> > receivedSyslogCollection = te->sessionParser->find<Syslog>().where("\"SLO_STATE\" = ?) FOR UPDATE ").limit(100).bind("0");
-            Wt::Dbo::collection<Wt::Dbo::ptr<Syslog> > receivedSyslogCollection = te->sessionParserGlobal->query<Wt::Dbo::ptr<Syslog> >("SELECT slo FROM \"T_SYSLOG_SLO\" slo WHERE \"SLO_STATE\" = 0 FOR UPDATE LIMIT 100;");
+            Wt::Dbo::collection<Wt::Dbo::ptr<Syslog> > receivedSyslogCollection = 
+                    te->sessionParserGlobal->query<Wt::Dbo::ptr<Syslog> >(
+                    "SELECT slo FROM \"T_SYSLOG_SLO\" slo WHERE \"SLO_STATE\" = 0 FOR UPDATE LIMIT ?"
+                    ).bind(syslogSize);
             
             ToolsEngine::log("debug") << " [Class:main] avant for";
             int idx = 0;
@@ -182,7 +199,7 @@ void checkNewDatas()
             ToolsEngine::log("error") << " [Class:main] data 2 : "<< e.what();
         }   
         
-        for (int i = 0 ; i < 100 ; i++)
+        for (int i = 0 ; i < syslogSize ; i++)
         {
             ToolsEngine::log("debug") << " [Class:main] boucle syslog, i : " << i << " id : " << syslogId[i];
             if (syslogId[i] == -1)
@@ -289,4 +306,135 @@ void removeOldValues()
         
         boost::this_thread::sleep(boost::posix_time::milliseconds(te->sleepThreadRemoveOldValues));
     };
+}
+
+void calculate()
+{
+    int ivaListSize = 1;
+    while (true)
+    {
+        long long ivaId[ivaListSize];
+        for (int i = 0 ; i < ivaListSize ; i++)
+        {
+            ivaId[i] = -1;
+        }
+        try
+        {
+            Wt::Dbo::Transaction transaction1(*(te->sessionCalculate));
+            // we get iva values where state = ToBeCalculate
+            std::string queryString = "SELECT iva FROM \"T_INFORMATION_VALUE_IVA\"  iva"
+                    " WHERE \"IVA_STATE\" = 9 FOR UPDATE LIMIT ?";
+            Wt::Dbo::collection<Wt::Dbo::ptr<InformationValue> > ivaList = 
+                    te->sessionCalculate->query<Wt::Dbo::ptr<InformationValue> >(queryString).bind(ivaListSize);
+            
+            int idx = 0;
+            for (Wt::Dbo::collection<Wt::Dbo::ptr<InformationValue> >::const_iterator j = ivaList.begin(); j != ivaList.end(); ++j) 
+            {
+                te->sessionCalculate->execute(
+                            "UPDATE \"T_INFORMATION_VALUE_IVA\" SET \"IVA_STATE\" = ? WHERE \"IVA_ID\" = ?"
+                            ).bind(1).bind(j->id());
+                ivaId[idx] = j->id();
+                idx++;
+            }
+            transaction1.commit();
+        }
+        catch(Wt::Dbo::Exception e)
+        {
+            ToolsEngine::log("error") << " [Class:main] iva selection : "<< e.what();
+        }
+        
+        
+        try
+        {
+            Wt::Dbo::Transaction transaction2(*(te->sessionCalculate));
+            for (int i = 0 ; i < ivaListSize; i++)
+            {
+                
+                if (ivaId[i] == -1)
+                {
+                    break;
+                }
+
+
+                std::string queryString = "SELECT iva FROM \"T_INFORMATION_VALUE_IVA\"  iva WHERE \"IVA_ID\" = ? LIMIT 1";
+                Wt::Dbo::ptr<InformationValue> ptrIva = 
+                        te->sessionCalculate->query<Wt::Dbo::ptr<InformationValue> >(queryString).bind(ivaId[i]);
+
+                // we get the information related to the iva
+                Wt::Dbo::ptr<Information2> ptrInfTmp = ptrIva.get()->information;
+                Wt::Dbo::ptr<Information2> ptrInfRes;
+                if (ptrInfTmp.get()->calculate)
+                {
+                    if (!ptrInfTmp.get()->calculate.get().empty())
+                    {
+                        ToolsEngine::log("debug") << " [Class:Main] " << "calculate value : " << ptrInfTmp.get()->calculate;
+                        if (ptrInfTmp.get()->calculate.get() == "searchValueToCalculate")
+                        {
+                            ptrInfRes = te->sessionCalculate->find<Information2>()
+                                    .where("\"PLG_ID_PLG_ID\" = ?").bind(
+                                                          ptrInfTmp.get()->pk.search.get()->pk.source.get()->pk.plugin.id())
+                                    .where("\"SRC_ID\" = ?").bind(ptrInfTmp.get()->pk.search.get()->pk.source.get()->pk.id)
+                                    .where("\"SEA_ID\" = ?").bind(ptrInfTmp.get()->pk.search.get()->pk.id)
+                                    .where("\"INF_VALUE_NUM\" = ?").bind(-1).limit(1);
+                        }
+                        else
+                        {
+                            ptrInfRes.reset(ptrInfTmp.modify());
+                        }
+                    }
+                }
+                else
+                {
+                    ToolsEngine::log("error") << " [Class:Main] " << "no calculate";
+                    break;
+                }
+                
+                
+                ToolsEngine::log("debug") << " [Class:Main] " << "launching calcul" ;
+                // We launch the calcul
+                //Wt::Dbo::ptr<InformationValue> ptrIva = te->sessionCalculate->find<InformationValue>().where("\"IVA_ID\" = ?").bind(ivaId[i]);
+                ptrInfRes.purge();
+                ptrInfTmp.purge();
+                ptrIva.purge();
+                if ((ptrIva.id() != -1) && (ptrInfRes))
+                {
+                    std::string queryStr = "SELECT " + ptrInfRes.get()->calculate.get().toUTF8() + "(" + boost::lexical_cast<std::string>(ptrInfRes.get()->pk.search.get()->pk.id)
+                                        + "," + boost::lexical_cast<std::string>(ptrInfRes.get()->pk.search.get()->pk.source.get()->pk.id)
+                                        + "," + boost::lexical_cast<std::string>(ptrInfRes.get()->pk.search.get()->pk.source.get()->pk.plugin.id())
+                                        + "," + boost::lexical_cast<std::string>(ptrInfRes.get()->pk.subSearchNumber)
+                                        + "," + boost::lexical_cast<std::string>(ptrInfRes.get()->pk.unit.id())
+                                        + "," + boost::lexical_cast<std::string>(ptrIva.get()->lotNumber)
+                                        + ",9" //state
+                                        + "," + boost::lexical_cast<std::string>(ptrIva.get()->lineNumber)
+                                        + "," + boost::lexical_cast<std::string>(ptrIva.get()->asset.id())
+                                        + ",10" // limit
+                                        + "," + boost::lexical_cast<std::string>(ptrIva.id())
+                                        + ")"
+                                        ;
+                    ToolsEngine::log("debug") << " [Class:Main] calc query : " << queryStr;
+                    te->sessionCalculate->execute(queryStr);
+                    ToolsEngine::log("debug") << " [Class:Main] calc done.";
+                }
+                else
+                {
+                    ToolsEngine::log("error") << " [Class:Main] " << "IVA not found. Id : " + ivaId[i] ;
+                } 
+                ptrInfRes.~ptr();
+                ptrInfTmp.~ptr();
+                ptrIva.~ptr();
+            }
+            
+            transaction2.commit();
+        }
+        catch(Wt::Dbo::Exception e)
+        {
+            ToolsEngine::log("error") << " [Class:Main] calculation : "<< e.what();
+        }
+   
+                
+
+        boost::this_thread::sleep(boost::posix_time::milliseconds(te->sleepThreadCalculate));
+            
+        
+    }
 }

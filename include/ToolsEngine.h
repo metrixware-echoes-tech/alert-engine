@@ -55,6 +55,7 @@ public:
     Session *sessionParserGlobal;
     Session *sessionAlertProcessor;
     Session *sessionOldValues;
+    Session *sessionCalculate;
     static Wt::WLogger logger;
     static Wt::WLogEntry log(std::string criticity);
     static int criticity; //log criticity
@@ -64,11 +65,20 @@ public:
     int sleepThreadReadDatasMilliSec; //the milliseconds to wait between each loop in our process (reading the database for new info)
     int sleepThreadCheckAlertMilliSec; //the milliseconds to wait between each loop in our process ( calculate alerts)
     int sleepThreadRemoveOldValues; //the milliseconds to wait between each old values cleaning
+    int sleepThreadCalculate;
     Wt::WIOService *ioService; //ioservice used for the http client
+    bool isParser();
+    bool isAlerter();
+    bool isCleaner();
+    bool isCalculator();
 protected:
     static bool alreadyCreated;
     static boost::mutex mutex;
     enum logCriticity{debug = 1,info = 2, warning = 3, secure = 4, error = 5, fatal = 6};
+    bool parser;
+    bool alerter;
+    bool cleaner;
+    bool calculator;
 
 
 };
