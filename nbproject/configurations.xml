@@ -85,7 +85,8 @@
             <linkerLibLibItem>wtdbo</linkerLibLibItem>
             <linkerLibLibItem>dbo</linkerLibLibItem>
             <linkerLibLibItem>boost_program_options</linkerLibLibItem>
-            <linkerLibLibItem>boost_unit_test_framework-mt</linkerLibLibItem>
+            <linkerLibLibItem>boost_unit_test_framework</linkerLibLibItem>
+            <linkerLibLibItem>boost_signals</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>
@@ -134,6 +135,7 @@
             <linkerLibLibItem>dbo</linkerLibLibItem>
             <linkerLibLibItem>boost_program_options</linkerLibLibItem>
             <linkerLibLibItem>boost_unit_test_framework</linkerLibLibItem>
+            <linkerLibLibItem>boost_signals</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>

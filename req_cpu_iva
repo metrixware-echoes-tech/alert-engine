@@ -1,0 +1,150 @@
+﻿
+-- SEA_ID $1, SRC_ID $2, PLG_ID $3, SubSeaNum $4, UNT_ID $5, LOT_NUM $6, STATE $7, LINE_NUM $8, AST_ID $9, LIMIT $10, IVA_ID $11
+
+-- calculate_cpu_iva(1,4,1,5,0,32980,9,6585,0,5426824)
+
+select * from calculate_cpu_iva(1,4,1,5,0,32980,0,1,6585,0,5426824)
+
+CREATE OR REPLACE FUNCTION calculate_cpu_iva(integer, integer, integer, integer, integer, integer, integer, integer, integer, integer,integer)
+  RETURNS void AS
+$BODY$
+INSERT INTO "T_INFORMATION_VALUE_IVA" ("version", 
+				"IVA_VALUE", 
+				"IVA_CREA_DATE", 
+				"IVA_LINE_NUM", 
+				"IVA_LOT_NUM",
+				"IVA_STATE",
+				"IVA_AST_AST_ID",
+				"IVA_SLO_SLO_ID",
+				"IVA_SLH_SLH_ID",
+				"SEA_ID",
+				"SRC_ID",
+				"PLG_ID_PLG_ID",
+				"INF_VALUE_NUM",
+				"INU_ID_INU_ID") 
+
+SELECT 
+0 "version",
+(
+	
+	CAST (("WORK_JIFFIES" - "WORK_LAG_JIFFIES")  AS FLOAT)
+		/
+	CAST (("TOTAL_JIFFIES" - "TOTAL_LAG_JIFFIES") AS FLOAT)
+		*
+	100
+) "IVA_VALUE", -- CPU Usage
+now() "IVA_CREA_DATE",
+$8 "IVA_LINE_NUM",
+$6 "IVA_LOT_NUM",
+0 "IVA_STATE",
+$9 "IVA_AST_AST_ID",
+"IVA_SLO_SLO_ID",
+"IVA_SLO_SLO_ID" "IVA_SLH_SLH_ID",
+$1 "SEA_ID",
+$2 "SRC_ID",
+$3 "PLG_ID_PLG_ID",
+$4 "INF_VALUE_NUM", 
+$5 "INU_ID_INU_ID"
+FROM
+(
+	SELECT (CAST("USER" as integer) 
+	+ CAST("NICE" as integer) 
+	+ CAST("SYSTEM" as integer) 
+	+ CAST("IDLE" as integer)) 
+	--+ CAST("IOWAIT" as integer) 
+	--+ CAST("IRQ" as integer) 
+	--+ CAST("SOFT_IRQ" as integer))
+	"TOTAL_JIFFIES",
+	(CAST("USER" as integer) 
+	+ CAST("NICE" as integer) 
+	+ CAST("SYSTEM" as integer))
+	"WORK_JIFFIES",
+	"IVA_CREA_DATE",
+	(CAST("LAG_USER" as integer) 
+	+ CAST("LAG_NICE" as integer) 
+	+ CAST("LAG_SYSTEM" as integer) 
+	+ CAST("LAG_IDLE" as integer))
+	--+ CAST("LAG_IOWAIT" as integer) 
+	--+ CAST("LAG_IRQ" as integer) 
+	--+ CAST("LAG_SOFT_IRQ" as integer))
+	"TOTAL_LAG_JIFFIES",
+	(CAST("LAG_USER" as integer) 
+	+ CAST("LAG_NICE" as integer) 
+	+ CAST("LAG_SYSTEM" as integer))
+	"WORK_LAG_JIFFIES",
+	"LAG_DATE",
+	"IVA_SLO_SLO_ID"
+	 FROM
+	(
+		SELECT 
+		"IVA_AST_AST_ID",
+		"IVA_CREA_DATE", "LAG_DATE",
+		max (CASE WHEN (sr_sr."INF_VALUE_NUM" = 1) THEN "IVA_VALUE" END) AS "INTERFACE_NAME",
+		max (CASE WHEN (sr_sr."INF_VALUE_NUM" = 2) THEN "IVA_VALUE" END) AS "USER",
+		max (CASE WHEN (sr_sr."INF_VALUE_NUM" = 3) THEN "IVA_VALUE" END) AS "NICE",
+		max (CASE WHEN (sr_sr."INF_VALUE_NUM" = 4) THEN "IVA_VALUE" END) AS "SYSTEM",
+		max (CASE WHEN (sr_sr."INF_VALUE_NUM" = 5) THEN "IVA_VALUE" END) AS "IDLE",
+		max (CASE WHEN (sr_sr."INF_VALUE_NUM" = 6) THEN "IVA_VALUE" END) AS "IOWAIT",
+		max (CASE WHEN (sr_sr."INF_VALUE_NUM" = 7) THEN "IVA_VALUE" END) AS "IRQ",
+		max (CASE WHEN (sr_sr."INF_VALUE_NUM" = 8) THEN "IVA_VALUE" END) AS "SOFT_IRQ",
+		max (CASE WHEN (sr_sr."INF_VALUE_NUM" = 1) THEN "LAG_VALUE" END) AS "LAG_INTERFACE_NAME",
+		max (CASE WHEN (sr_sr."INF_VALUE_NUM" = 2) THEN "LAG_VALUE" END) AS "LAG_USER",
+		max (CASE WHEN (sr_sr."INF_VALUE_NUM" = 3) THEN "LAG_VALUE" END) AS "LAG_NICE",
+		max (CASE WHEN (sr_sr."INF_VALUE_NUM" = 4) THEN "LAG_VALUE" END) AS "LAG_SYSTEM",
+		max (CASE WHEN (sr_sr."INF_VALUE_NUM" = 5) THEN "LAG_VALUE" END) AS "LAG_IDLE",
+		max (CASE WHEN (sr_sr."INF_VALUE_NUM" = 6) THEN "LAG_VALUE" END) AS "LAG_IOWAIT",
+		max (CASE WHEN (sr_sr."INF_VALUE_NUM" = 7) THEN "LAG_VALUE" END) AS "LAG_IRQ",
+		max (CASE WHEN (sr_sr."INF_VALUE_NUM" = 8) THEN "LAG_VALUE" END) AS "LAG_SOFT_IRQ",
+		min ("IVA_SLO_SLO_ID") "IVA_SLO_SLO_ID"
+		FROM
+		(
+			SELECT "IVA_ID", 
+			"IVA_CREA_DATE",
+			lag ("IVA_CREA_DATE") OVER (PARTITION BY "IVA_AST_AST_ID", "SEA_ID", "SRC_ID", "PLG_ID_PLG_ID", "INF_VALUE_NUM" ORDER BY "IVA_ID") "LAG_DATE",
+			"IVA_VALUE",
+			lag ("IVA_VALUE") OVER (PARTITION BY "IVA_AST_AST_ID", "SEA_ID", "SRC_ID", "PLG_ID_PLG_ID", "INF_VALUE_NUM" ORDER BY "IVA_ID") "LAG_VALUE",
+			"SEA_ID", 
+			"SRC_ID", 
+			"PLG_ID_PLG_ID", 
+			"INF_VALUE_NUM", 
+			"IVA_AST_AST_ID", 
+			"IVA_LINE_NUM", 
+			"IVA_LOT_NUM",
+			"IVA_SLO_SLO_ID"
+			FROM "T_INFORMATION_VALUE_IVA" iva
+			WHERE "SEA_ID" = 1
+			AND "SRC_ID" = 4
+			AND "IVA_LOT_NUM" IN (32980, 
+							(SELECT "IVA_LOT_NUM" FROM "T_INFORMATION_VALUE_IVA"
+							WHERE "SEA_ID" = 1
+							AND "SRC_ID" = 4
+							AND "IVA_LINE_NUM" = 1 
+							AND "PLG_ID_PLG_ID" = 1
+							AND "INF_VALUE_NUM" = 5
+							/*AND "INU_ID_INU_ID" = 0*/
+							AND "IVA_AST_AST_ID" = 6585
+							AND "IVA_ID" <= 5426824
+							ORDER BY "IVA_ID" DESC
+							LIMIT 1
+							OFFSET 1)
+						)
+						
+			AND "IVA_ID" <= 5426824
+			AND "IVA_LINE_NUM" = 1 
+			AND "PLG_ID_PLG_ID" = 1
+			AND "IVA_AST_AST_ID" = 6585
+			ORDER BY "IVA_ID" DESC
+			LIMIT 4
+		) sr_sr
+		WHERE "IVA_LOT_NUM" = 32980
+		GROUP BY "IVA_AST_AST_ID","IVA_CREA_DATE", "LAG_DATE"
+	) sr_sr_sr
+) sr_sr_sr_sr;
+$BODY$
+  LANGUAGE sql VOLATILE
+  COST 100;
+ALTER FUNCTION calculate_cpu_iva(integer, integer, integer, integer, integer, integer, integer, integer, integer, integer,integer)
+  OWNER TO echoes;
+
+
+

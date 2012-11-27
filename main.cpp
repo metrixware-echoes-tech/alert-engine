@@ -19,6 +19,7 @@ void calculate();
 
 Wt::WLogger ToolsEngine::logger;
 boost::mutex ToolsEngine::mutex;
+boost::mutex ToolsEngine::mutexCalculate;
 //default criticity to log before reading file config : debug = 1 / info = 2 / warning = 3 / secure = 4 / error = 5/ fatal = 6
 int ToolsEngine::criticity = 1;
 
@@ -153,7 +154,7 @@ int main(int argc, char *argv[])
     {
         threadsEngine.create_thread(&calculate);
     }
- 
+    
     // wait the end of the created thread
     threadsEngine.join_all();
     
@@ -346,9 +347,11 @@ void calculate()
         
         try
         {
-            Wt::Dbo::Transaction transaction2(*(te->sessionCalculate));
+//            te->sessionCalculate->~Session();
             for (int i = 0 ; i < ivaListSize; i++)
             {
+                te->reloadSessionCalculate();
+                Wt::Dbo::Transaction transaction2(*(te->sessionCalculate));
                 
                 if (ivaId[i] == -1)
                 {
@@ -361,8 +364,8 @@ void calculate()
                         te->sessionCalculate->query<Wt::Dbo::ptr<InformationValue> >(queryString).bind(ivaId[i]);
 
                 // we get the information related to the iva
-                Wt::Dbo::ptr<Information2> ptrInfTmp = ptrIva.get()->information;
-                Wt::Dbo::ptr<Information2> ptrInfRes;
+                Wt::Dbo::ptr<Information2> ptrInfTmp = ptrIva->information;
+                Wt::Dbo::ptr<Information2> *ptrInfRes = new Wt::Dbo::ptr<Information2>();
                 if (ptrInfTmp.get()->calculate)
                 {
                     if (!ptrInfTmp.get()->calculate.get().empty())
@@ -370,16 +373,23 @@ void calculate()
                         ToolsEngine::log("debug") << " [Class:Main] " << "calculate value : " << ptrInfTmp.get()->calculate;
                         if (ptrInfTmp.get()->calculate.get() == "searchValueToCalculate")
                         {
-                            ptrInfRes = te->sessionCalculate->find<Information2>()
-                                    .where("\"PLG_ID_PLG_ID\" = ?").bind(
-                                                          ptrInfTmp.get()->pk.search.get()->pk.source.get()->pk.plugin.id())
-                                    .where("\"SRC_ID\" = ?").bind(ptrInfTmp.get()->pk.search.get()->pk.source.get()->pk.id)
-                                    .where("\"SEA_ID\" = ?").bind(ptrInfTmp.get()->pk.search.get()->pk.id)
-                                    .where("\"INF_VALUE_NUM\" = ?").bind(-1).limit(1);
+//                            *ptrInfRes = te->sessionCalculate->find<Information2>()
+//                                    .where("\"PLG_ID_PLG_ID\" = ?").bind(
+//                                                          ptrInfTmp.get()->pk.search.get()->pk.source.get()->pk.plugin.id())
+//                                    .where("\"SRC_ID\" = ?").bind(ptrInfTmp.get()->pk.search.get()->pk.source.get()->pk.id)
+//                                    .where("\"SEA_ID\" = ?").bind(ptrInfTmp.get()->pk.search.get()->pk.id)
+//                                    .where("\"INF_VALUE_NUM\" = ?").bind(-1).limit(1);
+                            std::string queryString = "select inf from \"T_INFORMATION_INF\" inf where (\"PLG_ID_PLG_ID\" = ?) and (\"SRC_ID\" = ?) and (\"SEA_ID\" = ?) and (\"INF_VALUE_NUM\" = ?)";
+                            *ptrInfRes = te->sessionCalculate->query<Wt::Dbo::ptr<Information2> >(queryString)
+                                    .bind(ptrInfTmp->pk.search->pk.source->pk.plugin.id())
+                                    .bind(ptrInfTmp->pk.search->pk.source->pk.id)
+                                    .bind(ptrInfTmp->pk.search->pk.id)
+                                    .bind(-1)
+                                    .limit(1);
                         }
                         else
                         {
-                            ptrInfRes.reset(ptrInfTmp.modify());
+                            *ptrInfRes = ptrInfTmp;
                         }
                     }
                 }
@@ -393,20 +403,18 @@ void calculate()
                 ToolsEngine::log("debug") << " [Class:Main] " << "launching calcul" ;
                 // We launch the calcul
                 //Wt::Dbo::ptr<InformationValue> ptrIva = te->sessionCalculate->find<InformationValue>().where("\"IVA_ID\" = ?").bind(ivaId[i]);
-                ptrInfRes.purge();
-                ptrInfTmp.purge();
-                ptrIva.purge();
-                if ((ptrIva.id() != -1) && (ptrInfRes))
+
+                if ((ptrIva.id() != -1) && (*ptrInfRes) && (ptrInfTmp))
                 {
-                    std::string queryStr = "SELECT " + ptrInfRes.get()->calculate.get().toUTF8() + "(" + boost::lexical_cast<std::string>(ptrInfRes.get()->pk.search.get()->pk.id)
-                                        + "," + boost::lexical_cast<std::string>(ptrInfRes.get()->pk.search.get()->pk.source.get()->pk.id)
-                                        + "," + boost::lexical_cast<std::string>(ptrInfRes.get()->pk.search.get()->pk.source.get()->pk.plugin.id())
-                                        + "," + boost::lexical_cast<std::string>(ptrInfRes.get()->pk.subSearchNumber)
-                                        + "," + boost::lexical_cast<std::string>(ptrInfRes.get()->pk.unit.id())
-                                        + "," + boost::lexical_cast<std::string>(ptrIva.get()->lotNumber)
+                    std::string queryStr = "SELECT " + ptrInfRes->get()->calculate.get().toUTF8() + "(" + boost::lexical_cast<std::string>(ptrInfRes->get()->pk.search->pk.id)
+                                        + "," + boost::lexical_cast<std::string>(ptrInfTmp->pk.search->pk.source->pk.id)
+                                        + "," + boost::lexical_cast<std::string>(ptrInfTmp->pk.search->pk.source->pk.plugin.id())
+                                        + "," + boost::lexical_cast<std::string>(ptrInfTmp->pk.subSearchNumber)
+                                        + "," + boost::lexical_cast<std::string>(ptrInfTmp->pk.unit.id())
+                                        + "," + boost::lexical_cast<std::string>(ptrIva->lotNumber)
                                         + ",9" //state
-                                        + "," + boost::lexical_cast<std::string>(ptrIva.get()->lineNumber)
-                                        + "," + boost::lexical_cast<std::string>(ptrIva.get()->asset.id())
+                                        + "," + boost::lexical_cast<std::string>(ptrIva->lineNumber)
+                                        + "," + boost::lexical_cast<std::string>(ptrIva->asset.id())
                                         + ",10" // limit
                                         + "," + boost::lexical_cast<std::string>(ptrIva.id())
                                         + ")"
@@ -419,22 +427,23 @@ void calculate()
                 {
                     ToolsEngine::log("error") << " [Class:Main] " << "IVA not found. Id : " + ivaId[i] ;
                 } 
-                ptrInfRes.~ptr();
-                ptrInfTmp.~ptr();
-                ptrIva.~ptr();
+//                ptrInfRes->~ptr();
+//                ptrInfTmp.~ptr();
+//                ptrIva.~ptr();
+                transaction2.commit();
             }
-            
-            transaction2.commit();
         }
         catch(Wt::Dbo::Exception e)
         {
-            ToolsEngine::log("error") << " [Class:Main] calculation : "<< e.what();
+            ToolsEngine::log("error") << " [Class:Main:Dbo] calculation : "<< e.what();
+        }
+        catch(boost::bad_lexical_cast e)
+        {
+            ToolsEngine::log("error") << " [Class:Main:Boost] calculation : "<< e.what();
         }
    
                 
 
-        boost::this_thread::sleep(boost::posix_time::milliseconds(te->sleepThreadCalculate));
-            
-        
+        boost::this_thread::sleep(boost::posix_time::milliseconds(te->sleepThreadCalculate));   
     }
 }

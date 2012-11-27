@@ -490,8 +490,8 @@ int AlertProcessor::compareNumberValue(std::string stringValuesToCheck,bool (*ma
                 {
                     ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << " Alert generated  : " << alertPtr.get()->name; 
                     //we create the sender
-                    AlertSender alertSender;  
-                    alertSender.send(alertPtr,*i);
+                    AlertSender *alertSender = new AlertSender();  
+                    alertSender->send(alertPtr,*i);
                     i->modify()->state = 2;
                 }
                 else

@@ -56,6 +56,7 @@ public:
     Session *sessionAlertProcessor;
     Session *sessionOldValues;
     Session *sessionCalculate;
+    void reloadSessionCalculate();
     static Wt::WLogger logger;
     static Wt::WLogEntry log(std::string criticity);
     static int criticity; //log criticity
@@ -74,6 +75,7 @@ public:
 protected:
     static bool alreadyCreated;
     static boost::mutex mutex;
+    static boost::mutex mutexCalculate;
     enum logCriticity{debug = 1,info = 2, warning = 3, secure = 4, error = 5, fatal = 6};
     bool parser;
     bool alerter;
