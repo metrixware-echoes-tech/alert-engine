@@ -17,6 +17,7 @@
     <logicalFolder name="f1" displayName="Scripts" projectFiles="true">
       <itemPath>scripts/database_content_production.sql</itemPath>
       <itemPath>scripts/fill_echoes_database_sensor.sql</itemPath>
+      <itemPath>scripts/fill_echoes_model_inauguration.sql</itemPath>
       <itemPath>scripts/histo_tracking_tsa.sql</itemPath>
       <itemPath>scripts/log-echoes.sh</itemPath>
       <itemPath>scripts/rsyslog.conf</itemPath>
@@ -36,12 +37,6 @@
                    displayName="Test Files"
                    projectFiles="false"
                    kind="TEST_LOGICAL_FOLDER">
-      <logicalFolder name="f1"
-                     displayName="New Test 1"
-                     projectFiles="true"
-                     kind="TEST">
-        <itemPath>ToolsEngine-Tests.cpp</itemPath>
-      </logicalFolder>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -63,6 +58,11 @@
         <compilerSet>GNU|GNU</compilerSet>
       </toolsSet>
       <compileType>
+        <cTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </cTool>
         <ccTool>
           <incDir>
             <pElem>include</pElem>
@@ -71,8 +71,9 @@
           </incDir>
         </ccTool>
         <linkerTool>
+          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engine</output>
           <linkerAddLib>
-            <pElem>../dbo/dist/SharedObject/GNU-Linux-x86</pElem>
+            <pElem>../dbo/dist/Debug_SharedObject/GNU-Linux-x86</pElem>
           </linkerAddLib>
           <linkerLibItems>
             <linkerLibLibItem>boost_system</linkerLibLibItem>
@@ -84,25 +85,11 @@
             <linkerLibLibItem>wtdbo</linkerLibLibItem>
             <linkerLibLibItem>dbo</linkerLibLibItem>
             <linkerLibLibItem>boost_program_options</linkerLibLibItem>
-            <linkerLibLibItem>boost_unit_test_framework-mt</linkerLibLibItem>
+            <linkerLibLibItem>boost_unit_test_framework</linkerLibLibItem>
+            <linkerLibLibItem>boost_signals</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>
-      <folder path="TestFiles/f1">
-        <cTool>
-          <incDir>
-            <pElem>.</pElem>
-          </incDir>
-        </cTool>
-        <ccTool>
-          <incDir>
-            <pElem>.</pElem>
-          </incDir>
-        </ccTool>
-        <linkerTool>
-          <output>${TESTDIR}/TestFiles/f1</output>
-        </linkerTool>
-      </folder>
     </conf>
     <conf name="Release" type="1">
       <toolsSet>
@@ -114,7 +101,15 @@
           <developmentMode>5</developmentMode>
         </cTool>
         <ccTool>
-          <developmentMode>5</developmentMode>
+          <developmentMode>6</developmentMode>
+          <stripSymbols>true</stripSymbols>
+          <incDir>
+            <pElem>include</pElem>
+            <pElem>../UnitTest++/src</pElem>
+            <pElem>../dbo/include</pElem>
+            <pElem>/var/lib/jenkins/jobs/ea-dbo/workspace/include</pElem>
+          </incDir>
+          <commandLine>-DNDEBUG</commandLine>
         </ccTool>
         <fortranCompilerTool>
           <developmentMode>5</developmentMode>
@@ -123,6 +118,12 @@
           <developmentMode>5</developmentMode>
         </asmTool>
         <linkerTool>
+          <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engine</output>
+          <linkerAddLib>
+            <pElem>/var/lib/jenkins/jobs/ea-dbo/workspace/default/dist/Release_SharedObject/GNU-Linux-x86</pElem>
+            <pElem>../dbo/dist/Release_SharedObject/GNU-Linux-x86</pElem>
+          </linkerAddLib>
+          <stripSymbols>true</stripSymbols>
           <linkerLibItems>
             <linkerLibLibItem>boost_system</linkerLibLibItem>
             <linkerLibLibItem>pthread</linkerLibLibItem>
@@ -133,7 +134,8 @@
             <linkerLibLibItem>wtdbo</linkerLibLibItem>
             <linkerLibLibItem>dbo</linkerLibLibItem>
             <linkerLibLibItem>boost_program_options</linkerLibLibItem>
-            <linkerLibLibItem>boost_unit_test_framework-mt</linkerLibLibItem>
+            <linkerLibLibItem>boost_unit_test_framework</linkerLibLibItem>
+            <linkerLibLibItem>boost_signals</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>

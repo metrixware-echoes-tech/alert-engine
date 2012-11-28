@@ -6,27 +6,38 @@ AlertSender::AlertSender() {
 AlertSender::~AlertSender() {
 }
 
-MediaValueList AlertSender::checkMediaToSendAlert(Wt::Dbo::ptr<Alert> alertPtr)
+//MediaValueList AlertSender::checkMediaToSendAlert(Wt::Dbo::ptr<Alert> alertPtr)
+//{
+//    MediaValueList result;
+//    Wt::Dbo::collection<Wt::Dbo::ptr<AlertMediaSpecialization> > amsList = alertPtr.get()->alertMediaSpecializations;
+//    
+//    for (Wt::Dbo::collection<Wt::Dbo::ptr<AlertMediaSpecialization> >::const_iterator j = amsList.begin(); j != amsList.end(); ++j) 
+//    {
+//        result.insert(j->get()->mediaValue);
+//    }
+//    
+//    return result;
+//}
+
+Wt::Dbo::collection<Wt::Dbo::ptr<AlertMediaSpecialization> > AlertSender::checkMediaToSendAlert(Wt::Dbo::ptr<Alert> alertPtr)
 {
-    MediaValueList mvList = alertPtr.get()->mediaValues;
+    Wt::Dbo::collection<Wt::Dbo::ptr<AlertMediaSpecialization> > amsList = alertPtr.get()->alertMediaSpecializations;
     
-    return mvList;
+    return amsList;
 }
 
-Wt::Dbo::ptr<AlertTracking> AlertSender::createAlertTrackingNumber(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<MediaValue> mediaValuePtr, Session *session)
+Wt::Dbo::ptr<AlertTracking> AlertSender::createAlertTrackingNumber(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<AlertMediaSpecialization> amsPtr, Session *session)
 {
     //we get the session actually opened
     AlertTracking *newAlertTracking = new AlertTracking();
-   // Wt::WDateTime *now = new Wt::WDateTime();
-    Wt::WDateTime now = Wt::WDateTime::currentDateTime();
     
     newAlertTracking->alert = alertPtr;
-    newAlertTracking->mediaValue = mediaValuePtr;
-   // now->currentDateTime();
-    //newAlertTracking->sendDate = *now;
-    newAlertTracking->sendDate = now;
+    newAlertTracking->mediaValue = amsPtr.get()->mediaValue;
+
+    // WARNING : SendDate must be set by the API when the alert was sent, not before
+    newAlertTracking->sendDate = *(new Wt::WDateTime());
     Wt::Dbo::ptr<AlertTracking> alertTrackingPtr;
-    
+
     try
     {         
         alertTrackingPtr = session->add<AlertTracking>(newAlertTracking);
@@ -40,14 +51,14 @@ Wt::Dbo::ptr<AlertTracking> AlertSender::createAlertTrackingNumber(Wt::Dbo::ptr<
     return alertTrackingPtr;
 }
 
-int AlertSender::sendSMS(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<AlertTracking> alertTrackingPtr, Wt::Dbo::ptr<MediaValue> mediaValuePtr)
+int AlertSender::sendSMS(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<AlertTracking> alertTrackingPtr, Wt::Dbo::ptr<AlertMediaSpecialization> amsPtr)
 {
 
-    Wt::WString phoneNumber = mediaValuePtr.get()->value;
+    Wt::WString phoneNumber = amsPtr.get()->mediaValue.get()->value;
     Wt::WString assetConcerned = informationValuePtr.get()->asset.get()->name;
     Wt::WString alertName = alertPtr.get()->name;
     Wt::WString informationReceived = informationValuePtr.get()->value;
-    Wt::WString unit = alertPtr.get()->alertValue.get()->information.get()->unit.get()->name;
+    Wt::WString unit = alertPtr.get()->alertValue.get()->information.get()->pk.unit.get()->name;
     Wt::WString alertValue = alertPtr.get()->alertValue.get()->value;
     Wt::WString date = informationValuePtr.get()->creationDate.toString();
     Wt::WDateTime now = Wt::WDateTime::currentDateTime(); //for setting the send date of the alert
@@ -108,36 +119,37 @@ int AlertSender::sendSMS(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt:
         message.addBodyText(bodyText);
         message.setHeader("Content-Type", "application/x-www-form-urlencoded");
 
-        std::string apiAddress = "https://sms/netsize/send";
+        std::string apiAddress = te->apiUrl;
         ToolsEngine::log("info") << " [Class:AlertSender] " << "[SMS] Trying to send request to API. Address : " << apiAddress;
-        //client->post(apiAddress, message);
+        client->post(apiAddress, message);
 
 
         //SQL transaction to commit the date
         Session *session = static_cast<Session*>(informationValuePtr.session());
 
-        Wt::Dbo::ptr<MediaValue> mediaValueP = session->find<MediaValue>().where("\"MEV_ID\" = ?").bind(mediaValuePtr.id()).limit(1);
+//        Wt::Dbo::ptr<AlertMediaSpecialization> amsP = session->find<AlertMediaSpecialization>().where("\"AMS_ID\" = ? FOR UPDATE").bind(amsPtr.id()).limit(1);
+        Wt::Dbo::ptr<AlertMediaSpecialization> amsP = session->find<AlertMediaSpecialization>().where("\"AMS_ID\" = ?").bind(amsPtr.id()).limit(1);
 
         ToolsEngine::log("info") << " [Class:AlertSender] " << "insert date of last send in db : " << now.toString();
-        mediaValueP.modify()->lastSend = now;
+        amsP.modify()->lastSend = now;
     }
     catch (Wt::Dbo::Exception e)
     {
-        ToolsEngine::log("error") << " [Class:AlertSender] " << e.what();
+        ToolsEngine::log("error") << " [Class:AlertSender] " << e.what(); 
     }
     
 }
 
-int AlertSender::sendMAIL(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<AlertTracking> alertTrackingPtr, Wt::Dbo::ptr<MediaValue> mediaValuePtr, int overSMSQuota)
+int AlertSender::sendMAIL(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<AlertTracking> alertTrackingPtr, Wt::Dbo::ptr<AlertMediaSpecialization> amsPtr, int overSMSQuota)
 {
     Wt::WString mailRecipient; 
-    const Wt::WString mailRecipientName = mediaValuePtr.get()->user.get()->firstName + " " + mediaValuePtr.get()->user.get()->lastName ;
+    const Wt::WString mailRecipientName = amsPtr.get()->mediaValue.get()->user.get()->firstName + " " + amsPtr.get()->mediaValue.get()->user.get()->lastName ;
     const Wt::WString mailSender = "alert@echoes-tech.com";
     Wt::WString mailSenderName = "ECHOES Alert";
     Wt::WString assetConcerned = informationValuePtr.get()->asset.get()->name;
     Wt::WString alertName = alertPtr.get()->name;
     Wt::WString informationReceived = informationValuePtr.get()->value;
-    Wt::WString unit = alertPtr.get()->alertValue.get()->information.get()->unit.get()->name;
+    Wt::WString unit = alertPtr.get()->alertValue.get()->information.get()->pk.unit.get()->name;
     Wt::WString alertValue = alertPtr.get()->alertValue.get()->value;
     Wt::WString date = informationValuePtr.get()->creationDate.toString();
     Wt::WDateTime now = Wt::WDateTime::currentDateTime(); //for setting the send date of the alert
@@ -153,7 +165,7 @@ int AlertSender::sendMAIL(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt
     //normal case
     if (overSMSQuota == 0)
     {
-        mailRecipient = mediaValuePtr.get()->value;
+        mailRecipient = amsPtr.get()->mediaValue.get()->value;
 
         //we check if there is a key and get it if it's the case to put in the sms
         if (alertPtr.get()->alertValue.get()->keyValue)
@@ -194,7 +206,7 @@ int AlertSender::sendMAIL(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt
     }
     else if (overSMSQuota == 1)
     {
-        mailRecipient = mediaValuePtr.get()->user.get()->eMail;
+        mailRecipient = amsPtr.get()->mediaValue.get()->user.get()->eMail;
         //we check if there is a key and get it if it's the case to put in the sms
         if (alertPtr.get()->alertValue.get()->keyValue)
         {
@@ -241,9 +253,12 @@ int AlertSender::sendMAIL(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt
 
     try
     {
-        Wt::Dbo::ptr<MediaValue> mediaValueP = session->find<MediaValue>().where("\"MEV_ID\" = ?").bind(mediaValuePtr.id()).limit(1);
+//        Wt::Dbo::ptr<AlertMediaSpecialization> amsP = session->find<AlertMediaSpecialization>().where("\"AMS_ID\" = ? FOR UPDATE").bind(amsPtr.id()).limit(1);
+        Wt::Dbo::ptr<AlertMediaSpecialization> amsP = session->find<AlertMediaSpecialization>().where("\"AMS_ID\" = ?").bind(amsPtr.id()).limit(1);
         ToolsEngine::log("info") << " [Class:AlertSender] " << "insert date of last send in db : " << now.toString();
-        mediaValueP.modify()->lastSend = now;
+        amsP.modify()->lastSend = now;
+        
+        alertTrackingPtr.modify()->sendDate = now;
     }
     catch (Wt::Dbo::Exception e)
     {
@@ -265,13 +280,14 @@ int AlertSender::send(Wt::Dbo::ptr<Alert> oldAlertPtr, Wt::Dbo::ptr<InformationV
     ToolsEngine::log("debug") << " [Class:AlertSender] " << "now : " << now.toString();
     
     //because we have to re read the alert last send date that was just modified, if not we will read the first one commited at the first time alert send.
+    // TODO : check wether an alert is selected (avoid null pointer)
     Wt::Dbo::ptr<Alert> alertPtr = session->find<Alert>().where("\"ALE_ID\" = ?").bind(oldAlertPtr.id());
     
     Wt::Dbo::ptr<AlertTracking> alertTrackingPtr;
     
     //we get the list of media linked to this alert
-    MediaValueList mediaList = AlertSender::checkMediaToSendAlert(alertPtr);
-    for (MediaValueList::const_iterator j = mediaList.begin(); j != mediaList.end(); ++j) 
+    Wt::Dbo::collection<Wt::Dbo::ptr<AlertMediaSpecialization> >  amsList = AlertSender::checkMediaToSendAlert(alertPtr);
+    for (Wt::Dbo::collection<Wt::Dbo::ptr<AlertMediaSpecialization> > ::const_iterator j = amsList.begin(); j != amsList.end(); ++j) 
     {
         
         
@@ -285,17 +301,18 @@ int AlertSender::send(Wt::Dbo::ptr<Alert> oldAlertPtr, Wt::Dbo::ptr<InformationV
             
             ToolsEngine::log("info") << " [Class:AlertSender] " << "It's the first time we send this alert";
             ToolsEngine::log("debug") << " [Class:AlertSender] " << "snooze = " << j->get()->snoozeDuration;
-            switch (j->get()->media.id())
+            switch (j->get()->mediaValue.get()->media.id())
             {
                 case sms:
                 {
                     ToolsEngine::log("info") << " [Class:AlertSender] " << "Media value SMS choosed for the alert : " << alertPtr.get()->name;
                     
                     //we verify the quota of sms
-                    idOrg = j->get()->user.get()->currentOrganization.id();
+                    idOrg = j->get()->mediaValue.get()->user.get()->currentOrganization.id();
                     
                     try
                     {
+//                        optionValue = session->find<OptionValue>().where("\"OPT_ID_OPT_ID\" = ?").bind(quotasms).where("\"ORG_ID_ORG_ID\" = ? FOR UPDATE").bind(idOrg).limit(1);
                         optionValue = session->find<OptionValue>().where("\"OPT_ID_OPT_ID\" = ?").bind(quotasms).where("\"ORG_ID_ORG_ID\" = ?").bind(idOrg).limit(1);
 
                         smsQuota = boost::lexical_cast<int>(optionValue.get()->value); 
@@ -344,18 +361,19 @@ int AlertSender::send(Wt::Dbo::ptr<Alert> oldAlertPtr, Wt::Dbo::ptr<InformationV
             ToolsEngine::log("debug") << " [Class:AlertSender] " 
                                      << "Last time we send the alert : " << alertPtr.get()->name 
                                      << "was : " << (*j).get()->lastSend.toString()
-                                     << "the snooze for the media " << j->get()->media.get()->name 
+                                     << "the snooze for the media " << j->get()->mediaValue.get()->media.get()->name 
                                      << " is : " << j->get()->snoozeDuration << "secs so now it's time to send a new time";      
-            switch (j->get()->media.id())
+            switch (j->get()->mediaValue.get()->media.id())
             {
                 case sms:
                     ToolsEngine::log("info") << " [Class:AlertSender] " << "Media value SMS choosed for an alert.";
                     
                     //we verify the quota of sms
-                    idOrg = j->get()->user.get()->currentOrganization.id();
+                    idOrg = j->get()->mediaValue.get()->user.get()->currentOrganization.id();
                     
                     try
                     {
+//                        optionValue = session->find<OptionValue>().where("\"OPT_ID_OPT_ID\" = ?").bind(quotasms).where("\"ORG_ID_ORG_ID\" = ? FOR UPDATE").bind(idOrg).limit(1);
                         optionValue = session->find<OptionValue>().where("\"OPT_ID_OPT_ID\" = ?").bind(quotasms).where("\"ORG_ID_ORG_ID\" = ?").bind(idOrg).limit(1);
 
                         smsQuota = boost::lexical_cast<int>(optionValue.get()->value); 
@@ -390,7 +408,7 @@ int AlertSender::send(Wt::Dbo::ptr<Alert> oldAlertPtr, Wt::Dbo::ptr<InformationV
             ToolsEngine::log("debug") << " [Class:AlertSender] " 
                                      << "Last time we send the alert : " << alertPtr.get()->name 
                                      << "was : " << (*j).get()->lastSend.toString()
-                                     << "the snooze for the media " << j->get()->media.get()->name 
+                                     << "the snooze for the media " << j->get()->mediaValue.get()->media.get()->name 
                                      << " is : " << j->get()->snoozeDuration << "secs,  it's not the time to send the alert";  
  
         }

@@ -1,3 +1,9 @@
+
+#include <Wt/Dbo/ptr>
+#include <Wt/Dbo/Session>
+
+#include "ToolsEngine.h"
+
 #include "Parser.h"
 
 Parser::Parser() {
@@ -6,7 +12,7 @@ Parser::Parser() {
 Parser::~Parser() {
 }
 
-int Parser::unserializeStructuredData(Wt::Dbo::ptr<Syslog> ptrSyslog)
+int Parser::unserializeStructuredData(long long ptrSyslogId)
 {
     ToolsEngine::log("debug") << " [Class:Parser] " << " Unserialize StructuredData begin" ;    
     //[prop@5875 ver=1 probe=12]
@@ -29,11 +35,12 @@ int Parser::unserializeStructuredData(Wt::Dbo::ptr<Syslog> ptrSyslog)
         //SQL session
         try
         {
-            Wt::Dbo::Transaction transaction(*(te->sessionParser));
+            Wt::Dbo::Transaction transaction1(*(te->sessionParser));
             //we fill the local copy of the syslo pointer with the id of the received syslog
-            ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslog.id()).limit(1);
+            ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslogId).limit(1);
             oBracket = ptrSyslogTmp.get()->sd.value().find('[',oBracket+1);
             cBracket = ptrSyslogTmp.get()->sd.value().find(']',cBracket+1);
+            transaction1.commit();
         }
         catch (Wt::Dbo::Exception e)
         {
@@ -52,8 +59,10 @@ int Parser::unserializeStructuredData(Wt::Dbo::ptr<Syslog> ptrSyslog)
         //SQL session
         try
         {
-            Wt::Dbo::Transaction transaction(*(te->sessionParser));
-            tempString.assign(ptrSyslogTmp.get()->sd.toUTF8().substr(posBrackets.at(i)+1,posBrackets.at(i+1)-posBrackets.at(i)-1));                   
+            Wt::Dbo::Transaction transaction2(*(te->sessionParser));
+            ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslogId).limit(1);
+            tempString.assign(ptrSyslogTmp.get()->sd.toUTF8().substr(posBrackets.at(i)+1,posBrackets.at(i+1)-posBrackets.at(i)-1));
+            transaction2.commit();
         }
         catch (Wt::Dbo::Exception e)
         {
@@ -63,74 +72,162 @@ int Parser::unserializeStructuredData(Wt::Dbo::ptr<Syslog> ptrSyslog)
         if (posBrackets.at(i) == 0 && prop==false )
         {     
             //we parse the first sd-element containing the properties of the message
-            if (unserializeProperties(tempString, ptrSyslogTmp) == 0)
+            if (unserializeProperties(tempString, ptrSyslogId) == 0)
             {
                 tempString.clear();
                 //we have parsed the properties sd-element
                 prop=true;
             }
+            else
+            {
+                try
+                {
+                    Wt::Dbo::Transaction transaction(*(te->sessionParser));
+                    ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslogId).limit(1);
+                    ptrSyslogTmp.modify()->state = 12;
+                    transaction.commit();
+                    return res;
+                }
+                catch (Wt::Dbo::Exception e)
+                {
+                    ToolsEngine::log("error") << " [Class:Parser] " << e.what();
+                    return res;
+                }
+            }
             
         }
         else
         {
-            if (unserializeSDElement(tempString, ptrSyslog) == 0)
+            if (unserializeSDElement(tempString, ptrSyslogId) == 0)
             {
                 tempString.clear();
                 res = 0;
+            }
+            else
+            {
+                return res;
             }
         }
     }
     return res;
 }
 
-int Parser::unserializeProperties(std::string& strProperties, Wt::Dbo::ptr<Syslog> ptrSyslog)
+int Parser::unserializeProperties(std::string& strProperties, long long ptrSyslogId)
 {
     ToolsEngine::log("debug") << " [Class:Parser] " << " Unserialize properties begin" ;
-    //example of string to parse : prop@5875 ver=1 probe=12
+    //example of string to parse : prop@5875 ver=1 probe=12 token="tokentokentokentokentoken"
+    
     //we parse the first sd-element
-    //table to save the equal positions in the first sd-element
-    size_t tbEquals[1];
-    size_t space;
-    tbEquals[0] = strProperties.find('=',0);
-    space = strProperties.find(' ',tbEquals[0]+1);
-    tbEquals[1] = strProperties.find('=',space);
+    std::vector<std::string> globalSplitResult;
+    boost::split(globalSplitResult, strProperties, boost::is_any_of(" "), boost::token_compress_on);
+    
+    // 0 prop@5875
+    // 1 ver=1 
+    //2 probe=12 
+    //3 token="tokentokentokentokentoken"
+    
+    std::vector<std::string> keyValueProbeIdSplitResult;
+    boost::split(keyValueProbeIdSplitResult, globalSplitResult[2], boost::is_any_of("="), boost::token_compress_on);
+    
+    std::vector<std::string> keyValueVersionSplitResult;
+    boost::split(keyValueVersionSplitResult, globalSplitResult[1], boost::is_any_of("="), boost::token_compress_on);
+    
+    std::vector<std::string> keyValueTokenSplitResult;
+    boost::split(keyValueTokenSplitResult, globalSplitResult[3], boost::is_any_of("="), boost::token_compress_on);
+    
     Wt::Dbo::ptr<Probe> ptrProbe;
     int idProbeTmp;
+    std::string probeToken;
     Wt::Dbo::ptr<Syslog> ptrSyslogTmp;
+    Wt::Dbo::ptr<SyslogHistory> ptrSyslogHistoryTmp;
     
     //result
     int res = -1;
-    
-    
+
     //parse idProbe :
-    idProbeTmp = boost::lexical_cast<int>(strProperties.substr(tbEquals[1]+1,strProperties.length()-(tbEquals[1]+1)));
+    idProbeTmp = boost::lexical_cast<int>(keyValueProbeIdSplitResult[1]);
+    probeToken = boost::lexical_cast<std::string>(keyValueTokenSplitResult[1]);
     
     //SQL session
+    try 
     {
-        try 
-        {                         
-            Wt::Dbo::Transaction transaction(*(te->sessionParser));
-            //we fill the local copy of the syslo pointer with the id of the received syslog
-            ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslog.id()).limit(1);
-            ptrSyslogTmp.modify()->version = boost::lexical_cast<int>(strProperties.substr(tbEquals[0]+1,space-(tbEquals[0]+1)));      
+        ToolsEngine::log("debug") << " [Class:Parser] " << " check token" ;
+        Wt::Dbo::Transaction transaction(*(te->sessionParser));
+        Wt::Dbo::ptr<Probe> ptrProbe = te->sessionParser->find<Probe>().where("\"PRB_ID\" = ?").bind(idProbeTmp).limit(1);
+        
+        if (ptrProbe.id() < 0)
+        {
+            ToolsEngine::log("error") << " [Class:Parser] Unknown probe.";
+            transaction.commit();
+            return res;
+        }
+        ToolsEngine::log("debug") << " [Class:Parser] Token received : " << probeToken;
+        ToolsEngine::log("debug") << " [Class:Parser] Token organization : " << ptrProbe.get()->organization.get()->token.toUTF8();
+                
+        if (probeToken.compare("\"" + ptrProbe.get()->organization.get()->token.toUTF8() + "\"") != 0)
+        {
+            ToolsEngine::log("error") << " [Class:Parser] Token not matching organization token.";
+            transaction.commit();
+            return res;
+        }
+        else
+        {
+            ToolsEngine::log("debug") << " [Class:Parser] Token matching.";
+        }
+        
+        transaction.commit();
+    }
+    catch (Wt::Dbo::Exception e)
+    {
+        res = -1;
+        ToolsEngine::log("error") << " [Class:Parser] " << e.what();           
+    }
+    
+    //SQL session
+    try 
+    {
+        ToolsEngine::log("debug") << " [Class:Parser] " << " transaction update slo opened" ;
+        Wt::Dbo::Transaction transaction3(*(te->sessionParser));
+        //we fill the local copy of the syslo pointer with the id of the received syslog
+//            ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ? FOR UPDATE").bind(ptrSyslog.id()).limit(1);
+        ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslogId).limit(1);
+        ptrSyslogTmp.modify()->version = boost::lexical_cast<int>(keyValueVersionSplitResult[1]);      
 
-            //we find the probe that have the id of the received syslog and get its pointer
-            ptrProbe = te->sessionParser->find<Probe>().where("\"PRB_ID\" = ?").bind(idProbeTmp).limit(1);             
+        //we find the probe that have the id of the received syslog and get its pointer
+//            ptrProbe = te->sessionParser->find<Probe>().where("\"PRB_ID\" = ? FOR UPDATE").bind(idProbeTmp).limit(1);
+        ptrProbe = te->sessionParser->find<Probe>().where("\"PRB_ID\" = ?").bind(idProbeTmp).limit(1);
 
+        //we modify the probe in the local copy of the syslog pointer with the getted object
+        ptrSyslogTmp.modify()->probe = ptrProbe;
+
+        ptrSyslogHistoryTmp = te->sessionParser->find<SyslogHistory>().where("\"SLH_ID\" = ?").bind(ptrSyslogId).limit(1);
+        if (ptrSyslogHistoryTmp)
+        {
+            ptrSyslogHistoryTmp.modify()->version = boost::lexical_cast<int>(keyValueVersionSplitResult[1]);      
             //we modify the probe in the local copy of the syslog pointer with the getted object
-            ptrSyslogTmp.modify()->probe = ptrProbe;
+            ptrSyslogHistoryTmp.modify()->probe = ptrProbe;
+
             res = 0;
         }
-        catch (Wt::Dbo::Exception e)
+        else
         {
-            res = -1;
-            ToolsEngine::log("error") << " [Class:Parser] " << e.what();           
+            ToolsEngine::log("error") << " [Class:Parser] " << " slhnot found, id : " << ptrSyslogId ;
         }
-    } 
+
+        res = 0;
+        transaction3.commit();
+        ToolsEngine::log("debug") << " [Class:Parser] " << " transaction update slo commited" ;
+    }
+    catch (Wt::Dbo::Exception e)
+    {
+        res = -1;
+        ToolsEngine::log("error") << " [Class:Parser] " << e.what();           
+    }
+        
     return res;
 }
 
-int Parser::unserializeSDElement(std::string& strSDElement, Wt::Dbo::ptr<Syslog> ptrSyslog)
+int Parser::unserializeSDElement(std::string& strSDElement, long long ptrSyslogId)
 {
     ToolsEngine::log("debug") << " [Class:Parser] " << " Unserialize SDElement begin" ;
     //string to parse : res2@5875 offset=15 8-4-5-6-2="543" 8-4-5-6-1="54546"
@@ -184,7 +281,7 @@ int Parser::unserializeSDElement(std::string& strSDElement, Wt::Dbo::ptr<Syslog>
     {  
         try
         {
-            if ( unserializeValue(idsPlusValue.at(i),offset, ptrSyslog) == -1)
+            if ( unserializeValue(idsPlusValue.at(i),offset, ptrSyslogId) == -1)
             {
                 res = -1;
             }
@@ -202,7 +299,7 @@ int Parser::unserializeSDElement(std::string& strSDElement, Wt::Dbo::ptr<Syslog>
     return res;
 }
 
-int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Syslog> ptrSyslog)
+int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSyslogId)
 {  
     ToolsEngine::log("debug") << " [Class:Parser] " << " Unserialize value begin" ;
     Wt::WDateTime creaDate;
@@ -214,18 +311,20 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
     // new : 2-1-1-2-1-1-1="QXVnIDIxIDEwOg=="
    
     //table to save the dashs positions between the ids
-    size_t tbDashs[5];
+    int const tbDashsLength(6);
+    size_t tbDashs[tbDashsLength];
     size_t dash=-1;
     
     //table to save the quote positions in the value field
-    size_t tbQuotes[1]; 
+    int const tbQuotesLength(2);
+    size_t tbQuotes[tbQuotesLength]; 
     size_t quote=-1; 
     
     //result
     int res = -1;
     
     //we search and save the different positions of the dashs in the strValue
-    for(int i = 0 ; i < 6 ; i ++)
+    for(int i = 0 ; i < tbDashsLength ; i ++)
     {
         dash = strValue.find("-",dash+1);
      //   std::cout << "dash : " << dash << "\n";
@@ -237,7 +336,7 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
     }
     
     //we search and save the different positions of the quotes in the strValue
-    for(int i = 0 ; i < 2 ; i ++)
+    for(int i = 0 ; i < tbQuotesLength ; i ++)
     {
         quote = strValue.find("\"",quote+1);
         
@@ -264,57 +363,162 @@ int Parser::unserializeValue(std::string& strValue, int offset, Wt::Dbo::ptr<Sys
       //std::cout << "lineNum : " << lineNumber << "\n"; 
       sValue = Wt::Utils::base64Decode(strValue.substr(tbQuotes[0]+1,tbQuotes[1]-(tbQuotes[0]+1)));
    
-      
-   
     //SQL session
-    { 
+    {
+        InformationValue *informationValueToAdd = new InformationValue();
+        InformationHistoricalValue *informationHistoricalValueToAdd = new InformationHistoricalValue();
+        long long ivaAddedId = -1;
+        Wt::WString calculate = Wt::WString::Empty;
         try 
         {   
-            Wt::Dbo::Transaction transaction(*(te->sessionParser));
-            informationValueTmp = new InformationValue();
-            Wt::Dbo::ptr<Information2> ptrInfTmp = te->sessionParser->find<Information2>()
+            ToolsEngine::log("debug") << " [Class:Parser] " << "Starting transaction to get values to process." ;
+            Wt::Dbo::Transaction transaction5(*(te->sessionParser));
+            // we have to check wether the asset exists or not (been deleted ?)
+            Wt::Dbo::ptr<Asset> ptrAstTmp = te->sessionParser->find<Asset>()
+                    .where("\"AST_ID\" = ?").bind(idAsset).where("\"AST_DELETE\" IS NULL").limit(1);
+            
+            if (!ptrAstTmp)
+            {
+                ToolsEngine::log("error") << " [Class:Parser] " << "Asset with id : " << idAsset << " doesn't exist." ;
+                res = -1;
+                transaction5.commit();
+                return res;
+            }
+            
+            Wt::Dbo::ptr<Syslog> ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslogId);
+            if (!ptrSyslogTmp)
+            {
+                ToolsEngine::log("error") << " [Class:Parser] " << "Syslog with id : " << ptrSyslogId << " doesn't exist." ;
+                res = -1;
+                transaction5.commit();
+                return res;
+            }
+            
+            
+            //we verify the unit of the collected information before saving it linked ton an information entry.   
+            Wt::Dbo::ptr<SearchUnit> ptrSearchUnit = te->sessionParser->find<SearchUnit>()
                     .where("\"PLG_ID_PLG_ID\" = ?").bind(idPlugin)
                     .where("\"SRC_ID\" = ?").bind(idSource)
                     .where("\"SEA_ID\" = ?").bind(idSearch)
-                    .where("\"INF_VALUE_NUM\" = ?").bind(valueNum).limit(1);
-
-            informationValueTmp->information = ptrInfTmp;
-            informationValueTmp->value = sValue;
-            //get sent date of the the associated syslog
-            creaDate = ptrSyslog.get()->sentDate.addSecs(offset) ;
-
-            informationValueTmp->creationDate = creaDate;
-
-            informationValueTmp->syslog = ptrSyslog;
-            
-            informationValueTmp->lotNumber = lotNumber;
-            informationValueTmp->lineNumber = lineNumber;            
-
-            Wt::Dbo::ptr<Asset> ptrAstTmp = te->sessionParser->find<Asset>()
-                    .where("\"AST_ID\" = ?").bind(idAsset).limit(1);
-
-            informationValueTmp->asset = ptrAstTmp;
-            
-            
-            posKeyValue = informationValueTmp->information.get()->pk.search.get()->pos_key_value;
-            if (posKeyValue == 0)
+                    .where("\"INF_VALUE_NUM\" = ?").bind(valueNum).limit(1); 
+        
+//            Wt::Dbo::Transaction transaction(*(te->sessionParser));
+            Wt::Dbo::ptr<Information2> ptrInfTmp;
+            ToolsEngine::log("debug") << " [Class:Parser] " << "looking for INF";
+            if (ptrSearchUnit.get())
             {
-                informationValueTmp->state = 0;
+                ToolsEngine::log("debug") << " [Class:Parser] " << "search unit : " << ptrSearchUnit.id() << "information_unit_id : " << ptrSearchUnit.get()->informationUnit.id();
+                ptrInfTmp = te->sessionParser->find<Information2>()
+                        .where("\"PLG_ID_PLG_ID\" = ?").bind(idPlugin)
+                        .where("\"SRC_ID\" = ?").bind(idSource)
+                        .where("\"SEA_ID\" = ?").bind(idSearch)
+                        .where("\"INF_VALUE_NUM\" = ?").bind(valueNum)
+                        .where("\"INU_ID_INU_ID\" = ?").bind(ptrSearchUnit.get()->informationUnit.id()).limit(1);
             }
             else
             {
-                // state : -1= lot not complete, 0 = pending, 1 = processing, 2 = done    
-                informationValueTmp->state = -1;
+                ToolsEngine::log("error") << " [Class:Parser] " << "No search unit retrieved." ;
+                res = -1;
+                transaction5.commit();
+                return res;
             }
+            ToolsEngine::log("debug") << " [Class:Parser] " << "Get calculate." ;
+            //here we check whether we have to calculate something about the information
+            ToolsEngine::log("debug") << " [Class:Parser] " << "Calculate this info ? : "<< ptrInfTmp.get();
+            ToolsEngine::log("debug") << " [Class:Parser] " << "Calculate?";
 
-            te->sessionParser->add(informationValueTmp);
-            res = 0;           
+
+            if (ptrInfTmp.get())
+            {
+                ToolsEngine::log("debug") << " [Class:Parser] " << "Info exists. Looking for : " 
+                        << idSearch << "-"
+                        << idSource << "-"
+                        << idPlugin << "-"
+                        << valueNum << "-"
+                        << ptrSearchUnit.get()->informationUnit.id();
+                ToolsEngine::log("debug") << " [Class:Parser] " << "calculate found.";
+                if (ptrInfTmp.get()->calculate)
+                {
+                    if (!ptrInfTmp.get()->calculate.get().empty())
+                    {
+                        calculate = ptrInfTmp.get()->calculate.get();
+                    }
+                }
+            }
+            else
+            {
+                ToolsEngine::log("error") << " [Class:Parser] " << "No information retrieved." ;
+                res = -1;
+                transaction5.commit();
+                return res;
+            } 
+                
+            //get sent date of the the associated syslog
+            creaDate = ptrSyslogTmp.get()->sentDate.addSecs(offset) ;
+            informationValueToAdd->information = ptrInfTmp;
+            informationValueToAdd->value = sValue;
+            informationValueToAdd->creationDate = creaDate;
+            informationValueToAdd->syslog = ptrSyslogTmp;
+            informationValueToAdd->lotNumber = lotNumber;
+            informationValueToAdd->lineNumber = lineNumber;            
+            informationValueToAdd->asset = ptrAstTmp;
+
+            informationHistoricalValueToAdd->information = ptrInfTmp;
+            informationHistoricalValueToAdd->value = sValue;
+            informationHistoricalValueToAdd->creationDate = creaDate;
+            informationHistoricalValueToAdd->syslog = ptrSyslogTmp;
+            informationHistoricalValueToAdd->lotNumber = lotNumber;
+            informationHistoricalValueToAdd->lineNumber = lineNumber;            
+            informationHistoricalValueToAdd->asset = ptrAstTmp;
+            
+            if (!calculate.empty())
+            {
+                informationHistoricalValueToAdd->state = 9;
+                posKeyValue = ptrInfTmp.get()->pk.search.get()->pos_key_value;
+                if (posKeyValue == 0)
+                {
+                    informationValueToAdd->state = 9;
+                    
+                }
+                else
+                {
+                    // state : -1= lot not complete, 0 = pending, 1 = processing, 2 = done    
+                    informationValueToAdd->state = 9;
+                }
+            }   
+            else
+            {
+                informationHistoricalValueToAdd->state = 0;
+                posKeyValue = ptrInfTmp.get()->pk.search.get()->pos_key_value;
+                if (posKeyValue == 0)
+                {
+                    informationValueToAdd->state = 0;
+                }
+                else
+                {
+                    // state : -1= lot not complete, 0 = pending, 1 = processing, 2 = done    
+                    informationValueToAdd->state = 0;
+                }
+            }
+            
+            Wt::Dbo::ptr<InformationValue> ptrIvaRes = te->sessionParser->add<InformationValue>(informationValueToAdd);
+            Wt::Dbo::ptr<InformationHistoricalValue> ptrIhvRes = te->sessionParser->add<InformationHistoricalValue>(informationHistoricalValueToAdd);
+            ptrIvaRes.flush();
+            ivaAddedId = ptrIvaRes.id();
+            transaction5.commit();
+
+
+            res = 0; 
         }
         catch (Wt::Dbo::Exception e)
         {
             ToolsEngine::log("error") << " [Class:Parser] " << e.what() ;
             res = -1;
+            return res;
         }
+        
+        
     } 
+    ToolsEngine::log("debug") << " [Class:Parser] " << "End of value unserialization." ;  
     return res;
 }

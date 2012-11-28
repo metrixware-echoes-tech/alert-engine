@@ -62,9 +62,11 @@ public:
     * @param sourceId
     * @param searchId
     * @param valueNum
+    * @param unitId
+    * @param list of assets
     * @return pos key value ; -1 if error
     */
-    int getPosKey(Session *sessionThread, int pluginId,int sourceId,int searchId,double valueNum, std::string assetList);
+    int getPosKey(Session *sessionThread, int pluginId,int sourceId,int searchId,double valueNum, int unitId, std::string assetList);
     
     /**
     * Method to get an asset list to put it in a "in" sql request

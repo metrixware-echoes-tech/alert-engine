@@ -4,24 +4,30 @@
 bool ToolsEngine::alreadyCreated = false;
 
 
-ToolsEngine::ToolsEngine() {
+ToolsEngine::ToolsEngine(std::string confFile) {
     if (alreadyCreated)
     {
-            ToolsEngine::log("error") << " [Class:ToolsEngine] " << "Can't create a second instance of the singleton class";
+        ToolsEngine::log("error") << " [Class:ToolsEngine] " << "Can't create a second instance of the singleton class";
     }
     // Sinon, on construit la classe et on déclare l'objet créé
     alreadyCreated = true;
     
     //loading config file
-    if (configFileLoad("engine.conf") == -1)
+    if (configFileLoad(confFile) == -1)
     {
         ToolsEngine::log("fatal") << " [Class:ToolsEngine] " << "Can't load config file";
-        exit(0);
+        exit(1);
+    }
+    else
+    {
+        ToolsEngine::log("info") << " [Class:ToolsEngine] " << "conf file loaded";
     }
     //creating SQL sessions
     sessionParser = new Session(sqlCredentials);
+    sessionParserGlobal = new Session(sqlCredentials);
     sessionAlertProcessor = new Session(sqlCredentials);
     sessionOldValues = new Session(sqlCredentials);
+    sessionCalculate = new Session(sqlCredentials);
     
     ioService = new Wt::WIOService();
     ioService->start();
@@ -45,43 +51,38 @@ int ToolsEngine::configFileLoad(std::string fileLocation)
 {
     int result = -1;
     
-    //load the config file
-    std::ifstream configFile(fileLocation.data());
-    if(!configFile)
-    {
-        ToolsEngine::log("error") << " [Class:ToolsEngine] "<< " Config file not found";
-    }
-    std::set<std::string> options;
-    std::map<std::string, std::string> parameters;
-    options.insert("*");
+    // Create an empty property tree object
+    using boost::property_tree::ptree;
+    ptree pt;
     
-    //reading the config file
+    // Load the INI file into the property tree. If reading fails
+    // (cannot open file, parse error), an exception is thrown.
     try
     {
-        for(boost::program_options::detail::config_file_iterator i(configFile, options), e; i != e ; ++i)
-        {
-            ToolsEngine::log("debug") << " [Class:main] "<< " Config file reading :" << i->string_key <<"  " << i->value[0];
-            parameters[i->string_key] = i->value[0];
-        }
-        result = 0;
+        boost::property_tree::read_ini(fileLocation, pt);
+        sqlCredentials = "hostaddr=" + pt.get<std::string>("database-hostname") + 
+                     " port=" + pt.get<std::string>("database-port") + 
+                     " dbname=" + pt.get<std::string>("database-name") +
+                     " user=" + pt.get<std::string>("database-login") +
+                     " password=" + pt.get<std::string>("database-password");
+        apiUrl = pt.get<std::string>("api-url");
+        sleepThreadReadDatasMilliSec = pt.get<int>("sleep-database-reading");
+        sleepThreadCheckAlertMilliSec =pt.get<int>("sleep-alert-reading");
+        sleepThreadRemoveOldValues = pt.get<int>("sleep-remove-old-values");
+        sleepThreadCalculate = pt.get<int>("sleep-calculate");
+        parser = pt.get<bool>("parser");
+        alerter = pt.get<bool>("alerter");
+        cleaner = pt.get<bool>("cleaner");
+        calculator = pt.get<bool>("calculator");
+        result = 1;
     }
-    catch(std::exception& e)
+    catch (boost::property_tree::ini_parser_error e)
     {
-            ToolsEngine::log("error") << " [Class:main] "<< "Config file reading failed : " << e.what();
-    }  
-    //filling variables with the collected datas in the config file
-    //parcourir la map !!       
-    sqlCredentials = "hostaddr=" + parameters["database-hostname"] + 
-                     " port=" + parameters["database-port"] + 
-                     " dbname=" + parameters["database-name"] +
-                     " user=" + parameters["database-login"] +
-                     " password=" + parameters["database-password"];
-    sleepThreadReadDatasMilliSec = boost::lexical_cast<int>(parameters["sleep-database-reading"]);
-    sleepThreadCheckAlertMilliSec = boost::lexical_cast<int>(parameters["sleep-alert-reading"]);
-    sleepThreadRemoveOldValues = boost::lexical_cast<int>(parameters["sleep-remove-old-values"]);
-    criticity = boost::lexical_cast<int>(parameters["log-criticity"]);
-    //set the log criticity
-    switch (criticity)
+        Wt::log("error") << "[TE] " << e.what();
+    }
+    
+
+    switch (ToolsEngine::criticity)
     {
         case debug:
         {
@@ -95,22 +96,22 @@ int ToolsEngine::configFileLoad(std::string fileLocation)
         } 
         case warning:
         {
-                ToolsEngine::logger.configure("* -debug - info");
+                ToolsEngine::logger.configure("* -debug -info");
                 break;
         } 
         case secure:
         {
-                ToolsEngine::logger.configure("* -debug - info -warning");
+                ToolsEngine::logger.configure("* -debug -info -warning");
                 break;
         } 
         case error:
         {
-                ToolsEngine::logger.configure("* -debug - info -warning -secure");
+                ToolsEngine::logger.configure("* -debug -info -warning -secure");
                 break;
         }  
         case fatal:
         {
-                ToolsEngine::logger.configure("* -debug - info -warning -secure -error");
+                ToolsEngine::logger.configure("* -debug -info -warning -secure -error");
                 break;
         }
         default:
@@ -124,4 +125,30 @@ int ToolsEngine::configFileLoad(std::string fileLocation)
 //      ToolsEngine::log("info") << " [Class:main] "<< sleepThreadCheckAlertMilliSec;
       
       return result;
+}
+
+void ToolsEngine::reloadSessionCalculate()
+{
+    boost::mutex::scoped_lock scoped_lock(ToolsEngine::mutexCalculate);
+    sessionCalculate->~Session();
+    sessionCalculate = new Session(sqlCredentials);
+    return;
+    boost::mutex::scoped_lock scoped_unlock(ToolsEngine::mutexCalculate);
+}
+
+bool ToolsEngine::isParser()
+{
+    return this->parser;
+}
+bool ToolsEngine::isAlerter()
+{
+    return this->alerter;
+}
+bool ToolsEngine::isCleaner()
+{
+    return this->cleaner;
+}
+bool ToolsEngine::isCalculator()
+{
+    return this->calculator;
 }
