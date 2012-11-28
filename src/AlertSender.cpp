@@ -267,7 +267,7 @@ int AlertSender::sendMAIL(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt
 }
  
 
-int AlertSender::send(Wt::Dbo::ptr<Alert> oldAlertPtr, Wt::Dbo::ptr<InformationValue> InformationValuePtr )
+int AlertSender::send(long long idAlert, Wt::Dbo::ptr<InformationValue> InformationValuePtr )
 {
     ToolsEngine::log("debug") << " [Class:AlertSender] " << "Entering send";
     Session *session = static_cast<Session*>(InformationValuePtr.session());
@@ -281,7 +281,7 @@ int AlertSender::send(Wt::Dbo::ptr<Alert> oldAlertPtr, Wt::Dbo::ptr<InformationV
     
     //because we have to re read the alert last send date that was just modified, if not we will read the first one commited at the first time alert send.
     // TODO : check wether an alert is selected (avoid null pointer)
-    Wt::Dbo::ptr<Alert> alertPtr = session->find<Alert>().where("\"ALE_ID\" = ?").bind(oldAlertPtr.id());
+    Wt::Dbo::ptr<Alert> alertPtr = session->find<Alert>().where("\"ALE_ID\" = ?").bind(idAlert);
     
     Wt::Dbo::ptr<AlertTracking> alertTrackingPtr;
     

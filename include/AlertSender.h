@@ -80,7 +80,7 @@ public:
     * @param the information value that matches the alert
     * @return error -1 or sucess 0
     */ 
-    int send(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<InformationValue> InformationValuePtr );
+    int send(long long idAlert, Wt::Dbo::ptr<InformationValue> InformationValuePtr );
 
 private:
     enum mediaTypes{sms = 2,mail = 1};

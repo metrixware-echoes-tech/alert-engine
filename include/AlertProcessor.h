@@ -85,7 +85,7 @@ public:
     * @param optionnal, the line number if we have a value linked to a key transmitted
     * @return void
     */ 
-    int compareNumberValue(std::string valuesToCheck,bool (*mathOperator)(double,double), double valueSetInDb, Wt::Dbo::ptr<Alert> alertPtr, int lineNumber=0);
+    int compareNumberValue(std::string valuesToCheck,bool (*mathOperator)(double,double), double valueSetInDb, long long idAlert, int lineNumber=0);
 
     /**
     * method to compute the value of the alerts, implentation of the mathematics operators
