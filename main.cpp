@@ -16,6 +16,7 @@ void checkNewDatas();
 void checkNewAlerts();
 void removeOldValues();
 void calculate();
+void cleanAll();
 
 Wt::WLogger ToolsEngine::logger;
 boost::mutex ToolsEngine::mutex;
@@ -132,7 +133,8 @@ int main(int argc, char *argv[])
         std::cerr << e.what() << std::endl;
         ToolsEngine::log("info") << " [Class:Main] " << "Using existing database." << e.what();
     }
-
+    
+    cleanAll();
         
     // thread's creation
     boost::thread_group threadsEngine;
@@ -259,54 +261,58 @@ void removeOldValues()
 {
     while (true)
     {
-        //change the status for old values to avoid to send alert on old data
-        try
-        {
-            Wt::Dbo::Transaction transaction(*(te->sessionOldValues));
-            std::string queryString = "UPDATE \"T_INFORMATION_VALUE_IVA\" SET \"IVA_STATE\" = 4 WHERE"
-                                        " \"IVA_STATE\" = 0"
-                                        " AND \"IVA_CREA_DATE\" < (NOW() - interval '1 hour')";
-            te->sessionOldValues->execute(queryString);
-            transaction.commit();
-        }
-        catch(Wt::Dbo::Exception e)
-        {
-            ToolsEngine::log("error") << " [Class:main] "<< e.what();
-        }
-        
-        //remove values older than 1 day from information_value (duplicated in T_INFORMATION_HISTORICAL_VALUE_IHV)
-        try
-        {
-            Wt::Dbo::Transaction transaction(*(te->sessionOldValues));
-            std::string queryString = "DELETE FROM \"T_INFORMATION_VALUE_IVA\""
-                                        " WHERE"
-                                        " \"IVA_STATE\" = 0"
-                                        " AND \"IVA_CREA_DATE\" < (NOW() - interval '1 day')";
-            te->sessionOldValues->execute(queryString);
-            transaction.commit();
-        }
-        catch(Wt::Dbo::Exception e)
-        {
-            ToolsEngine::log("error") << " [Class:main] "<< e.what();
-        }
-        
-        //remove values older than 1 day from t_syslog_slo (duplicated in T_INFORMATION_HISTORICAL_VALUE_IHV)
-        try
-        {
-            Wt::Dbo::Transaction transaction(*(te->sessionOldValues));
-            std::string queryString = "DELETE FROM \"T_SYSLOG_SLO\""
-                                        " WHERE \"SLO_STATE\" != 0"
-                                        " AND \"SLO_RCPT_DATE\" < (NOW() - interval '1 day')";
-            te->sessionOldValues->execute(queryString);
-            transaction.commit();
-        }
-        catch(Wt::Dbo::Exception e)
-        {
-            ToolsEngine::log("error") << " [Class:main] "<< e.what();
-        }
-        
+        cleanAll();
         boost::this_thread::sleep(boost::posix_time::milliseconds(te->sleepThreadRemoveOldValues));
     };
+}
+
+void cleanAll()
+{
+    //change the status for old values to avoid to send alert on old data
+    try
+    {
+        Wt::Dbo::Transaction transaction(*(te->sessionOldValues));
+        std::string queryString = "UPDATE \"T_INFORMATION_VALUE_IVA\" SET \"IVA_STATE\" = 4 WHERE"
+                                    " \"IVA_STATE\" = 0"
+                                    " AND \"IVA_CREA_DATE\" < (NOW() - interval '1 hour')";
+        te->sessionOldValues->execute(queryString);
+        transaction.commit();
+    }
+    catch(Wt::Dbo::Exception e)
+    {
+        ToolsEngine::log("error") << " [Class:main] "<< e.what();
+    }
+
+    //remove values older than 1 day from information_value (duplicated in T_INFORMATION_HISTORICAL_VALUE_IHV)
+    try
+    {
+        Wt::Dbo::Transaction transaction(*(te->sessionOldValues));
+        std::string queryString = "DELETE FROM \"T_INFORMATION_VALUE_IVA\""
+                                    " WHERE"
+                                    " \"IVA_STATE\" = 0"
+                                    " AND \"IVA_CREA_DATE\" < (NOW() - interval '1 day')";
+        te->sessionOldValues->execute(queryString);
+        transaction.commit();
+    }
+    catch(Wt::Dbo::Exception e)
+    {
+        ToolsEngine::log("error") << " [Class:main] "<< e.what();
+    }
+
+    //remove values older than 1 day from t_syslog_slo (duplicated in T_INFORMATION_HISTORICAL_VALUE_IHV)
+    try
+    {
+        Wt::Dbo::Transaction transaction(*(te->sessionOldValues));
+        std::string queryString = "DELETE FROM \"T_SYSLOG_SLO\""
+                                    " WHERE \"SLO_STATE\" != 0"
+                                    " AND \"SLO_RCPT_DATE\" < (NOW() - interval '1 day')";
+        te->sessionOldValues->execute(queryString);
+        transaction.commit();
+    }
+    catch(Wt::Dbo::Exception e)
+    {
+        ToolsEngine::log("error") << " [Class:main] "<< e.what();
+    }
 }
 
 void calculate()
