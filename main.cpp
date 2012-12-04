@@ -299,7 +299,7 @@ void cleanAll()
         ToolsEngine::log("error") << " [Class:main] "<< e.what();
     }
 
-    //remove values older than 1 day from t_syslog_slo (duplicated in T_INFORMATION_HISTORICAL_VALUE_IHV)
+    //remove values older than 1 day from t_syslog_slo
     try
     {
         Wt::Dbo::Transaction transaction(*(te->sessionOldValues));

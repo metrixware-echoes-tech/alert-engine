@@ -6,19 +6,6 @@ AlertSender::AlertSender() {
 AlertSender::~AlertSender() {
 }
 
-//MediaValueList AlertSender::checkMediaToSendAlert(Wt::Dbo::ptr<Alert> alertPtr)
-//{
-//    MediaValueList result;
-//    Wt::Dbo::collection<Wt::Dbo::ptr<AlertMediaSpecialization> > amsList = alertPtr.get()->alertMediaSpecializations;
-//    
-//    for (Wt::Dbo::collection<Wt::Dbo::ptr<AlertMediaSpecialization> >::const_iterator j = amsList.begin(); j != amsList.end(); ++j) 
-//    {
-//        result.insert(j->get()->mediaValue);
-//    }
-//    
-//    return result;
-//}
-
 Wt::Dbo::collection<Wt::Dbo::ptr<AlertMediaSpecialization> > AlertSender::checkMediaToSendAlert(Wt::Dbo::ptr<Alert> alertPtr)
 {
     Wt::Dbo::collection<Wt::Dbo::ptr<AlertMediaSpecialization> > amsList = alertPtr.get()->alertMediaSpecializations;

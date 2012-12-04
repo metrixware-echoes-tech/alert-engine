@@ -80,21 +80,8 @@ int Parser::unserializeStructuredData(long long ptrSyslogId)
             }
             else
             {
-                try
-                {
-                    Wt::Dbo::Transaction transaction(*(te->sessionParser));
-                    ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslogId).limit(1);
-                    ptrSyslogTmp.modify()->state = 12;
-                    transaction.commit();
-                    return res;
-                }
-                catch (Wt::Dbo::Exception e)
-                {
-                    ToolsEngine::log("error") << " [Class:Parser] " << e.what();
-                    return res;
-                }
+                return res;
             }
-            
         }
         else
         {
