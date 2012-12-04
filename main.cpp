@@ -218,7 +218,10 @@ void checkNewDatas()
                 try
                 {
                     Wt::Dbo::Transaction transaction(*(te->sessionParserGlobal));
+                    te->sessionParserGlobal->execute("SELECT slo FROM \"T_SYSLOG_SLO\" slo WHERE \"SLO_ID\" = ? FOR UPDATE").bind(syslogId[i]);
                     te->sessionParserGlobal->execute("UPDATE \"T_SYSLOG_SLO\" SET \"SLO_STATE\" = ? WHERE \"SLO_ID\" = ?").bind(2).bind(syslogId[i]);
+                    te->sessionParserGlobal->execute("UPDATE \"T_SYSLOG_HISTORY_SLH\" SET \"SLH_STATE\" = ? WHERE \"SLH_ID\" = ?").bind(2).bind(syslogId[i]);
+                    te->sessionParserGlobal->execute("DELETE FROM \"T_SYSLOG_SLO\" WHERE \"SLO_ID\" = ?").bind(syslogId[i]);
 //                    Wt::Dbo::ptr<Syslog> ptrSyslog = te->sessionParserGlobal->find<Syslog>().where("\"SLO_ID\" = ?").bind(syslogId[i]).limit(1);
 //                    ptrSyslog.modify()->state = 2;
                     transaction.commit();
@@ -234,7 +237,10 @@ void checkNewDatas()
                 try
                 {
                     Wt::Dbo::Transaction transaction(*(te->sessionParserGlobal));
+                    te->sessionParserGlobal->execute("SELECT slo FROM \"T_SYSLOG_SLO\" slo WHERE \"SLO_ID\" = ? FOR UPDATE").bind(syslogId[i]);
                     te->sessionParserGlobal->execute("UPDATE \"T_SYSLOG_SLO\" SET \"SLO_STATE\" = ? WHERE \"SLO_ID\" = ?").bind(3).bind(syslogId[i]);
+                    te->sessionParserGlobal->execute("UPDATE \"T_SYSLOG_HISTORY_SLH\" SET \"SLH_STATE\" = ? WHERE \"SLH_ID\" = ?").bind(3).bind(syslogId[i]);
+                    te->sessionParserGlobal->execute("DELETE FROM \"T_SYSLOG_SLO\" WHERE \"SLO_ID\" = ?").bind(syslogId[i]);
 //                    Wt::Dbo::ptr<Syslog> ptrSyslog = te->sessionParserGlobal->find<Syslog>().where("\"SLO_ID\" = ?").bind(syslogId[i]).limit(1);
 //                    ptrSyslog.modify()->state = 3;
                     transaction.commit();

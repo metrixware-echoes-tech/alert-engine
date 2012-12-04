@@ -82,6 +82,20 @@ public:
     */ 
     int send(long long idAlert, Wt::Dbo::ptr<InformationValue> InformationValuePtr );
 
+    /**
+    * method to format the mail
+    * @param assetName : name of the asset
+    * @param alertName : name of the alert to be sent
+    * @param informationReceived : value of the information received
+    * @param unit : unit of the alert
+    * @param alertValue : value expected
+    * @param criteria : criteria of the alert
+    * @return error -1 or sucess 0
+    */ 
+    Wt::WString mailFormater(Wt::WString assetName,Wt::WString alertName,Wt::WString key, 
+                                Wt::WString informationReceived,Wt::WString unit,Wt::WString alertValue,
+                                Wt::WString criteria,Wt::WString date, bool noMoreSMS);
+    
 private:
     enum mediaTypes{sms = 2,mail = 1};
     enum options{quotasms = 2};

@@ -137,10 +137,11 @@ int AlertSender::sendMAIL(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt
     Wt::WString alertName = alertPtr.get()->name;
     Wt::WString informationReceived = informationValuePtr.get()->value;
     Wt::WString unit = alertPtr.get()->alertValue.get()->information.get()->pk.unit.get()->name;
+    Wt::WString criteria = alertPtr->alertValue->alertCriteria->name;
     Wt::WString alertValue = alertPtr.get()->alertValue.get()->value;
     Wt::WString date = informationValuePtr.get()->creationDate.toString();
     Wt::WDateTime now = Wt::WDateTime::currentDateTime(); //for setting the send date of the alert
-    Wt::WString key;
+    Wt::WString key = alertPtr->alertValue->keyValue.get();
     Wt::WString mail;
     Wt::Mail::Message mailMessage;
     Wt::Mail::Client mailClient;
@@ -153,43 +154,18 @@ int AlertSender::sendMAIL(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt
     if (overSMSQuota == 0)
     {
         mailRecipient = amsPtr.get()->mediaValue.get()->value;
-
         //we check if there is a key and get it if it's the case to put in the sms
         if (alertPtr.get()->alertValue.get()->keyValue)
         {
             key = alertPtr.get()->alertValue.get()->keyValue.get();
-            ToolsEngine::log("info") << " [Class:AlertSender] " << "New MAIL for "<< mailRecipient << " : "
-                                    << "New alert on " <<  assetConcerned
-                                    << " about : " << alertName
-                                    << "for : " << key
-                                    << " Received information : " << informationReceived << " " << unit
-                                    << " expected : " << alertValue << " " << unit
-                                    << " at : " << date
-                                    << " tracking id : " << alertTrackingPtr.id();
-            mail =  "New alert on " +  assetConcerned
-                        + " about : " + alertName
-                        + " for : " + key
-                        + " Received information : " + informationReceived + " " + unit
-                        + " expected : " + alertValue + " " + unit
-                        + " at : " + date
-                        + " check it on https://alert.echoes-tech.com";
         }
         else //there is no key in the value
         {
-            ToolsEngine::log("info") << " [Class:AlertSender] " << "New MAIL for "<< mailRecipient << " : "
-                                    << "New alert on " <<  assetConcerned
-                                    << " about : " << alertName
-                                    << " Received information : " << informationReceived << " " << unit
-                                    << " expected : " << alertValue << " " << unit
-                                    << " at : " << date
-                                    << " tracking id : " << alertTrackingPtr.id();
-            mail =  "New alert on " +  assetConcerned
-                        + " about : " + alertName
-                        + " Received information : " + informationReceived + " " + unit
-                        + " expected : " + alertValue + " " + unit
-                        + " at : " + date
-                        + " check it on https://alert.echoes-tech.com";
+            key = Wt::WString::Empty;
         }
+        Wt::WString mailBody = mailFormater(assetConcerned, alertName, key, informationReceived, unit, alertValue, criteria, date, false);
+        ToolsEngine::log("info") << " [Class:AlertSender] " << mailBody;
+        mail = mailBody;
     }
     else if (overSMSQuota == 1)
     {
@@ -198,42 +174,19 @@ int AlertSender::sendMAIL(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt
         if (alertPtr.get()->alertValue.get()->keyValue)
         {
             key = alertPtr.get()->alertValue.get()->keyValue.get();
-            ToolsEngine::log("info") << " [Class:AlertSender] " << "New MAIL instead of SMS (quota reached) for "<< mailRecipient << " : "
-                                    << "New alert on " <<  assetConcerned
-                                    << " about : " << alertName
-                                    << "for : " << key
-                                    << " Received information : " << informationReceived << " " << unit
-                                    << " expected : " << alertValue << " " << unit
-                                    << " at : " << date
-                                    << " tracking id : " << alertTrackingPtr.id();
-            mail =  "New Alert instead of SMS (quota reached) for " +  assetConcerned
-                        + " about : " + alertName
-                        + " for : " + key
-                        + " Received information : " + informationReceived + " " + unit
-                        + " expected : " + alertValue + " " + unit
-                        + " at : " + date;
         }
         else //there is no key in the value
         {
-            ToolsEngine::log("info") << " [Class:AlertSender] " << "New MAIL instead of SMS (quota reached) for "<< mailRecipient << " : "
-                                    << "New alert on " <<  assetConcerned
-                                    << " about : " << alertName
-                                    << " Received information : " << informationReceived << " " << unit
-                                    << " expected : " << alertValue << " " << unit
-                                    << " at : " << date
-                                    << " tracking id : " << alertTrackingPtr.id();
-            mail =  "New Alert instead of SMS (quota reached) for " +  assetConcerned
-                        + " about : " + alertName
-                        + " Received information : " + informationReceived + " " + unit
-                        + " expected : " + alertValue + " " + unit
-                        + " at : " + date
-                        + " check it on https://alert.echoes-tech.com";
+            key = Wt::WString::Empty;
         }
+        Wt::WString mailBody = mailFormater(assetConcerned, alertName, key, informationReceived, unit, alertValue, criteria, date, true);
+        ToolsEngine::log("info") << " [Class:AlertSender] " << mailBody;
+        mail = mailBody;
     }
     const Wt::WString constMailRecipient = mailRecipient;
     mailMessage.setFrom(Wt::Mail::Mailbox(mailSender.toUTF8(), mailSenderName));
     mailMessage.addRecipient(Wt::Mail::To, Wt::Mail::Mailbox(constMailRecipient.toUTF8(), mailRecipientName));
-    mailMessage.setSubject("You have a new alert");
+    mailMessage.setSubject("[ECHOES Alert] " + alertName);
     mailMessage.addHtmlBody(mail);
     mailClient.connect("hermes.gayuxweb.fr");
     mailClient.send(mailMessage);
@@ -400,4 +353,28 @@ int AlertSender::send(long long idAlert, Wt::Dbo::ptr<InformationValue> Informat
  
         }
     }
+}
+
+Wt::WString AlertSender::mailFormater(Wt::WString assetName,Wt::WString alertName,Wt::WString key, Wt::WString informationReceived,Wt::WString unit,Wt::WString alertValue,Wt::WString criteria, Wt::WString date, bool noMoreSMS)
+{
+    Wt::WString res = "";
+    if (noMoreSMS)
+    {
+        res += "MAIL sent instead of SMS (quota = 0) <br />";
+    }
+    res += 
+        + "Asset name : " +  assetName + "<br />"
+        + "Alert name : " + alertName + "<br />";
+    
+        if (!key.empty())
+        {
+           res += "Key : " + key + "<br />";
+        }
+        res += "Received value : " + informationReceived + " " + unit + "<br />"
+        + "Criteria : " + criteria + "<br />"
+        + "Expected value : " + alertValue + " " + unit + "<br />"
+        + "Time : " + date + "<br />"
+        + "Check it on https://alert.echoes-tech.com";
+    
+    return res;
 }
