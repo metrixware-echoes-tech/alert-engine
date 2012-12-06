@@ -439,13 +439,16 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
                 transaction5.commit();
                 return res;
             } 
+            
+            //get SLH
+            Wt::Dbo::ptr<SyslogHistory> ptrSyslogHistory = te->sessionParser->find<SyslogHistory>().where("\"SLH_ID\" = ?").bind(ptrSyslogId);
                 
             //get sent date of the the associated syslog
             creaDate = ptrSyslogTmp.get()->sentDate.addSecs(offset) ;
             informationValueToAdd->information = ptrInfTmp;
             informationValueToAdd->value = sValue;
             informationValueToAdd->creationDate = creaDate;
-            informationValueToAdd->syslog = ptrSyslogTmp;
+            informationValueToAdd->syslogHistory = ptrSyslogHistory;
             informationValueToAdd->lotNumber = lotNumber;
             informationValueToAdd->lineNumber = lineNumber;            
             informationValueToAdd->asset = ptrAstTmp;
@@ -453,7 +456,7 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
             informationHistoricalValueToAdd->information = ptrInfTmp;
             informationHistoricalValueToAdd->value = sValue;
             informationHistoricalValueToAdd->creationDate = creaDate;
-            informationHistoricalValueToAdd->syslog = ptrSyslogTmp;
+            informationHistoricalValueToAdd->syslogHistory = ptrSyslogHistory;
             informationHistoricalValueToAdd->lotNumber = lotNumber;
             informationHistoricalValueToAdd->lineNumber = lineNumber;            
             informationHistoricalValueToAdd->asset = ptrAstTmp;
