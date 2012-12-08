@@ -54,7 +54,11 @@ int Parser::unserializeStructuredData(long long ptrSyslogId)
         //prop@xxx
         if (i == 0)
         {
-            if (unserializeProperties(syslogStringSplitResult[i], ptrSyslogId) != 0)
+            if (unserializeProperties(syslogStringSplitResult[i], ptrSyslogId) == 0)
+            {
+                res = 0;
+            }
+            else
             {
                 return res;
             }
@@ -62,7 +66,11 @@ int Parser::unserializeStructuredData(long long ptrSyslogId)
         }
         else
         {
-            if (unserializeSDElement(syslogStringSplitResult[i], ptrSyslogId) != 0)
+            if (unserializeSDElement(syslogStringSplitResult[i], ptrSyslogId) == 0)
+            {
+                res = 0;
+            }
+            else
             {
                 return res;
             }
@@ -106,6 +114,7 @@ int Parser::unserializeProperties(std::string& strProperties, long long ptrSyslo
     probeToken = boost::lexical_cast<std::string>(keyValueTokenSplitResult[1]);
     
     //SQL session
+    //checking probe & token
     try 
     {
         ToolsEngine::log("debug") << " [Class:Parser] " << " check token" ;
@@ -138,9 +147,11 @@ int Parser::unserializeProperties(std::string& strProperties, long long ptrSyslo
     {
         res = -1;
         ToolsEngine::log("error") << " [Class:Parser] " << e.what();           
+        return res;
     }
     
     //SQL session
+    //updating syslog with version & probe
     try 
     {
         ToolsEngine::log("debug") << " [Class:Parser] " << " transaction update slo opened" ;
