@@ -25,6 +25,7 @@
 #include <sstream>
 #include <set>
 #include <boost/thread/mutex.hpp>
+#include <boost/thread/recursive_mutex.hpp>
 #include <Wt/WIOService>
 
 #include <boost/property_tree/ptree.hpp>
@@ -75,7 +76,7 @@ public:
 protected:
     static bool alreadyCreated;
     static boost::mutex mutex;
-    static boost::mutex mutexCalculate;
+    static boost::recursive_mutex mutexCalculate;
     enum logCriticity{debug = 1,info = 2, warning = 3, secure = 4, error = 5, fatal = 6};
     bool parser;
     bool alerter;

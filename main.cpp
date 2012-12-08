@@ -17,10 +17,11 @@ void checkNewAlerts();
 void removeOldValues();
 void calculate();
 void cleanAll();
+std::string getSyslogListSqlPrepared(int size, long long syslogId[]);
 
 Wt::WLogger ToolsEngine::logger;
 boost::mutex ToolsEngine::mutex;
-boost::mutex ToolsEngine::mutexCalculate;
+boost::recursive_mutex ToolsEngine::mutexCalculate;
 //default criticity to log before reading file config : debug = 1 / info = 2 / warning = 3 / secure = 4 / error = 5/ fatal = 6
 int ToolsEngine::criticity = 1;
 
@@ -168,7 +169,7 @@ void checkNewDatas()
     Parser *parser = new Parser();
     //result
     int res = -1;
-    int syslogSize = 50;
+    int syslogSize = 100;
     while (true)
     {
         long long syslogId[syslogSize];
@@ -191,10 +192,16 @@ void checkNewDatas()
             
             for (Wt::Dbo::collection<Wt::Dbo::ptr<Syslog> > ::const_iterator j = receivedSyslogCollection.begin(); j != receivedSyslogCollection.end(); ++j) 
             {
-                te->sessionParserGlobal->execute("UPDATE \"T_SYSLOG_SLO\" SET \"SLO_STATE\" = ? WHERE \"SLO_ID\" = ?").bind(1).bind(j->id());
                 syslogId[idx] = j->id();
                 idx++;
             }
+            if (idx > 0)
+            {
+                std::string listSloId = getSyslogListSqlPrepared(syslogSize,syslogId);
+                std::string qryString = "UPDATE \"T_SYSLOG_SLO\" SET \"SLO_STATE\" = ? WHERE \"SLO_ID\" IN " + listSloId;
+                ToolsEngine::log("debug") << " [Class:main] qyrStr : " << qryString;
+                te->sessionParserGlobal->execute(qryString).bind(1);
+            }            
             transaction0.commit();
         }
         catch(Wt::Dbo::Exception e)
@@ -257,6 +264,27 @@ void checkNewDatas()
     };
 }
 
+std::string getSyslogListSqlPrepared(int size, long long syslogId[])
+{
+    std::string res = "(";
+    int i = 0;
+    for (i ; i < size; i++) 
+    {
+        if (syslogId[i] == -1)
+        {
+            break;
+        }        
+        res += boost::lexical_cast<std::string>(syslogId[i]) + ",";
+    }
+    res.replace(res.size()-1, 1, "");
+    if (i == 0)
+    {
+        res += "0";
+    }
+    res += ")";
+    return res;
+}
+
 void checkNewAlerts()
 {
     AlertProcessor *alertProcessor = new AlertProcessor();
@@ -280,7 +308,7 @@ void cleanAll()
         Wt::Dbo::Transaction transaction(*(te->sessionOldValues));
         std::string queryString = "UPDATE \"T_INFORMATION_VALUE_IVA\" SET \"IVA_STATE\" = 4 WHERE"
                                     " \"IVA_STATE\" = 0"
-                                    " AND \"IVA_CREA_DATE\" < (NOW() - interval '1 hour')";
+                                    " AND \"IVA_CREA_DATE\" < (NOW() - interval '2 hour')";
         te->sessionOldValues->execute(queryString);
         transaction.commit();
     }

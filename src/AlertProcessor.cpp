@@ -490,7 +490,7 @@ int AlertProcessor::compareNumberValue(std::string stringValuesToCheck,bool (*ma
                 }
                 else
                 {
-                    ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << " Error while comparing alert value with iva value";
+                    ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << " Error while comparing alert value with iva value";
                     i->modify()->state = 3;
                 }
             }

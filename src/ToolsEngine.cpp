@@ -129,11 +129,12 @@ int ToolsEngine::configFileLoad(std::string fileLocation)
 
 void ToolsEngine::reloadSessionCalculate()
 {
-    boost::mutex::scoped_lock scoped_lock(ToolsEngine::mutexCalculate);
-    sessionCalculate->~Session();
-    sessionCalculate = new Session(sqlCredentials);
+    {
+        boost::lock_guard<boost::recursive_mutex> lock(mutexCalculate);
+        sessionCalculate->~Session();
+        sessionCalculate = new Session(sqlCredentials);
+    }
     return;
-    boost::mutex::scoped_lock scoped_unlock(ToolsEngine::mutexCalculate);
 }
 
 bool ToolsEngine::isParser()
