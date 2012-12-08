@@ -18,99 +18,57 @@ int Parser::unserializeStructuredData(long long ptrSyslogId)
     //[prop@5875 ver=1 probe=12]
     //[res2@5875 offset=15 8-4-5-6-2="543" 8-4-5-6-1="54546"][res1@5875 offset=75 8-4-5-6-2="123" 8-4-5-6-1="pojl"]
     
-    size_t oBracket=-1; //sucessives positions of the open bracket
-    size_t cBracket=-1; //sucessives positions of the closed bracket
-    posBrackets.clear();
-
-    
-    std::string tempString; //the substring that contains the sd-element passed in argument
-    bool prop=false; //we know if the properties sd-element is parsed
-
-    
-    //result
-    int res=-1;
-    
-    //we search and save the different positions of the brackets in the rawStructuredData
-    do
+    std::string syslogString = "";
+    try
     {
-        //SQL session
-        try
+        Wt::Dbo::Transaction transaction1(*(te->sessionParser));
+        //we fill the local copy of the syslo pointer with the id of the received syslog
+        Wt::Dbo::ptr<Syslog> ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslogId).limit(1);
+        if (ptrSyslogTmp)
         {
-            Wt::Dbo::Transaction transaction1(*(te->sessionParser));
-            //we fill the local copy of the syslo pointer with the id of the received syslog
-            Wt::Dbo::ptr<Syslog> ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslogId).limit(1);
-            if (ptrSyslogTmp)
-            {
-                oBracket = ptrSyslogTmp.get()->sd.value().find('[',oBracket+1);
-                cBracket = ptrSyslogTmp.get()->sd.value().find(']',cBracket+1);
-            }
-            else
-            {
-                ToolsEngine::log("error") << " [Class:Parser] " << "syslog id not found : " << ptrSyslogId;
-            }
-            transaction1.commit();
-        }
-        catch (Wt::Dbo::Exception e)
-        {
-            ToolsEngine::log("error") << " [Class:Parser] " << e.what();
-        }
-        
-        if ( oBracket != -1 || cBracket != -1 )
-        {
-                posBrackets.push_back(oBracket) ; //we save the position of the open bracket in the list
-                posBrackets.push_back(cBracket) ; //we save the position of the close bracket in the list
-        }   
-    }while (oBracket != -1); 
-
-    for (int i = 0 ; i < posBrackets.size() ; i +=2 )
-    {   
-        //SQL session
-        try
-        {
-            Wt::Dbo::Transaction transaction2(*(te->sessionParser));
-            Wt::Dbo::ptr<Syslog> ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslogId).limit(1);
-            if (ptrSyslogTmp)
-            {
-                tempString.assign(ptrSyslogTmp.get()->sd.toUTF8().substr(posBrackets.at(i)+1,posBrackets.at(i+1)-posBrackets.at(i)-1));
-            }
-            else
-            {
-                ToolsEngine::log("error") << " [Class:Parser] " << "syslog id not found : " << ptrSyslogId;
-            }
-            transaction2.commit();
-        }
-        catch (Wt::Dbo::Exception e)
-        {
-            ToolsEngine::log("error") << " [Class:Parser] " << e.what();
-        }
-        
-        if (posBrackets.at(i) == 0 && prop==false )
-        {     
-            //we parse the first sd-element containing the properties of the message
-            if (unserializeProperties(tempString, ptrSyslogId) == 0)
-            {
-                tempString.clear();
-                //we have parsed the properties sd-element
-                prop=true;
-            }
-            else
-            {
-                return res;
-            }
+            syslogString = ptrSyslogTmp.get()->sd.toUTF8();
         }
         else
         {
-            if (unserializeSDElement(tempString, ptrSyslogId) == 0)
+            ToolsEngine::log("error") << " [Class:Parser] " << "syslog id not found : " << ptrSyslogId;
+        }
+        transaction1.commit();
+    }
+    catch (Wt::Dbo::Exception e)
+    {
+        ToolsEngine::log("error") << " [Class:Parser] " << e.what();
+    }
+    
+    boost::erase_all(syslogString,"[");
+    //prop@5875 ver=1 probe=12]
+    //res2@5875 offset=15 8-4-5-6-2="543" 8-4-5-6-1="54546"]res1@5875 offset=75 8-4-5-6-2="123" 8-4-5-6-1="pojl"]
+    
+    std::vector<std::string> syslogStringSplitResult;
+    boost::split(syslogStringSplitResult, syslogString, boost::is_any_of("]"), boost::token_compress_on);
+    
+    //result
+    int res = -1;
+
+    for (int i = 0; i < syslogStringSplitResult.size(); i++)
+    {
+        //prop@xxx
+        if (i == 0)
+        {
+            if (unserializeProperties(syslogStringSplitResult[i], ptrSyslogId) != 0)
             {
-                tempString.clear();
-                res = 0;
+                return res;
             }
-            else
+            
+        }
+        else
+        {
+            if (unserializeSDElement(syslogStringSplitResult[i], ptrSyslogId) != 0)
             {
                 return res;
             }
         }
     }
+
     return res;
 }
 
@@ -187,20 +145,15 @@ int Parser::unserializeProperties(std::string& strProperties, long long ptrSyslo
     {
         ToolsEngine::log("debug") << " [Class:Parser] " << " transaction update slo opened" ;
         Wt::Dbo::Transaction transaction3(*(te->sessionParser));
-        //we fill the local copy of the syslo pointer with the id of the received syslog
         Wt::Dbo::ptr<Syslog> ptrSyslogTmp = te->sessionParser->query<Wt::Dbo::ptr<Syslog> >("SELECT slo FROM \"T_SYSLOG_SLO\" slo WHERE \"SLO_ID\" = ? LIMIT 1 FOR UPDATE").bind(ptrSyslogId);
-//        ptrSyslogTmp = te->sessionParser->find<Syslog>().where("\"SLO_ID\" = ?").bind(ptrSyslogId).limit(1);
         ptrSyslogTmp.modify()->version = boost::lexical_cast<int>(keyValueVersionSplitResult[1]);      
 
         //we find the probe that have the id of the received syslog and get its pointer
-//            ptrProbe = te->sessionParser->find<Probe>().where("\"PRB_ID\" = ? FOR UPDATE").bind(idProbeTmp).limit(1);
         Wt::Dbo::ptr<Probe> ptrProbe = te->sessionParser->query<Wt::Dbo::ptr<Probe> >("SELECT prb FROM \"T_PROBE_PRB\" prb WHERE \"PRB_ID\" = ? LIMIT 1 FOR UPDATE").bind(idProbeTmp);
 
-        //we modify the probe in the local copy of the syslog pointer with the getted object
         ptrSyslogTmp.modify()->probe = ptrProbe;
 
         Wt::Dbo::ptr<SyslogHistory> ptrSyslogHistoryTmp = te->sessionParser->query<Wt::Dbo::ptr<SyslogHistory> >("SELECT slh FROM \"T_SYSLOG_HISTORY_SLH\" slh WHERE \"SLH_ID\" = ? LIMIT 1 FOR UPDATE").bind(ptrSyslogId);
-//        ptrSyslogHistoryTmp = te->sessionParser->find<SyslogHistory>().where("\"SLH_ID\" = ?").bind(ptrSyslogId).limit(1);
         if (ptrSyslogHistoryTmp)
         {
             ptrSyslogHistoryTmp.modify()->version = boost::lexical_cast<int>(keyValueVersionSplitResult[1]);      
@@ -240,7 +193,6 @@ int Parser::unserializeSDElement(std::string& strSDElement, long long ptrSyslogI
     //result
     int res = -1;
 
-    std::cout << " [Class:Parser] " << " SD ELEMENT SIZE : " << sdElementSplitResult.size() << std::endl;
     for (int i = 0; i < sdElementSplitResult.size(); i++)
     {
         //res@xxx we don't need that
