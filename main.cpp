@@ -342,7 +342,7 @@ void cleanAll()
                                   "(SELECT \"SLO_ID\" FROM \"T_SYSLOG_SLO\""
                                     " WHERE \"SLO_STATE\" != 0"
                                     " AND \"SLO_RCPT_DATE\" < (NOW() - interval '1 day')"
-                                    " LIMIT 100)";
+                                    " LIMIT 50)";
         te->sessionOldValues->execute(queryString);
         transaction.commit();
     }

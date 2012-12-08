@@ -232,70 +232,43 @@ int Parser::unserializeSDElement(std::string& strSDElement, long long ptrSyslogI
     ToolsEngine::log("debug") << " [Class:Parser] " << " Unserialize SDElement begin" ;
     //string to parse : res2@5875 offset=15 8-4-5-6-2="543" 8-4-5-6-1="54546"
     int offset=0;
-    size_t space=-1; //sucessives positions of the space
-    std::string tempString; //temp string to save the value parsed before adding to the vector
-    
-    idsPlusValue.clear();
-    spaces.clear();
-    
-  //  std::cout << "SDElement : " << strSDElement <<"\n";
+
+
+    std::vector<std::string> sdElementSplitResult;
+    boost::split(sdElementSplitResult, strSDElement, boost::is_any_of(" "), boost::token_compress_on);
     
     //result
     int res = -1;
-    
-    //we search and save the different positions of the spaces in the strSDElement
-    do
-    {
-        space = strSDElement.find(" ",space+1);
 
-        if ( space != -1 )
+    std::cout << " [Class:Parser] " << " SD ELEMENT SIZE : " << sdElementSplitResult.size() << std::endl;
+    for (int i = 0; i < sdElementSplitResult.size(); i++)
+    {
+        //res@xxx we don't need that
+        if (i == 0)
         {
-                spaces.push_back(space) ; //we save the position of the space in the list
-        }   
-    }while (space != -1); 
-    
-    offset = boost::lexical_cast<int>(strSDElement.substr(strSDElement.find("=",spaces.at(0))+1,(spaces.at(1)-1)-strSDElement.find("=",spaces.at(0))));
-    ToolsEngine::log("debug") << " [Class:Parser] "<< "offset : " << offset;
-    
-    
-    //we add the only element to the vector
-    if (spaces.size() == 2)
-    {
-        idsPlusValue.push_back(strSDElement.substr(spaces.back()+1,strSDElement.size()-spaces.back()));
-        ToolsEngine::log("debug") << " [Class:Parser] "<< "idsPlusValue : " << strSDElement.substr(spaces.back()+1,strSDElement.size()-spaces.back()); 
-    }
-    //
-    else
-    {
-        for ( int i= 1 ; i < spaces.size()-1 ; i ++)
-        {  
-            idsPlusValue.push_back(strSDElement.substr(spaces.at(i)+1,spaces.at(i+1)-spaces.at(i)));
-            ToolsEngine::log("debug") << " [Class:Parser] " << strSDElement.substr(spaces.at(i)+1,spaces.at(i+1)-spaces.at(i));
+            continue;
         }
-        idsPlusValue.push_back(strSDElement.substr(spaces.back()+1,strSDElement.size()-spaces.back()));
-        ToolsEngine::log("debug") << " [Class:Parser] " << strSDElement.substr(spaces.back()+1,strSDElement.size()-spaces.back()); 
-    }
-   
-    //we unserialize each value
-    for ( int i= 0 ; i < idsPlusValue.size() ; i ++)
-    {  
-        try
+        // offset
+        else if (i == 1)
         {
-            if ( unserializeValue(idsPlusValue.at(i),offset, ptrSyslogId) == -1)
+            std::vector<std::string> offsetSplitResult;
+            boost::split(offsetSplitResult, sdElementSplitResult[i], boost::is_any_of("="), boost::token_compress_on);
+            offset = boost::lexical_cast<int>(offsetSplitResult[1]);
+        }
+        else
+        {
+            if (unserializeValue(sdElementSplitResult[i],offset, ptrSyslogId) == -1)
             {
-                res = -1;
+                // fail res = -1
+                break;
             }
             else
             {
                 res = 0;
             }
         }
-        catch (Wt::Dbo::Exception e)
-        {
-            ToolsEngine::log("error") << " [Class:Parser] " << e.what() ;
-            res = -1;
-        }
     }
+    
     return res;
 }
 
@@ -313,7 +286,7 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
     int res = -1;
     
     std::vector<std::string> keyValueSplitResult;
-    boost::split(keyValueSplitResult, strValue, boost::is_any_of("="), boost::token_compress_on);
+    boost::iter_split(keyValueSplitResult, strValue, boost::first_finder("="));
     
     std::string key = keyValueSplitResult[0];
     std::string value = keyValueSplitResult[1];
@@ -366,7 +339,7 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
             }
             
             
-            //we verify the unit of the collected information before saving it linked ton an information entry.   
+            //we verify the unit of the collected information before saving it linked to an information entry.   
             Wt::Dbo::ptr<SearchUnit> ptrSearchUnit = te->sessionParser->find<SearchUnit>()
                     .where("\"PLG_ID_PLG_ID\" = ?").bind(idPlugin)
                     .where("\"SRC_ID\" = ?").bind(idSource)
@@ -378,7 +351,7 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
             ToolsEngine::log("debug") << " [Class:Parser] " << "looking for INF";
             if (ptrSearchUnit.get())
             {
-                ToolsEngine::log("debug") << " [Class:Parser] " << "search unit : " << ptrSearchUnit.id() << "information_unit_id : " << ptrSearchUnit.get()->informationUnit.id();
+//                ToolsEngine::log("debug") << " [Class:Parser] " << "search unit : " << ptrSearchUnit.id() << "information_unit_id : " << ptrSearchUnit.get()->informationUnit.id();
                 ptrInfTmp = te->sessionParser->find<Information2>()
                         .where("\"PLG_ID_PLG_ID\" = ?").bind(idPlugin)
                         .where("\"SRC_ID\" = ?").bind(idSource)
@@ -388,36 +361,41 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
             }
             else
             {
-                ToolsEngine::log("error") << " [Class:Parser] " << "No search unit retrieved." ;
+                ToolsEngine::log("error") << " [Class:Parser] " << "No search unit retrieved for values :"
+                                                                << " seaId : " << idSearch 
+                                                                << " srcId : " << idSource 
+                                                                << " plgId : " << idPlugin;
                 res = -1;
                 transaction5.commit();
                 return res;
             }
-            ToolsEngine::log("debug") << " [Class:Parser] " << "Get calculate." ;
             //here we check whether we have to calculate something about the information
             ToolsEngine::log("debug") << " [Class:Parser] " << "Calculate this info ? : "<< ptrInfTmp.get();
-
-
             if (ptrInfTmp.get())
             {
-                ToolsEngine::log("debug") << " [Class:Parser] " << "Info exists. Looking for : " 
-                        << idSearch << "-"
-                        << idSource << "-"
-                        << idPlugin << "-"
-                        << valueNum << "-"
-                        << ptrSearchUnit.get()->informationUnit.id();
-                ToolsEngine::log("debug") << " [Class:Parser] " << "calculate found.";
                 if (ptrInfTmp.get()->calculate)
                 {
                     if (!ptrInfTmp.get()->calculate.get().empty())
                     {
                         calculate = ptrInfTmp.get()->calculate.get();
+                        ToolsEngine::log("debug") << " [Class:Parser] " << "calculate found : " << calculate ;
                     }
+                    else
+                    {
+                        ToolsEngine::log("error") << " [Class:Parser] " << "No calculation found, should have" ;
+                        res = -1;
+                        transaction5.commit();
+                        return res;
+                    }
+                }
+                else
+                {
+                    ToolsEngine::log("debug") << " [Class:Parser] " << "No calculation required" ;
                 }
             }
             else
             {
-                ToolsEngine::log("error") << " [Class:Parser] " << "No information retrieved." ;
+                ToolsEngine::log("error") << " [Class:Parser] " << "No ptrInfTmp" ;
                 res = -1;
                 transaction5.commit();
                 return res;
@@ -448,38 +426,18 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
             {
                 informationHistoricalValueToAdd->state = 9;
                 posKeyValue = ptrInfTmp.get()->pk.search.get()->pos_key_value;
-                if (posKeyValue == 0)
-                {
-                    informationValueToAdd->state = 9;
-                    
-                }
-                else
-                {
-                    // state : -1= lot not complete, 0 = pending, 1 = processing, 2 = done    
-                    informationValueToAdd->state = 9;
-                }
+                informationValueToAdd->state = 9;
             }   
             else
             {
                 informationHistoricalValueToAdd->state = 0;
                 posKeyValue = ptrInfTmp.get()->pk.search.get()->pos_key_value;
-                if (posKeyValue == 0)
-                {
-                    informationValueToAdd->state = 0;
-                }
-                else
-                {
-                    // state : -1= lot not complete, 0 = pending, 1 = processing, 2 = done    
-                    informationValueToAdd->state = 0;
-                }
+                informationValueToAdd->state = 0;
             }
             
-            Wt::Dbo::ptr<InformationValue> ptrIvaRes = te->sessionParser->add<InformationValue>(informationValueToAdd);
-            Wt::Dbo::ptr<InformationHistoricalValue> ptrIhvRes = te->sessionParser->add<InformationHistoricalValue>(informationHistoricalValueToAdd);
-            ptrIvaRes.flush();
-            ivaAddedId = ptrIvaRes.id();
+            te->sessionParser->add<InformationValue>(informationValueToAdd);
+            te->sessionParser->add<InformationHistoricalValue>(informationHistoricalValueToAdd);
             transaction5.commit();
-
 
             res = 0; 
         }
