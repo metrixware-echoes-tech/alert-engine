@@ -338,8 +338,11 @@ void cleanAll()
     {
         Wt::Dbo::Transaction transaction(*(te->sessionOldValues));
         std::string queryString = "DELETE FROM \"T_SYSLOG_SLO\""
+                                  " WHERE \"SLO_ID\" IN"  
+                                  "(SELECT \"SLO_ID\" FROM \"T_SYSLOG_SLO\""
                                     " WHERE \"SLO_STATE\" != 0"
-                                    " AND \"SLO_RCPT_DATE\" < (NOW() - interval '1 day')";
+                                    " AND \"SLO_RCPT_DATE\" < (NOW() - interval '1 day')"
+                                    " LIMIT 100)";
         te->sessionOldValues->execute(queryString);
         transaction.commit();
     }
