@@ -21,10 +21,11 @@ int Parser::unserializeStructuredData(long long ptrSyslogId)
     size_t oBracket=-1; //sucessives positions of the open bracket
     size_t cBracket=-1; //sucessives positions of the closed bracket
     posBrackets.clear();
-    //TODO: we may be use the -1 value of the previous closed bracket to know the value of the open next one
+
+    
     std::string tempString; //the substring that contains the sd-element passed in argument
     bool prop=false; //we know if the properties sd-element is parsed
-//    Wt::Dbo::ptr<Syslog> ptrSyslogTmp;
+
     
     //result
     int res=-1;
@@ -306,61 +307,32 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
     int posKeyValue;
     
     //string to parse : 
-    // old : 8-4-5-6-2="543"  
-    // new : 2-1-1-2-1-1-1="QXVnIDIxIDEwOg=="
-   
-    //table to save the dashs positions between the ids
-    int const tbDashsLength(6);
-    size_t tbDashs[tbDashsLength];
-    size_t dash=-1;
-    
-    //table to save the quote positions in the value field
-    int const tbQuotesLength(2);
-    size_t tbQuotes[tbQuotesLength]; 
-    size_t quote=-1; 
-    
+    // 2-1-1-2-1-1-1="QXVnIDIxIDEwOg=="
+  
     //result
     int res = -1;
     
-    //we search and save the different positions of the dashs in the strValue
-    for(int i = 0 ; i < tbDashsLength ; i ++)
-    {
-        dash = strValue.find("-",dash+1);
-     //   std::cout << "dash : " << dash << "\n";
-        if ( dash != -1 )
-        {
-                tbDashs[i]=dash ; //we save the position of the space in the list
-      //          std::cout << "tableau dash : " << tbDashs[i] << "\n";
-        }
-    }
+    std::vector<std::string> keyValueSplitResult;
+    boost::split(keyValueSplitResult, strValue, boost::is_any_of("="), boost::token_compress_on);
     
-    //we search and save the different positions of the quotes in the strValue
-    for(int i = 0 ; i < tbQuotesLength ; i ++)
-    {
-        quote = strValue.find("\"",quote+1);
-        
-        if ( quote != -1 )
-        {
-                tbQuotes[i]=quote ; //we save the position of the space in the list
-        }
-    }
+    std::string key = keyValueSplitResult[0];
+    std::string value = keyValueSplitResult[1];
+    
+    //we remove the " in the value
+    boost::erase_all(value, "\"");
+    
+    std::vector<std::string> keySplitResult;
+    boost::split(keySplitResult, key, boost::is_any_of("-"), boost::token_compress_on);
     
       //parsing of the value and the corresponding id(s)
-      idPlugin = boost::lexical_cast<int>(strValue.substr(0,tbDashs[0]));
-      //std::cout << "idPlugin : " << idPlugin << "\n";
-      idAsset = boost::lexical_cast<int>(strValue.substr(tbDashs[0]+1,tbDashs[1]-(tbDashs[0]+1)));  
-      //std::cout << "idAsset : " << idAsset << "\n";
-      idSource = boost::lexical_cast<int>(strValue.substr(tbDashs[1]+1,tbDashs[2]-(tbDashs[1]+1)));
-      //std::cout << "idSource : " << idSource << "\n";
-      idSearch = boost::lexical_cast<int>(strValue.substr(tbDashs[2]+1,tbDashs[3]-(tbDashs[2]+1)));
-      //std::cout << "idSearch : " << idSearch << "\n";
-      valueNum = boost::lexical_cast<int>(strValue.substr(tbDashs[3]+1,tbDashs[4]-(tbDashs[3]+1)));
-      //std::cout << "valueNum : " << valueNum << "\n";
-      lotNumber = boost::lexical_cast<int>(strValue.substr(tbDashs[4]+1,tbDashs[5]-(tbDashs[4]+1)));
-      //std::cout << "lotNum : " << lotNumber << "\n";      
-      lineNumber = boost::lexical_cast<int>(strValue.substr(tbDashs[5]+1,strValue.find("=",0)-(tbDashs[5]+1)));
-      //std::cout << "lineNum : " << lineNumber << "\n"; 
-      sValue = Wt::Utils::base64Decode(strValue.substr(tbQuotes[0]+1,tbQuotes[1]-(tbQuotes[0]+1)));
+    idPlugin = boost::lexical_cast<int>(keySplitResult[0]);
+    idAsset = boost::lexical_cast<int>(keySplitResult[1]);
+    idSource = boost::lexical_cast<int>(keySplitResult[2]);
+    idSearch = boost::lexical_cast<int>(keySplitResult[3]);
+    valueNum = boost::lexical_cast<int>(keySplitResult[4]);
+    lineNumber = boost::lexical_cast<int>(keySplitResult[6]);
+
+    sValue = Wt::Utils::base64Decode(value);
    
     //SQL session
     {
@@ -424,7 +396,6 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
             ToolsEngine::log("debug") << " [Class:Parser] " << "Get calculate." ;
             //here we check whether we have to calculate something about the information
             ToolsEngine::log("debug") << " [Class:Parser] " << "Calculate this info ? : "<< ptrInfTmp.get();
-            ToolsEngine::log("debug") << " [Class:Parser] " << "Calculate?";
 
 
             if (ptrInfTmp.get())
