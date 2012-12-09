@@ -354,13 +354,13 @@ void cleanAll()
 
 void calculate()
 {
-    int ivaListSize = 1;
+    int ivaListSize = 50;
     while (true)
     {
-        long long ivaId[ivaListSize];
+        long long ivaIdList[ivaListSize];
         for (int i = 0 ; i < ivaListSize ; i++)
         {
-            ivaId[i] = -1;
+            ivaIdList[i] = -1;
         }
         try
         {
@@ -377,7 +377,7 @@ void calculate()
                 te->sessionCalculate->execute(
                             "UPDATE \"T_INFORMATION_VALUE_IVA\" SET \"IVA_STATE\" = ? WHERE \"IVA_ID\" = ?"
                             ).bind(1).bind(j->id());
-                ivaId[idx] = j->id();
+                ivaIdList[idx] = j->id();
                 idx++;
             }
             transaction1.commit();
@@ -388,104 +388,161 @@ void calculate()
         }
         
         
-        try
+
+        for (int i = 0 ; i < ivaListSize; i++)
         {
-//            te->sessionCalculate->~Session();
-            for (int i = 0 ; i < ivaListSize; i++)
+            if (ivaIdList[i] == -1)
             {
-                te->reloadSessionCalculate();
-                Wt::Dbo::Transaction transaction2(*(te->sessionCalculate));
-                
-                if (ivaId[i] == -1)
-                {
-                    break;
-                }
+                break;
+            }
+            
+            int ivaLotNum;
+            int ivaLineNum;
+            long long ivaAssetId;
+            long long ivaId;
 
-
+            long long plgId;
+            long long seaId;
+            long long srcId;
+            long long untId;
+            int subSearchNumber;
+            
+            Wt::WString calculate;
+            Wt::WString realCalculate;
+            
+            // we get the information related to the iva into ptrInfTmp ptr
+            
+            try
+            {
+                Wt::Dbo::ptr<Information2> ptrInfTmp;
+                Wt::Dbo::Transaction transactionIvaData(*(te->sessionCalculate));
                 std::string queryString = "SELECT iva FROM \"T_INFORMATION_VALUE_IVA\"  iva WHERE \"IVA_ID\" = ? LIMIT 1";
                 Wt::Dbo::ptr<InformationValue> ptrIva = 
-                        te->sessionCalculate->query<Wt::Dbo::ptr<InformationValue> >(queryString).bind(ivaId[i]);
+                        te->sessionCalculate->query<Wt::Dbo::ptr<InformationValue> >(queryString).bind(ivaIdList[i]);
 
-                // we get the information related to the iva
-                Wt::Dbo::ptr<Information2> ptrInfTmp = ptrIva->information;
-                Wt::Dbo::ptr<Information2> *ptrInfRes = new Wt::Dbo::ptr<Information2>();
+                // we get the information related to the iva into ptrInfTmp ptr
+                ptrInfTmp = ptrIva->information;
+                ivaLotNum = ptrIva->lotNumber;
+                ivaLineNum = ptrIva->lineNumber;
+                ivaAssetId = ptrIva->asset.id();
+                ivaId = ivaIdList[i];
+                ptrInfTmp.reread();
+
+                plgId = ptrInfTmp->pk.search->pk.source->pk.plugin.id();
+                seaId = ptrInfTmp->pk.search->pk.id;
+                srcId = ptrInfTmp->pk.search->pk.source->pk.id;
+                untId = ptrInfTmp->pk.unit.id();
+                subSearchNumber = ptrInfTmp->pk.subSearchNumber;
+                
                 if (ptrInfTmp.get()->calculate)
                 {
                     if (!ptrInfTmp.get()->calculate.get().empty())
                     {
-                        ToolsEngine::log("debug") << " [Class:Main] " << "calculate value : " << ptrInfTmp.get()->calculate;
-                        if (ptrInfTmp.get()->calculate.get() == "searchValueToCalculate")
-                        {
-//                            *ptrInfRes = te->sessionCalculate->find<Information2>()
-//                                    .where("\"PLG_ID_PLG_ID\" = ?").bind(
-//                                                          ptrInfTmp.get()->pk.search.get()->pk.source.get()->pk.plugin.id())
-//                                    .where("\"SRC_ID\" = ?").bind(ptrInfTmp.get()->pk.search.get()->pk.source.get()->pk.id)
-//                                    .where("\"SEA_ID\" = ?").bind(ptrInfTmp.get()->pk.search.get()->pk.id)
-//                                    .where("\"INF_VALUE_NUM\" = ?").bind(-1).limit(1);
-                            std::string queryString = "select inf from \"T_INFORMATION_INF\" inf where (\"PLG_ID_PLG_ID\" = ?) and (\"SRC_ID\" = ?) and (\"SEA_ID\" = ?) and (\"INF_VALUE_NUM\" = ?)";
-                            *ptrInfRes = te->sessionCalculate->query<Wt::Dbo::ptr<Information2> >(queryString)
-                                    .bind(ptrInfTmp->pk.search->pk.source->pk.plugin.id())
-                                    .bind(ptrInfTmp->pk.search->pk.source->pk.id)
-                                    .bind(ptrInfTmp->pk.search->pk.id)
-                                    .bind(-1)
-                                    .limit(1);
-                        }
-                        else
-                        {
-                            *ptrInfRes = ptrInfTmp;
-                        }
+                        calculate = ptrInfTmp->calculate.get();
+                    }
+                    else
+                    {
+                       ToolsEngine::log("error") << " [Class:Main] " << "no calculate";
+                        transactionIvaData.commit();
+                        break; 
                     }
                 }
                 else
                 {
                     ToolsEngine::log("error") << " [Class:Main] " << "no calculate";
+                    transactionIvaData.commit();
                     break;
                 }
-                
-                
-                ToolsEngine::log("debug") << " [Class:Main] " << "launching calcul" ;
-                // We launch the calcul
-                //Wt::Dbo::ptr<InformationValue> ptrIva = te->sessionCalculate->find<InformationValue>().where("\"IVA_ID\" = ?").bind(ivaId[i]);
-
-                if ((ptrIva.id() != -1) && (*ptrInfRes) && (ptrInfTmp))
+                transactionIvaData.commit();
+            }
+            catch(Wt::Dbo::Exception e)
+            {
+                ToolsEngine::log("error") << " [Class:main] iva data : "<< e.what();
+            }
+            
+            //we get the calculation data
+            try
+            {
+                ToolsEngine::log("debug") << " [Class:Main] " << "calculate value : " << calculate;
+                Wt::Dbo::Transaction transactionCalcData(*(te->sessionCalculate));
+                Wt::Dbo::ptr<Information2> ptrInfRes;
+                if (calculate == "searchValueToCalculate")
                 {
-                    std::string queryStr = "SELECT " + ptrInfRes->get()->calculate.get().toUTF8() + "(" + boost::lexical_cast<std::string>(ptrInfRes->get()->pk.search->pk.id)
-                                        + "," + boost::lexical_cast<std::string>(ptrInfTmp->pk.search->pk.source->pk.id)
-                                        + "," + boost::lexical_cast<std::string>(ptrInfTmp->pk.search->pk.source->pk.plugin.id())
-                                        + "," + boost::lexical_cast<std::string>(ptrInfTmp->pk.subSearchNumber)
-                                        + "," + boost::lexical_cast<std::string>(ptrInfTmp->pk.unit.id())
-                                        + "," + boost::lexical_cast<std::string>(ptrIva->lotNumber)
-                                        + ",9" //state
-                                        + "," + boost::lexical_cast<std::string>(ptrIva->lineNumber)
-                                        + "," + boost::lexical_cast<std::string>(ptrIva->asset.id())
-                                        + ",10" // limit
-                                        + "," + boost::lexical_cast<std::string>(ptrIva.id())
-                                        + ")"
-                                        ;
-                    ToolsEngine::log("debug") << " [Class:Main] calc query : " << queryStr;
-                    te->sessionCalculate->execute(queryStr);
-                    ToolsEngine::log("debug") << " [Class:Main] calc done.";
+
+                    std::string queryString = "select inf from \"T_INFORMATION_INF\" inf where (\"PLG_ID_PLG_ID\" = ?) and (\"SRC_ID\" = ?) and (\"SEA_ID\" = ?) and (\"INF_VALUE_NUM\" = ?)";
+                    ptrInfRes = te->sessionCalculate->query<Wt::Dbo::ptr<Information2> >(queryString)
+                            .bind(plgId)
+                            .bind(srcId)
+                            .bind(seaId)
+                            .bind(-1)
+                            .limit(1);
+                    if (ptrInfRes.get()->calculate.is_initialized())
+                    {
+                        if (!ptrInfRes.get()->calculate.get().empty())
+                        {
+                            realCalculate = ptrInfRes->calculate.get();
+                        }
+                        else
+                        {
+                            ToolsEngine::log("error") << " [Class:Main] " << "no real calculate";
+                            transactionCalcData.commit();
+                            break; 
+                        }
+                    }
+                    else
+                    {
+                        ToolsEngine::log("error") << " [Class:Main] " << "no real calculate";
+                        transactionCalcData.commit();
+                        break;
+                    }
                 }
                 else
                 {
-                    ToolsEngine::log("error") << " [Class:Main] " << "IVA not found. Id : " + ivaId[i] ;
-                } 
-//                ptrInfRes->~ptr();
-//                ptrInfTmp.~ptr();
-//                ptrIva.~ptr();
-                transaction2.commit();
+                    realCalculate = calculate;
+                }
+                transactionCalcData.commit();
             }
-        }
-        catch(Wt::Dbo::Exception e)
-        {
-            ToolsEngine::log("error") << " [Class:Main:Dbo] calculation : "<< e.what();
-        }
-        catch(boost::bad_lexical_cast e)
-        {
-            ToolsEngine::log("error") << " [Class:Main:Boost] calculation : "<< e.what();
-        }
-   
+            catch(Wt::Dbo::Exception e)
+            {
+                ToolsEngine::log("error") << " [Class:main] iva data : "<< e.what();
+            }
+
+            
+
+
+            //calcul
+            try
+            {
+                Wt::Dbo::Transaction transactionCalcul(*(te->sessionCalculate));
+                std::string queryStr = "SELECT " + realCalculate.toUTF8() + "(" + boost::lexical_cast<std::string>(seaId)
+                                    + "," + boost::lexical_cast<std::string>(srcId)
+                                    + "," + boost::lexical_cast<std::string>(plgId)
+                                    + "," + boost::lexical_cast<std::string>(subSearchNumber)
+                                    + "," + boost::lexical_cast<std::string>(untId)
+                                    + "," + boost::lexical_cast<std::string>(ivaLotNum)
+                                    + ",9" //state
+                                    + "," + boost::lexical_cast<std::string>(ivaLineNum)
+                                    + "," + boost::lexical_cast<std::string>(ivaAssetId)
+                                    + ",10" // limit
+                                    + "," + boost::lexical_cast<std::string>(ivaId)
+                                    + ")"
+                                    ;
+                ToolsEngine::log("debug") << " [Class:Main] calc query : " << queryStr;
+                te->sessionCalculate->execute(queryStr);
+                ToolsEngine::log("debug") << " [Class:Main] calc done.";
+                transactionCalcul.commit();
+            }
+            catch(Wt::Dbo::Exception e)
+            {
+                ToolsEngine::log("error") << " [Class:main] iva data : "<< e.what();
+            }
+            ToolsEngine::log("debug") << " [Class:Main] " << "launching calcul" ;
+            // We launch the calcul
+
                 
+
+        }
+
 
         boost::this_thread::sleep(boost::posix_time::milliseconds(te->sleepThreadCalculate));   
     }

@@ -266,6 +266,7 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
     idSource = boost::lexical_cast<int>(keySplitResult[2]);
     idSearch = boost::lexical_cast<int>(keySplitResult[3]);
     valueNum = boost::lexical_cast<int>(keySplitResult[4]);
+    lotNumber = boost::lexical_cast<int>(keySplitResult[5]);
     lineNumber = boost::lexical_cast<int>(keySplitResult[6]);
 
     sValue = Wt::Utils::base64Decode(value);
