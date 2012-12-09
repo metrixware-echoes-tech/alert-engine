@@ -173,182 +173,173 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
         ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << e.what();
     }
 
-    int loopCount = 0;
     
     ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << " Launching loop";
     
-    // not while(true) to reload the class and check whether there are new alerts to check or old alert to not check anymore
-    // FIXME: check whether there are changes in the alert list inside the while and put the loop condition on it
-    while(loopCount < 100)
-    {
-        boost::this_thread::sleep(boost::posix_time::milliseconds(te->sleepThreadCheckAlertMilliSec));
-        loopCount++;
-        // TSA : maybe put the sleep at the beginning to avoid any risk to miss it in a unexpected case
-        posKey = getPosKey(&sessionThread, pluginId,sourceId,searchId,infValueNum, unitId,assetList);
 
-        // GET THE LINE VALUE IF NECESSARY
-        if (posKey > 0)
+    // TSA : maybe put the sleep at the beginning to avoid any risk to miss it in a unexpected case
+    posKey = getPosKey(&sessionThread, pluginId,sourceId,searchId,infValueNum, unitId,assetList);
+
+    // GET THE LINE VALUE IF NECESSARY
+    if (posKey > 0)
+    {
+        ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - posKey found : " << posKey;
+        try
         {
-            ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - posKey found : " << posKey;
+            Wt::Dbo::Transaction transaction(sessionThread);
+            std::string queryString = "SELECT iva FROM \"T_INFORMATION_VALUE_IVA\"  iva"
+            " WHERE \"SEA_ID\" = " + boost::lexical_cast<std::string>(searchId) + 
+            " AND \"SRC_ID\" = " + boost::lexical_cast<std::string>(sourceId) + 
+            " AND \"PLG_ID_PLG_ID\" = " + boost::lexical_cast<std::string>(pluginId) + 
+            " AND \"INF_VALUE_NUM\" = " + boost::lexical_cast<std::string>(posKey) + 
+            " AND \"IVA_VALUE\" = '" + keyValue + "'"
+            " AND \"IVA_AST_AST_ID\" IN " + assetList + 
+            " LIMIT 1";
+            ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " -  Query : " << queryString;
+            Wt::Dbo::ptr<InformationValue> ptrIva = sessionThread.query<Wt::Dbo::ptr<InformationValue> >(queryString);
+            lineNumber = ptrIva.get()->lineNumber;
+            transaction.commit();
+        }
+        catch (Wt::Dbo::Exception e)
+        {
+            ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << "Failed to find the line corresponding to posKey" << "-" << e.what();
+            return;
+        }
+    } 
+    else if (posKey == 0)
+    {
+        ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - posKey == 0";
+        lineNumber = 0;
+    }
+    else //posKey < 0 
+    {
+        ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "Couldn't get pos key value";
+        return;
+    }
+    // END OF GETTING LINE NUMBER
+
+
+    // GET THE VALUES TO PROCESS    
+    try //SQL transaction
+    {
+        Wt::Dbo::Transaction transaction(sessionThread);
+        Wt::Dbo::ptr<Alert> alertPtr = sessionThread.query<Wt::Dbo::ptr<Alert> >
+            ("SELECT ale FROM \"T_ALERT_ALE\" ale WHERE \"ALE_ID\" = ? AND \"ALE_DELETE\" IS NULL FOR UPDATE")
+            .bind(idAlert).limit(1);
+        ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "switch : alert unit type";
+        //get the type of the value
+        ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "unit type id :"  
+                << alertPtr->alertValue->information->pk.unit->unitType.get();
+
+
+        ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "asset list : " << assetList;
+        std::string queryString = "SELECT iva FROM \"T_INFORMATION_VALUE_IVA\" iva "
+                " WHERE \"IVA_STATE\" = 0 "
+                " AND \"PLG_ID_PLG_ID\" = " + boost::lexical_cast<std::string>(pluginId) + ""
+                " AND \"SRC_ID\" = " + boost::lexical_cast<std::string>(sourceId) + ""
+                " AND \"SEA_ID\" = " + boost::lexical_cast<std::string>(searchId) + ""
+                " AND \"INF_VALUE_NUM\" = " + boost::lexical_cast<std::string>(infValueNum) + ""
+                " AND \"INU_ID_INU_ID\" = " + boost::lexical_cast<std::string>(unitId) + ""
+                " AND \"IVA_AST_AST_ID\" IN " + assetList + " FOR UPDATE";
+        tbInformationValue valuesToCheck = sessionThread.query<Wt::Dbo::ptr<InformationValue> >(queryString).limit(10);
+
+        ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "valuesToCheck size : " << valuesToCheck.size();
+        if (valuesToCheck.size() < 1)
+        {
+            ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << "Nothing to check";
+            transaction.commit();
+            return;
+        }
+        informationValueListSqlPrepared = getInformationValueListSqlPrepared(valuesToCheck, 1);
+        sessionThread.execute("UPDATE \"T_INFORMATION_VALUE_IVA\" SET \"IVA_STATE\" = 1 WHERE \"IVA_ID\" IN " + informationValueListSqlPrepared);
+        transaction.commit();
+    }//fin try
+    catch (Wt::Dbo::Exception e)
+    {
+        ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << "getting iva list 1 : " << e.what();
+    }
+
+    int unitType = 0;
+    int alertCriteria = 0;
+    try //SQL transaction
+    {
+        Wt::Dbo::Transaction transaction(sessionThread);
+        Wt::Dbo::ptr<Alert> alertPtr = sessionThread.query<Wt::Dbo::ptr<Alert> >
+            ("SELECT ale FROM \"T_ALERT_ALE\" ale WHERE \"ALE_ID\" = ? AND \"ALE_DELETE\" IS NULL FOR UPDATE")
+            .bind(idAlert).limit(1);
+        unitType = alertPtr->alertValue->information->pk.unit->unitType.id();
+        alertCriteria = alertPtr->alertValue->alertCriteria.id();
+        transaction.commit();
+    }
+    catch (Wt::Dbo::Exception e)
+    {
+        ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << "getting iva list 2 : " << e.what();
+        return;
+    }
+    switch(unitType)
+    {
+        case number:
+            ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are entering in the switch of the case number";
+            switch(alertCriteria)
+            {          
+                case lt: 
+                    ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are entering in the switch of the lt comparison";
+                    AlertProcessor::compareNumberValue(informationValueListSqlPrepared, ltPtr, alertValueToCompare, idAlert, lineNumber);
+                    ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are at the end of the lt comparison";  
+                    break;
+                case le:
+                    ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are entering in the switch of the le comparison";
+                    AlertProcessor::compareNumberValue(informationValueListSqlPrepared, lePtr, alertValueToCompare, idAlert, lineNumber);
+                    ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are at the end of the le comparison";
+                    break;
+                case eq:
+                    ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are entering in the switch of the eq comparison";
+                    AlertProcessor::compareNumberValue(informationValueListSqlPrepared, eqPtr, alertValueToCompare, idAlert, lineNumber);
+                    ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are at the end of the eq comparison";
+                    break;
+                case ne:
+                    ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are entering in the switch of the ne comparison";
+                    AlertProcessor::compareNumberValue(informationValueListSqlPrepared, nePtr, alertValueToCompare, idAlert, lineNumber);
+                    ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are at the end of the ne comparison";
+                    break;                            
+                case ge:
+                    ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are entering in the switch of the ge comparison";
+                    AlertProcessor::compareNumberValue(informationValueListSqlPrepared, gePtr, alertValueToCompare, idAlert, lineNumber);
+                    ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are at the end of the ge comparison";
+                    break;
+                case gt:
+                    ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are entering in the switch of the gt comparison";
+                    AlertProcessor::compareNumberValue(informationValueListSqlPrepared, gtPtr, alertValueToCompare, idAlert, lineNumber);
+                    ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are at the end of the gt comparison";
+                    break;
+                default:
+                    ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << "switch operator selection failed";
+                    break; 
+            }
+            break;
+        case text:
+            ToolsEngine::log("warning") << " [Class:AlertProcessor] " << " - " << "Text Alert not yet implemented";
             try
             {
                 Wt::Dbo::Transaction transaction(sessionThread);
-                std::string queryString = "SELECT iva FROM \"T_INFORMATION_VALUE_IVA\"  iva"
-                " WHERE \"SEA_ID\" = " + boost::lexical_cast<std::string>(searchId) + 
-                " AND \"SRC_ID\" = " + boost::lexical_cast<std::string>(sourceId) + 
-                " AND \"PLG_ID_PLG_ID\" = " + boost::lexical_cast<std::string>(pluginId) + 
-                " AND \"INF_VALUE_NUM\" = " + boost::lexical_cast<std::string>(posKey) + 
-                " AND \"IVA_VALUE\" = '" + keyValue + "'"
-                " AND \"IVA_AST_AST_ID\" IN " + assetList + 
-                " LIMIT 1";
-                ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " -  Query : " << queryString;
-                Wt::Dbo::ptr<InformationValue> ptrIva = sessionThread.query<Wt::Dbo::ptr<InformationValue> >(queryString);
-                lineNumber = ptrIva.get()->lineNumber;
+                std::string queryString = "SELECT iva FROM \"T_INFORMATION_VALUE_IVA\" iva WHERE \"IVA_ID\" IN " + informationValueListSqlPrepared;
+                tbInformationValue valuesToCheck = sessionThread.query<Wt::Dbo::ptr<InformationValue> >(queryString);
+                for (tbInformationValue::const_iterator i = valuesToCheck.begin(); i != valuesToCheck.end(); ++i) 
+                {
+                    ToolsEngine::log("warning") << " [Class:AlertProcessor] " << " - " << "processing information name for text alert : " << i->get()->information.get()->name;
+                    i->modify()->state = 666;//error
+                }
                 transaction.commit();
             }
             catch (Wt::Dbo::Exception e)
             {
-                ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << "Failed to find the line corresponding to posKey" << "-" << e.what();
-                continue;
+                ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << " text fail : " << e.what();
             }
-        } 
-        else if (posKey == 0)
-        {
-            ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - posKey == 0";
-            lineNumber = 0;
-        }
-        else //posKey < 0 
-        {
-            ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "Couldn't get pos key value";
-            continue;
-        }
-        // END OF GETTING LINE NUMBER
-            
-            
-        // GET THE VALUES TO PROCESS    
-        try //SQL transaction
-        {
-            Wt::Dbo::Transaction transaction(sessionThread);
-            Wt::Dbo::ptr<Alert> alertPtr = sessionThread.query<Wt::Dbo::ptr<Alert> >
-                ("SELECT ale FROM \"T_ALERT_ALE\" ale WHERE \"ALE_ID\" = ? AND \"ALE_DELETE\" IS NULL FOR UPDATE")
-                .bind(idAlert).limit(1);
-            ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "switch : alert unit type";
-            //get the type of the value
-            ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "unit type id :"  
-                    << alertPtr->alertValue->information->pk.unit->unitType.get();
-            
-            
-            ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "asset list : " << assetList;
-            std::string queryString = "SELECT iva FROM \"T_INFORMATION_VALUE_IVA\" iva "
-                    " WHERE \"IVA_STATE\" = 0 "
-                    " AND \"PLG_ID_PLG_ID\" = " + boost::lexical_cast<std::string>(pluginId) + ""
-                    " AND \"SRC_ID\" = " + boost::lexical_cast<std::string>(sourceId) + ""
-                    " AND \"SEA_ID\" = " + boost::lexical_cast<std::string>(searchId) + ""
-                    " AND \"INF_VALUE_NUM\" = " + boost::lexical_cast<std::string>(infValueNum) + ""
-                    " AND \"INU_ID_INU_ID\" = " + boost::lexical_cast<std::string>(unitId) + ""
-                    " AND \"IVA_AST_AST_ID\" IN " + assetList + " FOR UPDATE";
-            tbInformationValue valuesToCheck = sessionThread.query<Wt::Dbo::ptr<InformationValue> >(queryString).limit(10);
-            
-            ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "valuesToCheck size : " << valuesToCheck.size();
-            if (valuesToCheck.size() < 1)
-            {
-                ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << "Nothing to check";
-                transaction.commit();
-                continue;
-            }
-            informationValueListSqlPrepared = getInformationValueListSqlPrepared(valuesToCheck, 1);
-            sessionThread.execute("UPDATE \"T_INFORMATION_VALUE_IVA\" SET \"IVA_STATE\" = 1 WHERE \"IVA_ID\" IN " + informationValueListSqlPrepared);
-            transaction.commit();
-        }//fin try
-        catch (Wt::Dbo::Exception e)
-        {
-            ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << "getting iva list 1 : " << e.what();
-        }
-        
-        int unitType = 0;
-        int alertCriteria = 0;
-        try //SQL transaction
-        {
-            Wt::Dbo::Transaction transaction(sessionThread);
-            Wt::Dbo::ptr<Alert> alertPtr = sessionThread.query<Wt::Dbo::ptr<Alert> >
-                ("SELECT ale FROM \"T_ALERT_ALE\" ale WHERE \"ALE_ID\" = ? AND \"ALE_DELETE\" IS NULL FOR UPDATE")
-                .bind(idAlert).limit(1);
-            unitType = alertPtr->alertValue->information->pk.unit->unitType.id();
-            alertCriteria = alertPtr->alertValue->alertCriteria.id();
-            transaction.commit();
-        }
-        catch (Wt::Dbo::Exception e)
-        {
-            ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << "getting iva list 2 : " << e.what();
             break;
-        }
-        switch(unitType)
-        {
-            case number:
-                ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are entering in the switch of the case number";
-                switch(alertCriteria)
-                {          
-                    case lt: 
-                        ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are entering in the switch of the lt comparison";
-                        AlertProcessor::compareNumberValue(informationValueListSqlPrepared, ltPtr, alertValueToCompare, idAlert, lineNumber);
-                        ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are at the end of the lt comparison";  
-                        break;
-                    case le:
-                        ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are entering in the switch of the le comparison";
-                        AlertProcessor::compareNumberValue(informationValueListSqlPrepared, lePtr, alertValueToCompare, idAlert, lineNumber);
-                        ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are at the end of the le comparison";
-                        break;
-                    case eq:
-                        ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are entering in the switch of the eq comparison";
-                        AlertProcessor::compareNumberValue(informationValueListSqlPrepared, eqPtr, alertValueToCompare, idAlert, lineNumber);
-                        ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are at the end of the eq comparison";
-                        break;
-                    case ne:
-                        ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are entering in the switch of the ne comparison";
-                        AlertProcessor::compareNumberValue(informationValueListSqlPrepared, nePtr, alertValueToCompare, idAlert, lineNumber);
-                        ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are at the end of the ne comparison";
-                        break;                            
-                    case ge:
-                        ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are entering in the switch of the ge comparison";
-                        AlertProcessor::compareNumberValue(informationValueListSqlPrepared, gePtr, alertValueToCompare, idAlert, lineNumber);
-                        ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are at the end of the ge comparison";
-                        break;
-                    case gt:
-                        ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are entering in the switch of the gt comparison";
-                        AlertProcessor::compareNumberValue(informationValueListSqlPrepared, gtPtr, alertValueToCompare, idAlert, lineNumber);
-                        ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are at the end of the gt comparison";
-                        break;
-                    default:
-                        ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << "switch operator selection failed";
-                        break; 
-                }
-                break;
-            case text:
-                ToolsEngine::log("warning") << " [Class:AlertProcessor] " << " - " << "Text Alert not yet implemented";
-                try
-                {
-                    Wt::Dbo::Transaction transaction(sessionThread);
-                    std::string queryString = "SELECT iva FROM \"T_INFORMATION_VALUE_IVA\" iva WHERE \"IVA_ID\" IN " + informationValueListSqlPrepared;
-                    tbInformationValue valuesToCheck = sessionThread.query<Wt::Dbo::ptr<InformationValue> >(queryString);
-                    for (tbInformationValue::const_iterator i = valuesToCheck.begin(); i != valuesToCheck.end(); ++i) 
-                    {
-                        ToolsEngine::log("warning") << " [Class:AlertProcessor] " << " - " << "processing information name for text alert : " << i->get()->information.get()->name;
-                        i->modify()->state = 666;//error
-                    }
-                    transaction.commit();
-                }
-                catch (Wt::Dbo::Exception e)
-                {
-                    ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << " text fail : " << e.what();
-                }
-                break;
-            default:
-                ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << "switch Information unit type check failed";
-                break;               
-            }
-            
-        // END OF GETTING THE INFORMATION VALUES TO PROCESS
-    }//end while
+        default:
+            ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << "switch Information unit type check failed";
+            break;               
+    }
 }
 
 int AlertProcessor::getPosKey(Session *sessionThread, int pluginId,int sourceId,int searchId,double valueNum, int unitId, std::string assetList)
