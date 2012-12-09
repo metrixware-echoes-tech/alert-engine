@@ -32,6 +32,7 @@ int AlertProcessor::verifyAlerts()
                //we instanciate a thread for each alert           
                //this : instance de la classe (l'objet lui même) dans laquelle est exécuté bind()
                threadsVerifyAlerts.create_thread(boost::bind(&AlertProcessor::InformationValueLoop,this,(*i).id()));
+               boost::this_thread::sleep(boost::posix_time::milliseconds(100));
             }
             transaction.commit();
             threadsVerifyAlerts.join_all();
