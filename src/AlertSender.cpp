@@ -115,7 +115,9 @@ int AlertSender::sendSMS(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt:
         Session *session = static_cast<Session*>(informationValuePtr.session());
 
 //        Wt::Dbo::ptr<AlertMediaSpecialization> amsP = session->find<AlertMediaSpecialization>().where("\"AMS_ID\" = ? FOR UPDATE").bind(amsPtr.id()).limit(1);
-        Wt::Dbo::ptr<AlertMediaSpecialization> amsP = session->find<AlertMediaSpecialization>().where("\"AMS_ID\" = ?").bind(amsPtr.id()).limit(1);
+        std::string qryString = "SELECT ams FROM \"T_ALERT_MEDIA_SPECIALIZATION_AMS\" ams WHERE \"AMS_ID\" = ? FOR UPDATE";
+        Wt::Dbo::ptr<AlertMediaSpecialization> amsP = session->query<Wt::Dbo::ptr<AlertMediaSpecialization> >(qryString).bind(amsPtr.id());
+//        Wt::Dbo::ptr<AlertMediaSpecialization> amsP = session->find<AlertMediaSpecialization>().where("\"AMS_ID\" = ?").bind(amsPtr.id()).limit(1);
 
         ToolsEngine::log("info") << " [Class:AlertSender] " << "insert date of last send in db : " << now.toString();
         amsP.modify()->lastSend = now;
