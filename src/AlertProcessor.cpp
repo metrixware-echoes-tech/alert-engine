@@ -107,6 +107,12 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
         Wt::Dbo::ptr<Alert> alertPtr = sessionThread.query<Wt::Dbo::ptr<Alert> >
                 ("SELECT ale FROM \"T_ALERT_ALE\" ale WHERE \"ALE_ID\" = ? AND \"ALE_DELETE\" IS NULL FOR UPDATE")
                 .bind(idAlert).limit(1);
+        
+        if (!alertPtr)
+        {
+            ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << " No alert for id : " << idAlert;
+            return;
+        }
 
         ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << " Alert fetched";
 
@@ -165,6 +171,11 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
         Wt::Dbo::ptr<Alert> alertPtr = sessionThread.query<Wt::Dbo::ptr<Alert> >
                 ("SELECT ale FROM \"T_ALERT_ALE\" ale WHERE \"ALE_ID\" = ? AND \"ALE_DELETE\" IS NULL FOR UPDATE")
                 .bind(idAlert).limit(1);
+        if (!alertPtr)
+        {
+            ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << " No alert for id : " << idAlert;
+            return;
+        }
         alertPtr.modify()->lastAttempt = Wt::WDateTime::currentDateTime();
         transaction.commit();
     }
@@ -197,6 +208,11 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
             " LIMIT 1";
             ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " -  Query : " << queryString;
             Wt::Dbo::ptr<InformationValue> ptrIva = sessionThread.query<Wt::Dbo::ptr<InformationValue> >(queryString);
+            if (!ptrIva)
+            {
+                ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << " No iva";
+                return;
+            }
             lineNumber = ptrIva.get()->lineNumber;
             transaction.commit();
         }
@@ -226,6 +242,13 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
         Wt::Dbo::ptr<Alert> alertPtr = sessionThread.query<Wt::Dbo::ptr<Alert> >
             ("SELECT ale FROM \"T_ALERT_ALE\" ale WHERE \"ALE_ID\" = ? AND \"ALE_DELETE\" IS NULL FOR UPDATE")
             .bind(idAlert).limit(1);
+        
+        if (!alertPtr)
+        {
+            ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << " No alert for id : " << idAlert;
+            return;
+        }
+        
         ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "switch : alert unit type";
         //get the type of the value
         ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "unit type id :"  
@@ -267,6 +290,11 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
         Wt::Dbo::ptr<Alert> alertPtr = sessionThread.query<Wt::Dbo::ptr<Alert> >
             ("SELECT ale FROM \"T_ALERT_ALE\" ale WHERE \"ALE_ID\" = ? AND \"ALE_DELETE\" IS NULL FOR UPDATE")
             .bind(idAlert).limit(1);
+        if (!alertPtr)
+        {
+            ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << " No alert for id : " << idAlert;
+            return;
+        }
         unitType = alertPtr->alertValue->information->pk.unit->unitType.id();
         alertCriteria = alertPtr->alertValue->alertCriteria.id();
         transaction.commit();
