@@ -62,6 +62,7 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
     int searchId;
     double infValueNum;
     int unitId;
+    Wt::WDateTime alertCreaDate;
     Wt::Dbo::collection<Wt::Dbo::ptr<Asset> > assets;
     std::string assetList = "";
     std::string keyValue;
@@ -133,6 +134,7 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
         infValueNum = alertPtr.get()->alertValue.get()->information.get()->pk.subSearchNumber;
         unitId = alertPtr.get()->alertValue.get()->information.get()->pk.unit.id();
         assets = alertPtr.get()->assets;
+        alertCreaDate = alertPtr.get()->creaDate;
         
         ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "plid = " << pluginId
                                     << "souid = " << sourceId
@@ -239,22 +241,7 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
     try //SQL transaction
     {
         Wt::Dbo::Transaction transaction(sessionThread);
-        Wt::Dbo::ptr<Alert> alertPtr = sessionThread.query<Wt::Dbo::ptr<Alert> >
-            ("SELECT ale FROM \"T_ALERT_ALE\" ale WHERE \"ALE_ID\" = ? AND \"ALE_DELETE\" IS NULL FOR UPDATE")
-            .bind(idAlert).limit(1);
         
-        if (!alertPtr)
-        {
-            ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << " No alert for id : " << idAlert;
-            return;
-        }
-        
-        ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "switch : alert unit type";
-        //get the type of the value
-        ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "unit type id :"  
-                << alertPtr->alertValue->information->pk.unit->unitType.get();
-
-
         ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "asset list : " << assetList;
         std::string queryString = "SELECT iva FROM \"T_INFORMATION_VALUE_IVA\" iva "
                 " WHERE \"IVA_STATE\" = 0 "
@@ -263,6 +250,7 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
                 " AND \"SEA_ID\" = " + boost::lexical_cast<std::string>(searchId) + ""
                 " AND \"INF_VALUE_NUM\" = " + boost::lexical_cast<std::string>(infValueNum) + ""
                 " AND \"INU_ID_INU_ID\" = " + boost::lexical_cast<std::string>(unitId) + ""
+                " AND \"IVA_CREA_DATE\" >= '" + alertCreaDate.toString().toUTF8() + "'" +
                 " AND \"IVA_AST_AST_ID\" IN " + assetList + " FOR UPDATE";
         tbInformationValue valuesToCheck = sessionThread.query<Wt::Dbo::ptr<InformationValue> >(queryString).limit(10);
 
