@@ -34,7 +34,7 @@ bool eqMethod(double a, double b)
 {
    bool res = false;
    
-   if (a = b)
+   if (a == b)
    {
        res = true;
    }
