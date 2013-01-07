@@ -22,7 +22,8 @@ Wt::Dbo::ptr<AlertTracking> AlertSender::createAlertTrackingNumber(Wt::Dbo::ptr<
     newAlertTracking->mediaValue = amsPtr.get()->mediaValue;
 
     // WARNING : SendDate must be set by the API when the alert was sent, not before
-    newAlertTracking->sendDate = *(new Wt::WDateTime());
+    Wt::WDateTime *sendDate = new Wt::WDateTime();
+    newAlertTracking->sendDate = *sendDate;
     Wt::Dbo::ptr<AlertTracking> alertTrackingPtr;
 
     try
@@ -35,6 +36,8 @@ Wt::Dbo::ptr<AlertTracking> AlertSender::createAlertTrackingNumber(Wt::Dbo::ptr<
     {
         ToolsEngine::log("error") << " [Class:AlertSender] " << e.what() ;
     }
+    delete sendDate;
+    delete newAlertTracking;
     return alertTrackingPtr;
 }
 

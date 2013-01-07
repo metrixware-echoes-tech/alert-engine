@@ -479,6 +479,7 @@ int AlertProcessor::compareNumberValue(std::string stringValuesToCheck,bool (*ma
                     AlertSender *alertSender = new AlertSender();  
                     alertSender->send(idAlert,*i);
                     i->modify()->state = 2;
+                    delete alertSender;
                 }
                 else
                 {

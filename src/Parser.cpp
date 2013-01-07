@@ -290,6 +290,8 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
                 ToolsEngine::log("error") << " [Class:Parser] " << "Asset with id : " << idAsset << " doesn't exist." ;
                 res = -1;
                 transaction5.commit();
+                delete informationValueToAdd;
+                delete informationHistoricalValueToAdd;
                 return res;
             }
             
@@ -299,6 +301,8 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
                 ToolsEngine::log("error") << " [Class:Parser] " << "Syslog with id : " << ptrSyslogId << " doesn't exist." ;
                 res = -1;
                 transaction5.commit();
+                delete informationValueToAdd;
+                delete informationHistoricalValueToAdd;
                 return res;
             }
             
@@ -331,6 +335,8 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
                                                                 << " plgId : " << idPlugin;
                 res = -1;
                 transaction5.commit();
+                delete informationValueToAdd;
+                delete informationHistoricalValueToAdd;
                 return res;
             }
             //here we check whether we have to calculate something about the information
@@ -349,6 +355,8 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
                         ToolsEngine::log("error") << " [Class:Parser] " << "No calculation found, should have" ;
                         res = -1;
                         transaction5.commit();
+                        delete informationValueToAdd;
+                        delete informationHistoricalValueToAdd;
                         return res;
                     }
                 }
@@ -362,6 +370,8 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
                 ToolsEngine::log("error") << " [Class:Parser] " << "No ptrInfTmp" ;
                 res = -1;
                 transaction5.commit();
+                delete informationValueToAdd;
+                delete informationHistoricalValueToAdd;
                 return res;
             } 
             
@@ -404,6 +414,9 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
             transaction5.commit();
 
             res = 0; 
+            
+            delete informationValueToAdd;
+            delete informationHistoricalValueToAdd;
         }
         catch (Wt::Dbo::Exception e)
         {
