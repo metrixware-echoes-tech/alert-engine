@@ -35,19 +35,21 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
+	${OBJECTDIR}/src/PoolIvaPools.o \
 	${OBJECTDIR}/src/Parser.o \
 	${OBJECTDIR}/main.o \
 	${OBJECTDIR}/src/ToolsEngine.o \
 	${OBJECTDIR}/src/AlertProcessor.o \
-	${OBJECTDIR}/src/AlertSender.o
+	${OBJECTDIR}/src/AlertSender.o \
+	${OBJECTDIR}/src/InformationValuePool.o
 
 
 # C Compiler Flags
 CFLAGS=
 
 # CC Compiler Flags
-CCFLAGS=
-CXXFLAGS=
+CCFLAGS=-pedantic
+CXXFLAGS=-pedantic
 
 # Fortran Compiler Flags
 FFLAGS=
@@ -66,30 +68,40 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engine: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engine ${OBJECTFILES} ${LDLIBSOPTIONS} 
 
+${OBJECTDIR}/src/PoolIvaPools.o: src/PoolIvaPools.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -g -Wall -Iinclude -I../UnitTest++/src -I../dbo/include -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/PoolIvaPools.o src/PoolIvaPools.cpp
+
 ${OBJECTDIR}/src/Parser.o: src/Parser.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -g -Iinclude -I../UnitTest++/src -I../dbo/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/Parser.o src/Parser.cpp
+	$(COMPILE.cc) -g -Wall -Iinclude -I../UnitTest++/src -I../dbo/include -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/Parser.o src/Parser.cpp
 
 ${OBJECTDIR}/main.o: main.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.cc) -g -Iinclude -I../UnitTest++/src -I../dbo/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/main.o main.cpp
+	$(COMPILE.cc) -g -Wall -Iinclude -I../UnitTest++/src -I../dbo/include -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/main.o main.cpp
 
 ${OBJECTDIR}/src/ToolsEngine.o: src/ToolsEngine.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -g -Iinclude -I../UnitTest++/src -I../dbo/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/ToolsEngine.o src/ToolsEngine.cpp
+	$(COMPILE.cc) -g -Wall -Iinclude -I../UnitTest++/src -I../dbo/include -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/ToolsEngine.o src/ToolsEngine.cpp
 
 ${OBJECTDIR}/src/AlertProcessor.o: src/AlertProcessor.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -g -Iinclude -I../UnitTest++/src -I../dbo/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/AlertProcessor.o src/AlertProcessor.cpp
+	$(COMPILE.cc) -g -Wall -Iinclude -I../UnitTest++/src -I../dbo/include -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/AlertProcessor.o src/AlertProcessor.cpp
 
 ${OBJECTDIR}/src/AlertSender.o: src/AlertSender.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -g -Iinclude -I../UnitTest++/src -I../dbo/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/AlertSender.o src/AlertSender.cpp
+	$(COMPILE.cc) -g -Wall -Iinclude -I../UnitTest++/src -I../dbo/include -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/AlertSender.o src/AlertSender.cpp
+
+${OBJECTDIR}/src/InformationValuePool.o: src/InformationValuePool.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -g -Wall -Iinclude -I../UnitTest++/src -I../dbo/include -std=c++11 -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/InformationValuePool.o src/InformationValuePool.cpp
 
 # Subprojects
 .build-subprojects:

@@ -32,6 +32,8 @@
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/algorithm/string.hpp>
 
+#include  "tools/SessionPool.h"
+
 class ToolsEngine;
 
 extern ToolsEngine *te;

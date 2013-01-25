@@ -29,10 +29,14 @@
 #include <boost/bind/bind.hpp>
 #include <boost/thread/mutex.hpp>
 #include <tools/Session.h>
+#include <tools/SessionPool.h>
 #include <boost/lexical_cast.hpp>
 #include "AlertSender.h"
 
 typedef Wt::Dbo::collection<Wt::Dbo::ptr<InformationValue> > tbInformationValue;
+
+typedef std::map<long long, bool*> alertBooleansMap;
+typedef std::map<long long, alertBooleansMap*> ivaAlertsMap;
 
 class AlertProcessor {
 public:
@@ -47,6 +51,36 @@ public:
     * @return error or success
     */
     int verifyAlerts();  
+    
+    
+    void launchUpdateDataThread();
+    void launchIvaThread();
+    void launchAlertThread();
+    void launchCleanThread();
+    
+    //update data thread
+    bool updateData();
+    bool setAlerts();
+    bool setInfos();
+    bool setAlertsByInfo();
+    
+    //collect iva thread
+    void collectIva();
+    
+    //alert preparation thread
+    void prepareAlertComputing();
+    void prepareAlertComputingFromId(long long alertId);
+    
+    // alert computing
+    void computeAlerts();
+    void computeAlertFromId(long long alertId);
+
+    //clean thread
+    void cleanMaps();
+    
+    bool createIvaMaps();
+    bool launchCalculationThreadForEachGroup();
+    bool sendAlerts();
     
     
    /**
@@ -66,7 +100,7 @@ public:
     * @param list of assets
     * @return pos key value ; -1 if error
     */
-    int getPosKey(Session *sessionThread, int pluginId,int sourceId,int searchId,double valueNum, int unitId, std::string assetList);
+    int getPosKey(int pluginId,int sourceId,int searchId,double valueNum, int unitId, std::string assetList);
     
     /**
     * Method to get an asset list to put it in a "in" sql request
@@ -85,29 +119,53 @@ public:
     * @param optionnal, the line number if we have a value linked to a key transmitted
     * @return void
     */ 
-    int compareNumberValue(std::string valuesToCheck,bool (*mathOperator)(double,double), double valueSetInDb, long long idAlert, int lineNumber=0);
+    int compareNumberValue(Session * sessionCompare, std::string valuesToCheck,bool (*mathOperator)(double,double), double valueSetInDb, long long idAlert, int lineNumber=0);
 
-    /**
-    * method to compute the value of the alerts, implentation of the mathematics operators
-    * @param first number to compare
-    * @param second number to compare
-    * @return true or false
-    */ 
- //   bool ltMethod(double a, double b);
- //   bool leMethod(double a, double b);
- //   bool eqMethod(double a, double b);
- //   bool neMethod(double a, double b);
- //   bool geMethod(double a, double b);
-//    bool gtMethod(double a, double b);
-
-    
 private:
     boost::mutex mutex;
+    
+    boost::thread_group threadsVerifyAlerts;
+    boost::thread_group threadsPrepareAlertComputing;
+    boost::thread_group threadsComputeAlerts;
+    
+    std::map<long long, Wt::Dbo::ptr<Alert>*> mapAlerts;
+    // key = infid ; value = vector containing id alerts for each info
+    std::map<InformationId, std::vector<long long>*> mapInfsAlertId;
+    
+    // key = alert id ; value = vector containing InfId for each alert
+    std::map<long long, std::vector<InformationId>*> mapAlertIdInfs;
+    
+    // key = alert id ; value = vector containing IvaId to check for each alert
+    std::map<long long, std::vector<long long>*> mapAlertIvasToCheck;
+    
+    // to be deported in memcache later
+    // key = asset id ; value = map with
+    // key = inf id ; value = map with
+    // key = iva id ; value = map with
+    // key = ale id ; value = boolean (already treated or not)
+    std::map<long long, std::map<InformationId,std::map<long long, std::map<long long, bool*>*>*>*> mapIvasSortedByAssetsByInfos;
+    
+    
+    std::vector<Wt::Dbo::ptr<Information2>> vInfos;
+    std::vector<std::vector<Wt::Dbo::ptr<Alert>>> vAlertGroups;
+    
+    void addInformationToMapInfos(InformationId infId);
+    void removeInformationToMapInfos(InformationId infId);
     
     enum criteria{lt = 1,le = 2,eq = 3,ne = 4,ge = 5,gt = 6};
     
     enum informationUnitType{number = 2,text = 1};
-       
+    
+    std::map<long long, Wt::Dbo::ptr<Alert>*> getMapAlerts();
+    
+    //define the pointer of the operators functions
+    bool (*ltPtr)(double, double);
+    bool (*lePtr) (double, double);
+    bool (*eqPtr)(double, double);
+    bool (*nePtr) (double, double);
+    bool (*gePtr)(double, double);
+    bool (*gtPtr)(double, double);
+     
 };
 
 #endif	/* ALERTPROCESSOR_H */

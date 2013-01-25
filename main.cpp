@@ -25,6 +25,10 @@ boost::recursive_mutex ToolsEngine::mutexCalculate;
 //default criticity to log before reading file config : debug = 1 / info = 2 / warning = 3 / secure = 4 / error = 5/ fatal = 6
 int ToolsEngine::criticity = 1;
 
+SessionPool* SessionPool::instance = 0;
+std::string SessionPool::credentials = "";
+boost::mutex SessionPool::mutex;
+
 int main(int argc, char *argv[])
 {  
     // Declare the supported options.
@@ -170,7 +174,7 @@ void checkNewDatas()
     Parser *parser = new Parser();
     //result
     int res = -1;
-    int syslogSize = 100;
+    const int syslogSize = 100;
     while (true)
     {
         long long syslogId[syslogSize];
@@ -268,8 +272,8 @@ void checkNewDatas()
 std::string getSyslogListSqlPrepared(int size, long long syslogId[])
 {
     std::string res = "(";
-    int i = 0;
-    for (i ; i < size; i++) 
+    int i;
+    for (i = 0; i < size; i++) 
     {
         if (syslogId[i] == -1)
         {
@@ -355,7 +359,7 @@ void cleanAll()
 
 void calculate()
 {
-    int ivaListSize = 50;
+    const int ivaListSize = 50;
     while (true)
     {
         long long ivaIdList[ivaListSize];

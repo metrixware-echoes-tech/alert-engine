@@ -35,11 +35,13 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
+	${OBJECTDIR}/src/PoolIvaPools.o \
 	${OBJECTDIR}/src/Parser.o \
 	${OBJECTDIR}/main.o \
 	${OBJECTDIR}/src/ToolsEngine.o \
 	${OBJECTDIR}/src/AlertProcessor.o \
-	${OBJECTDIR}/src/AlertSender.o
+	${OBJECTDIR}/src/AlertSender.o \
+	${OBJECTDIR}/src/InformationValuePool.o
 
 
 # C Compiler Flags
@@ -66,6 +68,11 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engine: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engine -s ${OBJECTFILES} ${LDLIBSOPTIONS} 
 
+${OBJECTDIR}/src/PoolIvaPools.o: src/PoolIvaPools.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -O3 -s -Iinclude -I../UnitTest++/src -I../dbo/include -I/var/lib/jenkins/jobs/ea-dbo/workspace/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/PoolIvaPools.o src/PoolIvaPools.cpp
+
 ${OBJECTDIR}/src/Parser.o: src/Parser.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
@@ -90,6 +97,11 @@ ${OBJECTDIR}/src/AlertSender.o: src/AlertSender.cpp
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.cc) -O3 -s -Iinclude -I../UnitTest++/src -I../dbo/include -I/var/lib/jenkins/jobs/ea-dbo/workspace/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/AlertSender.o src/AlertSender.cpp
+
+${OBJECTDIR}/src/InformationValuePool.o: src/InformationValuePool.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -O3 -s -Iinclude -I../UnitTest++/src -I../dbo/include -I/var/lib/jenkins/jobs/ea-dbo/workspace/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/InformationValuePool.o src/InformationValuePool.cpp
 
 # Subprojects
 .build-subprojects:

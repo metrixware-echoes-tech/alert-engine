@@ -49,7 +49,7 @@ int Parser::unserializeStructuredData(long long ptrSyslogId)
     //result
     int res = -1;
 
-    for (int i = 0; i < syslogStringSplitResult.size(); i++)
+    for (unsigned int i = 0; i < syslogStringSplitResult.size(); i++)
     {
         //prop@xxx
         if (i == 0)
@@ -204,7 +204,7 @@ int Parser::unserializeSDElement(std::string& strSDElement, long long ptrSyslogI
     //result
     int res = -1;
 
-    for (int i = 0; i < sdElementSplitResult.size(); i++)
+    for (unsigned int i = 0; i < sdElementSplitResult.size(); i++)
     {
         //res@xxx we don't need that
         if (i == 0)
@@ -240,7 +240,7 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
     ToolsEngine::log("debug") << " [Class:Parser] " << " Unserialize value begin" ;
     Wt::WDateTime creaDate;
     sValue.clear();
-    int posKeyValue;
+//    int posKeyValue;
     
     //string to parse : 
     // 2-1-1-2-1-1-1="QXVnIDIxIDEwOg=="
@@ -275,7 +275,7 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
     {
         InformationValue *informationValueToAdd = new InformationValue();
         InformationHistoricalValue *informationHistoricalValueToAdd = new InformationHistoricalValue();
-        long long ivaAddedId = -1;
+//        long long ivaAddedId = -1;
         Wt::WString calculate = Wt::WString::Empty;
         try 
         {   
@@ -290,8 +290,6 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
                 ToolsEngine::log("error") << " [Class:Parser] " << "Asset with id : " << idAsset << " doesn't exist." ;
                 res = -1;
                 transaction5.commit();
-                delete informationValueToAdd;
-                delete informationHistoricalValueToAdd;
                 return res;
             }
             
@@ -301,8 +299,6 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
                 ToolsEngine::log("error") << " [Class:Parser] " << "Syslog with id : " << ptrSyslogId << " doesn't exist." ;
                 res = -1;
                 transaction5.commit();
-                delete informationValueToAdd;
-                delete informationHistoricalValueToAdd;
                 return res;
             }
             
@@ -335,8 +331,6 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
                                                                 << " plgId : " << idPlugin;
                 res = -1;
                 transaction5.commit();
-                delete informationValueToAdd;
-                delete informationHistoricalValueToAdd;
                 return res;
             }
             //here we check whether we have to calculate something about the information
@@ -355,8 +349,6 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
                         ToolsEngine::log("error") << " [Class:Parser] " << "No calculation found, should have" ;
                         res = -1;
                         transaction5.commit();
-                        delete informationValueToAdd;
-                        delete informationHistoricalValueToAdd;
                         return res;
                     }
                 }
@@ -370,8 +362,6 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
                 ToolsEngine::log("error") << " [Class:Parser] " << "No ptrInfTmp" ;
                 res = -1;
                 transaction5.commit();
-                delete informationValueToAdd;
-                delete informationHistoricalValueToAdd;
                 return res;
             } 
             
@@ -399,24 +389,24 @@ int Parser::unserializeValue(std::string& strValue, int offset, long long ptrSys
             if (!calculate.empty())
             {
                 informationHistoricalValueToAdd->state = 9;
-                posKeyValue = ptrInfTmp.get()->pk.search.get()->pos_key_value;
+//                posKeyValue = ptrInfTmp.get()->pk.search.get()->pos_key_value;
                 informationValueToAdd->state = 9;
             }   
             else
             {
                 informationHistoricalValueToAdd->state = 0;
-                posKeyValue = ptrInfTmp.get()->pk.search.get()->pos_key_value;
+//                posKeyValue = ptrInfTmp.get()->pk.search.get()->pos_key_value;
                 informationValueToAdd->state = 0;
             }
             
             te->sessionParser->add<InformationValue>(informationValueToAdd);
             te->sessionParser->add<InformationHistoricalValue>(informationHistoricalValueToAdd);
+            
             transaction5.commit();
 
             res = 0; 
             
-            delete informationValueToAdd;
-            delete informationHistoricalValueToAdd;
+            
         }
         catch (Wt::Dbo::Exception e)
         {

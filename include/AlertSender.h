@@ -44,7 +44,7 @@ public:
     * @return the list of the medias 
     */ 
 //    MediaValueList checkMediaToSendAlert(Wt::Dbo::ptr<Alert> alertPtr);
-    Wt::Dbo::collection<Wt::Dbo::ptr<AlertMediaSpecialization> > checkMediaToSendAlert(Wt::Dbo::ptr<Alert> alertPtr);
+//    Wt::Dbo::collection<Wt::Dbo::ptr<AlertMediaSpecialization> > checkMediaToSendAlert(Wt::Dbo::ptr<Alert> alertPtr);
     
    /**
     * method to create a new alert tracking number
@@ -52,7 +52,7 @@ public:
     * @param the media value used to create the alert tracking
     * @return the pointer on the created object
     */ 
-    Wt::Dbo::ptr<AlertTracking> createAlertTrackingNumber(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<AlertMediaSpecialization> amsPtr, Session *session);
+    Wt::Dbo::ptr<AlertTracking> createAlertTrackingNumber(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<AlertMediaSpecialization> amsPtr);
 
    /**
     * method to send an SMS with the call of the API
@@ -62,7 +62,7 @@ public:
     * @param the media value concern by the alert
     * @return error -1 or sucess 0
     */     
-    int sendSMS(Wt::Dbo::ptr<InformationValue> InformationValuePtr,Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<AlertTracking> alertTrackingPtr, Wt::Dbo::ptr<AlertMediaSpecialization> amsPtr);
+    int sendSMS(Session * session, Wt::Dbo::ptr<InformationValue> InformationValuePtr,Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<AlertTracking> alertTrackingPtr, Wt::Dbo::ptr<AlertMediaSpecialization> amsPtr);
 
    /**
     * method to send a MAIL 
@@ -73,14 +73,14 @@ public:
     * @param if the user as use all his sms, the value here is 1 if not it's 0
     * @return error -1 or sucess 0
     */    
-    int sendMAIL(Wt::Dbo::ptr<InformationValue> InformationValuePtr, Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<AlertTracking> alertTrackingPtr, Wt::Dbo::ptr<AlertMediaSpecialization> amsPtr, int overSMSQuota = 0);
+    int sendMAIL(Session * session, Wt::Dbo::ptr<InformationValue> InformationValuePtr, Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<AlertTracking> alertTrackingPtr, Wt::Dbo::ptr<AlertMediaSpecialization> amsPtr, int overSMSQuota = 0);
    /**
     * method to send the differents alerts over the air (mail, sms....) linked to an alert
     * @param the alert
     * @param the information value that matches the alert
     * @return error -1 or sucess 0
     */ 
-    int send(long long idAlert, Wt::Dbo::ptr<InformationValue> InformationValuePtr );
+    int send(Session * session, long long idAlert, Wt::Dbo::ptr<InformationValue> InformationValuePtr );
 
     /**
     * method to format the mail

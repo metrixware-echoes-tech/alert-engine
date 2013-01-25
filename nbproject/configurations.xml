@@ -7,7 +7,9 @@
       <itemPath>include/AlertProcessor.h</itemPath>
       <itemPath>include/AlertSender.h</itemPath>
       <itemPath>include/CompareMethods.h</itemPath>
+      <itemPath>include/InformationValuePool.h</itemPath>
       <itemPath>include/Parser.h</itemPath>
+      <itemPath>include/PoolIvaPools.h</itemPath>
       <itemPath>include/ToolsEngine.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
@@ -28,7 +30,9 @@
       <logicalFolder name="src" displayName="src" projectFiles="true">
         <itemPath>src/AlertProcessor.cpp</itemPath>
         <itemPath>src/AlertSender.cpp</itemPath>
+        <itemPath>src/InformationValuePool.cpp</itemPath>
         <itemPath>src/Parser.cpp</itemPath>
+        <itemPath>src/PoolIvaPools.cpp</itemPath>
         <itemPath>src/ToolsEngine.cpp</itemPath>
       </logicalFolder>
       <itemPath>main.cpp</itemPath>
@@ -64,11 +68,14 @@
           </incDir>
         </cTool>
         <ccTool>
+          <standard>8</standard>
           <incDir>
             <pElem>include</pElem>
             <pElem>../UnitTest++/src</pElem>
             <pElem>../dbo/include</pElem>
           </incDir>
+          <commandLine>-pedantic</commandLine>
+          <warningLevel>2</warningLevel>
         </ccTool>
         <linkerTool>
           <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engine</output>
