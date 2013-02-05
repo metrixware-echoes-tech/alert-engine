@@ -64,13 +64,13 @@
           </incDir>
         </cTool>
         <ccTool>
+          <standard>8</standard>
           <commandlineTool>DISTCC_FALLBACK=0 distcc</commandlineTool>
           <incDir>
             <pElem>include</pElem>
             <pElem>../UnitTest++/src</pElem>
             <pElem>../dbo/include</pElem>
           </incDir>
-          <commandLine>-std=c++0x</commandLine>
           <warningLevel>2</warningLevel>
         </ccTool>
         <linkerTool>
@@ -106,14 +106,13 @@
         <ccTool>
           <developmentMode>6</developmentMode>
           <stripSymbols>true</stripSymbols>
-          <standard>8</standard>
           <incDir>
             <pElem>include</pElem>
             <pElem>../UnitTest++/src</pElem>
             <pElem>../dbo/include</pElem>
             <pElem>/var/lib/jenkins/jobs/ea-dbo/workspace/include</pElem>
           </incDir>
-          <commandLine>-DNDEBUG</commandLine>
+          <commandLine>-DNDEBUG -std=c++0x</commandLine>
         </ccTool>
         <fortranCompilerTool>
           <developmentMode>5</developmentMode>
