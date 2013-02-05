@@ -1,0 +1,22 @@
+# config file of the engine #
+###DATABASE SECTION###
+database-hostname = <%= hostname %>
+database-port = 5432
+database-name = <%= dbname %>
+database-login = <%= user %>
+database-password = <%= password %>
+###ENGINE SECTION###
+#pause time between reading new syslog entries in milliseconds
+sleep-database-reading = 10
+#pause time between calculating alerts on new datas in milliseconds
+sleep-alert-reading = 100
+#pause time between checks to remove old values
+sleep-remove-old-values = 3600000
+sleep-calculate = 10
+#url of the api
+api-url =  https://sms.echoes-tech.com
+#engine mode
+parser = true
+alerter = true
+cleaner = true
+calculator = true
