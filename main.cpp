@@ -8,7 +8,7 @@
 #include <boost/thread/thread.hpp>
 #include <boost/program_options.hpp>
 #include <boost/program_options/variables_map.hpp>
-
+#include <tools/SessionPool.h>
 
 ToolsEngine *te;
 
@@ -24,6 +24,10 @@ boost::mutex ToolsEngine::mutex;
 boost::recursive_mutex ToolsEngine::mutexCalculate;
 //default criticity to log before reading file config : debug = 1 / info = 2 / warning = 3 / secure = 4 / error = 5/ fatal = 6
 int ToolsEngine::criticity = 1;
+
+SessionPool* SessionPool::instance = 0;
+std::string SessionPool::credentials = "";
+boost::mutex SessionPool::mutex;
 
 int main(int argc, char *argv[])
 {  
