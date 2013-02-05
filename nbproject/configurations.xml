@@ -64,13 +64,13 @@
           </incDir>
         </cTool>
         <ccTool>
-          <standard>8</standard>
           <commandlineTool>DISTCC_FALLBACK=0 distcc</commandlineTool>
           <incDir>
             <pElem>include</pElem>
             <pElem>../UnitTest++/src</pElem>
             <pElem>../dbo/include</pElem>
           </incDir>
+          <commandLine>-std=c++0x</commandLine>
           <warningLevel>2</warningLevel>
         </ccTool>
         <linkerTool>
