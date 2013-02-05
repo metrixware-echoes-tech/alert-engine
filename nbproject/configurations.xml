@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configurationDescriptor version="84">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
+    <logicalFolder name="conf" displayName="Conf" projectFiles="true">
+      <itemPath>conf/engine.conf</itemPath>
+      <itemPath>conf/engine.conf.erb</itemPath>
+    </logicalFolder>
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
@@ -44,7 +48,6 @@
                    kind="IMPORTANT_FILES_FOLDER">
       <itemPath>Makefile</itemPath>
     </logicalFolder>
-    <itemPath>engine.conf</itemPath>
     <itemPath>plugin.yaml.yml</itemPath>
   </logicalFolder>
   <sourceRootList>
@@ -71,6 +74,7 @@
             <pElem>../UnitTest++/src</pElem>
             <pElem>../dbo/include</pElem>
           </incDir>
+          <commandLine>-pedantic</commandLine>
           <warningLevel>2</warningLevel>
         </ccTool>
         <linkerTool>
@@ -106,6 +110,7 @@
         <ccTool>
           <developmentMode>6</developmentMode>
           <stripSymbols>true</stripSymbols>
+          <commandlineTool>g++-4.4</commandlineTool>
           <incDir>
             <pElem>include</pElem>
             <pElem>../UnitTest++/src</pElem>
