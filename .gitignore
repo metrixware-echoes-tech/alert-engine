@@ -6,10 +6,6 @@
 /bin/
 /obj/
 /nbproject/private/
-/build/Debug/
-/dist/Debug/
 /build/
 /dist/
-/build/Release/
-/dist/Release/
 .dep.inc
