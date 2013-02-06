@@ -42,8 +42,9 @@ ToolsEngine::~ToolsEngine() {
 Wt::WLogEntry ToolsEngine::log(std::string logCriticity)
 {
     boost::mutex::scoped_lock scoped_lock(ToolsEngine::mutex);
-    return ToolsEngine::logger.entry(logCriticity) << logCriticity << Wt::WLogger::sep << Wt::WLogger::timestamp << Wt::WLogger::sep << (unsigned int)pthread_self() << Wt::WLogger::sep;
+    Wt::WLogEntry log = ToolsEngine::logger.entry(logCriticity) << logCriticity << Wt::WLogger::sep << Wt::WLogger::timestamp << Wt::WLogger::sep << (unsigned int)pthread_self() << Wt::WLogger::sep;
     boost::mutex::scoped_lock scoped_unlock(ToolsEngine::mutex);
+    return log;
 }
 
 

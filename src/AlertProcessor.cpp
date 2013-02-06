@@ -1,7 +1,14 @@
 #include "AlertProcessor.h"
 #include "CompareMethods.h"
 
-AlertProcessor::AlertProcessor() {
+AlertProcessor::AlertProcessor() 
+{
+    ltPtr = ltMethod;
+    lePtr = leMethod;
+    eqPtr = eqMethod;
+    nePtr = neMethod;
+    gePtr = geMethod;  
+    gtPtr = gtMethod;
 }
 
 AlertProcessor::~AlertProcessor() {
@@ -9,12 +16,10 @@ AlertProcessor::~AlertProcessor() {
 
 int AlertProcessor::verifyAlerts()
 {
-    typedef Wt::Dbo::collection< Wt::Dbo::ptr<Alert> > Alerts;
     boost::thread_group threadsVerifyAlerts;
-    //int threadNumber=0;
-    //std::vector<pthread_t> threadList;
+
     boost::mutex::scoped_lock scoped_lock(mutex);
-    Alerts alerts;
+    Wt::Dbo::collection< Wt::Dbo::ptr<Alert>> alerts;
     //SQL session
     while (true)
     {
@@ -26,7 +31,7 @@ int AlertProcessor::verifyAlerts()
             alerts = te->sessionAlertProcessor->find<Alert>().where("\"ALE_DELETE\" IS NULL");
             ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << "We have " << alerts.size() << " Alert(s) in the database";
 
-            for (Alerts::const_iterator i = alerts.begin(); i != alerts.end(); ++i)
+            for (Wt::Dbo::collection<Wt::Dbo::ptr<Alert>>::const_iterator i = alerts.begin(); i != alerts.end(); ++i)
             {
                ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << " the Alert : " << (*i)->name << " is in the database.";
                //we instanciate a thread for each alert           
@@ -54,8 +59,7 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
     //creation of a new SQL session
     Session sessionThread(te->sqlCredentials);
     
-//    int alertId;
-    
+   
     //parameters from the alert         
     int pluginId;            
     int sourceId;
@@ -63,37 +67,18 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
     double infValueNum;
     int unitId;
     Wt::WDateTime alertCreaDate;
-    Wt::Dbo::collection<Wt::Dbo::ptr<Asset> > assets;
+    Wt::Dbo::collection<Wt::Dbo::ptr<Asset>> assets;
     std::string assetList = "";
     std::string keyValue;
     //list of iva to process
     std::string informationValueListSqlPrepared = "()";
     
     //value of the alert set by the user in the database (need to be converted)
-    double alertValueToCompare; 
+    double dAlertValueToCompare; 
+    Wt::WString sAlertValueToCompare;
     
     //the line number we search if the information value has a key
     int lineNumber;
-    
-    //define the pointer of the operators functions
-    bool (*ltPtr)(double, double);
-    ltPtr = ltMethod;
-    
-    bool (*lePtr) (double, double);
-    lePtr = leMethod;
-    
-    bool (*eqPtr)(double, double);
-    eqPtr = eqMethod;
-    
-    bool (*nePtr) (double, double);
-    nePtr = neMethod;
-    
-    bool (*gePtr)(double, double);
-    gePtr = geMethod;  
-    
-    bool (*gtPtr)(double, double);
-    gtPtr = gtMethod;
-    
     
     ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << " New Thread created, the Alert : " << idAlert 
             << " is now processed by the engine.";
@@ -119,8 +104,8 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
 
         
         //value of the alert that will be processed     
-        Wt::WString val =  alertPtr.get()->alertValue.get()->value;
-        alertValueToCompare = boost::lexical_cast<double>(val);
+        sAlertValueToCompare = alertPtr.get()->alertValue.get()->value;
+        dAlertValueToCompare = boost::lexical_cast<double>(sAlertValueToCompare);
         
         if (alertPtr.get()->alertValue.get()->keyValue)
         {
@@ -300,32 +285,32 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
             {          
                 case lt: 
                     ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are entering in the switch of the lt comparison";
-                    AlertProcessor::compareNumberValue(informationValueListSqlPrepared, ltPtr, alertValueToCompare, idAlert, lineNumber);
+                    AlertProcessor::compareNumberValue(informationValueListSqlPrepared, ltPtr, dAlertValueToCompare, idAlert, lineNumber);
                     ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are at the end of the lt comparison";  
                     break;
                 case le:
                     ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are entering in the switch of the le comparison";
-                    AlertProcessor::compareNumberValue(informationValueListSqlPrepared, lePtr, alertValueToCompare, idAlert, lineNumber);
+                    AlertProcessor::compareNumberValue(informationValueListSqlPrepared, lePtr, dAlertValueToCompare, idAlert, lineNumber);
                     ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are at the end of the le comparison";
                     break;
                 case eq:
                     ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are entering in the switch of the eq comparison";
-                    AlertProcessor::compareNumberValue(informationValueListSqlPrepared, eqPtr, alertValueToCompare, idAlert, lineNumber);
+                    AlertProcessor::compareNumberValue(informationValueListSqlPrepared, eqPtr, dAlertValueToCompare, idAlert, lineNumber);
                     ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are at the end of the eq comparison";
                     break;
                 case ne:
                     ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are entering in the switch of the ne comparison";
-                    AlertProcessor::compareNumberValue(informationValueListSqlPrepared, nePtr, alertValueToCompare, idAlert, lineNumber);
+                    AlertProcessor::compareNumberValue(informationValueListSqlPrepared, nePtr, dAlertValueToCompare, idAlert, lineNumber);
                     ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are at the end of the ne comparison";
                     break;                            
                 case ge:
                     ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are entering in the switch of the ge comparison";
-                    AlertProcessor::compareNumberValue(informationValueListSqlPrepared, gePtr, alertValueToCompare, idAlert, lineNumber);
+                    AlertProcessor::compareNumberValue(informationValueListSqlPrepared, gePtr, dAlertValueToCompare, idAlert, lineNumber);
                     ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are at the end of the ge comparison";
                     break;
                 case gt:
                     ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are entering in the switch of the gt comparison";
-                    AlertProcessor::compareNumberValue(informationValueListSqlPrepared, gtPtr, alertValueToCompare, idAlert, lineNumber);
+                    AlertProcessor::compareNumberValue(informationValueListSqlPrepared, gtPtr, dAlertValueToCompare, idAlert, lineNumber);
                     ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are at the end of the gt comparison";
                     break;
                 default:
@@ -343,6 +328,7 @@ void AlertProcessor::InformationValueLoop(long long idAlert)
                 for (tbInformationValue::const_iterator i = valuesToCheck.begin(); i != valuesToCheck.end(); ++i) 
                 {
                     ToolsEngine::log("warning") << " [Class:AlertProcessor] " << " - " << "processing information name for text alert : " << i->get()->information.get()->name;
+                    AlertProcessor::compareTextValue(informationValueListSqlPrepared, sAlertValueToCompare, idAlert, lineNumber);
                     i->modify()->state = 666;//error
                 }
                 transaction.commit();
@@ -515,4 +501,73 @@ int AlertProcessor::compareNumberValue(std::string stringValuesToCheck,bool (*ma
     }
             
     ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are at the end of the for()";
+    
+    return 0;
+}
+
+
+int AlertProcessor::compareTextValue(std::string stringValuesToCheck, Wt::WString valueSetInDb, long long idAlert, int lineNumber)
+{
+    Session compareSession(te->sqlCredentials);
+    
+    ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are entering in the comparingNumberValue method";
+    try
+    {
+        Wt::Dbo::Transaction transaction(compareSession);
+        std::string queryString = "SELECT iva FROM \"T_INFORMATION_VALUE_IVA\" iva WHERE \"IVA_ID\" IN " + stringValuesToCheck + " FOR UPDATE";
+        ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - Compare number value query String : " << queryString;
+        tbInformationValue valuesToCheck = compareSession.query<Wt::Dbo::ptr<InformationValue> >(queryString);
+        for (tbInformationValue::const_iterator i = valuesToCheck.begin(); i != valuesToCheck.end(); ++i) 
+        {
+            ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "processing information name : " << i->get()->information.get()->name;
+            ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "begin of the for() comparison";
+            ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "pos key value in the for : " 
+                                                                    << i->get()->information.get()->pk.search.get()->pos_key_value;
+            //it concerns an information without a key value
+            if (i->get()->information.get()->pk.search.get()->pos_key_value == 0)
+            {
+                if( i->get()->value.toUTF8().compare(valueSetInDb.toUTF8()) == 0 )
+                {
+                    ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << " Alert generated  : " << idAlert; 
+                    //we create the sender
+                    AlertSender *alertSender = new AlertSender();  
+                    alertSender->send(idAlert,*i);
+                    i->modify()->state = 2;
+                }
+                else
+                {
+                    i->modify()->state = 3;
+                }
+            }
+            else if (i->get()->information.get()->pk.search.get()->pos_key_value != 0)
+            {
+                ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << " alert treatment on an information with a key value ";
+                if( i->get()->lineNumber == lineNumber && i->get()->value.toUTF8().compare(valueSetInDb.toUTF8()) == 0)
+                {
+                    ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << " Alert generated with key value < : " << idAlert; 
+                    //we create the sender
+                    AlertSender alertSender;  
+                    alertSender.send(idAlert,*i);
+                    i->modify()->state = 2;
+                }
+                else
+                {
+                    ToolsEngine::log("info") << " [Class:AlertProcessor] " << " - " << " Error while comparing alert value with iva value";
+                    i->modify()->state = 3;
+                }
+            }
+            else
+            {
+                ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << " Alert not generated with the information : " << i->get()->value;
+            }
+        }
+        transaction.commit();
+    }
+    catch (Wt::Dbo::Exception e)
+    {
+        ToolsEngine::log("error") << " [Class:AlertProcessor] " << " - " << " comparing numbervalue catch " << e.what();
+    }
+            
+    ToolsEngine::log("debug") << " [Class:AlertProcessor] " << " - " << "we are at the end of the for()";
+    return 0;
 }

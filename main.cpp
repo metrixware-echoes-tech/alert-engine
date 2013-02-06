@@ -173,7 +173,7 @@ void checkNewDatas()
     Parser *parser = new Parser();
     //result
     int res = -1;
-    int syslogSize = 100;
+    const int syslogSize = 100;
     while (true)
     {
         long long syslogId[syslogSize];
@@ -271,17 +271,18 @@ void checkNewDatas()
 std::string getSyslogListSqlPrepared(int size, long long syslogId[])
 {
     std::string res = "(";
-    int i = 0;
-    for (i ; i < size; i++) 
+    int idx = 0;
+    for (int i = 0 ; i < size; i++) 
     {
         if (syslogId[i] == -1)
         {
             break;
-        }        
+        }
+        idx++;
         res += boost::lexical_cast<std::string>(syslogId[i]) + ",";
     }
     res.replace(res.size()-1, 1, "");
-    if (i == 0)
+    if (idx == 0)
     {
         res += "0";
     }
@@ -358,7 +359,7 @@ void cleanAll()
 
 void calculate()
 {
-    int ivaListSize = 50;
+    const int ivaListSize = 50;
     while (true)
     {
         long long ivaIdList[ivaListSize];
