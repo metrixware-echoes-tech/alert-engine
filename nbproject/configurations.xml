@@ -115,7 +115,7 @@
             <pElem>include</pElem>
             <pElem>../UnitTest++/src</pElem>
             <pElem>../dbo/include</pElem>
-            <pElem>/var/lib/jenkins/jobs/ea-dbo/workspace/include</pElem>
+            <pElem>/var/lib/jenkins/jobs/ea-dbo-master/workspace/include</pElem>
           </incDir>
           <commandLine>-DNDEBUG -std=c++0x</commandLine>
         </ccTool>
