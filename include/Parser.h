@@ -38,14 +38,14 @@ public:
      * [res2@5875 offset=10 8-4-5-6-2="53" 8-4-5-6-1="987"]
      * [res1@5875 offset=15 8-4-5-6="543" 8-4-5-6="54546"]
      */
-    
+
     /**
      * method to fill the value's queue with the initial rawStructuredData 
      * @param the pointer to the syslog we want to parse
      * @return error or success
      */
     int unserializeStructuredData(long long id);
-    
+
     /**
      * method to unserialize the SD Elements included in a rawStructuredData
      * @param strSDElement the string that contains the informations
@@ -53,7 +53,7 @@ public:
      * @return error or success
      */
     int unserializeSDElement(std::string& strSDElement, long long ptrSyslogId);
-    
+
     /**
      * method to unserialize a value included in a SDElement
      * @param strValue the string that contains the informations
@@ -62,7 +62,7 @@ public:
      * @return error or success
      */
     int unserializeValue(std::string& strValue, int offset, long long ptrSyslogId);
-    
+
     /**
      * method to unserialize the sd-element concerning the properties
      * @param strProperties the sub string of rawStructuredData that contains the properties
@@ -70,19 +70,19 @@ public:
      * @return error or success
      */
     int unserializeProperties(std::string& strProperties, long long ptrSyslogId);
-    
+
 private:
-      
-      //concerning value
-      int idAsset;
-      int idPlugin;
-      int idSearch;
-      int idSource;
-      int valueNum;
-      int lotNumber;
-      int lineNumber;
-      std::string sValue;
-      
+
+    //concerning value
+    int idAsset;
+    int idPlugin;
+    int idSearch;
+    int idSource;
+    int valueNum;
+    int lotNumber;
+    int lineNumber;
+    std::string sValue;
+
 
 };
 

@@ -41,9 +41,10 @@ ToolsEngine::~ToolsEngine() {
 
 Wt::WLogEntry ToolsEngine::log(std::string logCriticity)
 {
-    boost::mutex::scoped_lock scoped_lock(ToolsEngine::mutex);
-    return ToolsEngine::logger.entry(logCriticity) << logCriticity << Wt::WLogger::sep << Wt::WLogger::timestamp << Wt::WLogger::sep << (unsigned int)pthread_self() << Wt::WLogger::sep;
-    boost::mutex::scoped_lock scoped_unlock(ToolsEngine::mutex);
+    ToolsEngine::mutex.lock();
+    Wt::WLogEntry log = ToolsEngine::logger.entry(logCriticity) << logCriticity << Wt::WLogger::sep << Wt::WLogger::timestamp << Wt::WLogger::sep << (unsigned int)pthread_self() << Wt::WLogger::sep;
+    ToolsEngine::mutex.unlock();
+    return log;
 }
 
 
@@ -127,15 +128,15 @@ int ToolsEngine::configFileLoad(std::string fileLocation)
       return result;
 }
 
-void ToolsEngine::reloadSessionCalculate()
-{
-    {
-        boost::lock_guard<boost::recursive_mutex> lock(mutexCalculate);
-        sessionCalculate->~Session();
-        sessionCalculate = new Session(sqlCredentials);
-    }
-    return;
-}
+//void ToolsEngine::reloadSessionCalculate()
+//{
+//    {
+//        boost::lock_guard<boost::recursive_mutex> lock(mutexCalculate);
+//        sessionCalculate->~Session();
+//        sessionCalculate = new Session(sqlCredentials);
+//    }
+//    return;
+//}
 
 bool ToolsEngine::isParser()
 {
