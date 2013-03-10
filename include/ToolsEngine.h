@@ -57,7 +57,7 @@ public:
     Session *sessionAlertProcessor;
     Session *sessionOldValues;
     Session *sessionCalculate;
-    void reloadSessionCalculate();
+//    void reloadSessionCalculate();
     static Wt::WLogger logger;
     static Wt::WLogEntry log(std::string criticity);
     static int criticity; //log criticity
