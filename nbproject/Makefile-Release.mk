@@ -35,11 +35,10 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
-	${OBJECTDIR}/src/Parser.o \
 	${OBJECTDIR}/main.o \
-	${OBJECTDIR}/src/ToolsEngine.o \
 	${OBJECTDIR}/src/AlertProcessor.o \
-	${OBJECTDIR}/src/AlertSender.o
+	${OBJECTDIR}/src/AlertSender.o \
+	${OBJECTDIR}/src/ToolsEngine.o
 
 
 # C Compiler Flags
@@ -64,32 +63,27 @@ LDLIBSOPTIONS=-L/var/lib/jenkins/jobs/ea-dbo-develop/workspace/default/dist/Rele
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engine: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engine -s ${OBJECTFILES} ${LDLIBSOPTIONS} 
-
-${OBJECTDIR}/src/Parser.o: src/Parser.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.cc) -O3 -s -Iinclude -I../UnitTest++/src -I../dbo/include -I/var/lib/jenkins/jobs/ea-dbo-develop/workspace/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/Parser.o src/Parser.cpp
+	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engine ${OBJECTFILES} ${LDLIBSOPTIONS} -s
 
 ${OBJECTDIR}/main.o: main.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.cc) -O3 -s -Iinclude -I../UnitTest++/src -I../dbo/include -I/var/lib/jenkins/jobs/ea-dbo-develop/workspace/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/main.o main.cpp
-
-${OBJECTDIR}/src/ToolsEngine.o: src/ToolsEngine.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.cc) -O3 -s -Iinclude -I../UnitTest++/src -I../dbo/include -I/var/lib/jenkins/jobs/ea-dbo-develop/workspace/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/ToolsEngine.o src/ToolsEngine.cpp
+	$(COMPILE.cc) -O3 -s -Iinclude -I../UnitTest++/src -I../dbo/include -I/var/lib/jenkins/jobs/ea-dbo-develop/workspace/include -DNDEBUG -std=c++0x -MMD -MP -MF $@.d -o ${OBJECTDIR}/main.o main.cpp
 
 ${OBJECTDIR}/src/AlertProcessor.o: src/AlertProcessor.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -O3 -s -Iinclude -I../UnitTest++/src -I../dbo/include -I/var/lib/jenkins/jobs/ea-dbo-develop/workspace/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/AlertProcessor.o src/AlertProcessor.cpp
+	$(COMPILE.cc) -O3 -s -Iinclude -I../UnitTest++/src -I../dbo/include -I/var/lib/jenkins/jobs/ea-dbo-develop/workspace/include -DNDEBUG -std=c++0x -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/AlertProcessor.o src/AlertProcessor.cpp
 
 ${OBJECTDIR}/src/AlertSender.o: src/AlertSender.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
-	$(COMPILE.cc) -O3 -s -Iinclude -I../UnitTest++/src -I../dbo/include -I/var/lib/jenkins/jobs/ea-dbo-develop/workspace/include -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/AlertSender.o src/AlertSender.cpp
+	$(COMPILE.cc) -O3 -s -Iinclude -I../UnitTest++/src -I../dbo/include -I/var/lib/jenkins/jobs/ea-dbo-develop/workspace/include -DNDEBUG -std=c++0x -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/AlertSender.o src/AlertSender.cpp
+
+${OBJECTDIR}/src/ToolsEngine.o: src/ToolsEngine.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} $@.d
+	$(COMPILE.cc) -O3 -s -Iinclude -I../UnitTest++/src -I../dbo/include -I/var/lib/jenkins/jobs/ea-dbo-develop/workspace/include -DNDEBUG -std=c++0x -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/ToolsEngine.o src/ToolsEngine.cpp
 
 # Subprojects
 .build-subprojects:

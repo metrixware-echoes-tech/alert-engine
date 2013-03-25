@@ -53,7 +53,6 @@ public:
     int configFileLoad(std::string fileLocation);
 
     Session *sessionParser;
-    Session *sessionParserGlobal;
     Session *sessionAlertProcessor;
     Session *sessionOldValues;
     Session *sessionCalculate;
@@ -69,7 +68,6 @@ public:
     int sleepThreadRemoveOldValues; //the milliseconds to wait between each old values cleaning
     int sleepThreadCalculate;
     Wt::WIOService *ioService; //ioservice used for the http client
-    bool isParser();
     bool isAlerter();
     bool isCleaner();
     bool isCalculator();
@@ -78,7 +76,6 @@ protected:
     static boost::mutex mutex;
     static boost::recursive_mutex mutexCalculate;
     enum logCriticity{debug = 1,info = 2, warning = 3, secure = 4, error = 5, fatal = 6};
-    bool parser;
     bool alerter;
     bool cleaner;
     bool calculator;

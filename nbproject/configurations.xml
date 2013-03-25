@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configurationDescriptor version="84">
+<configurationDescriptor version="88">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <logicalFolder name="conf" displayName="Conf" projectFiles="true">
       <itemPath>conf/engine.conf</itemPath>
@@ -97,6 +97,49 @@
           </linkerLibItems>
         </linkerTool>
       </compileType>
+      <item path="conf/engine.conf" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="conf/engine.conf.erb" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/AlertProcessor.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/AlertSender.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/CompareMethods.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/ToolsEngine.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="main.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="plugin.yaml.yml" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="scripts/database_content_production.sql"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="scripts/fill_echoes_database_sensor.sql"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="scripts/fill_echoes_model_inauguration.sql"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="scripts/histo_tracking_tsa.sql" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="scripts/log-echoes.sh" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="scripts/rsyslog.conf" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/AlertProcessor.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/AlertSender.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/ToolsEngine.cpp" ex="false" tool="1" flavor2="0">
+      </item>
     </conf>
     <conf name="Release" type="1">
       <toolsSet>
@@ -147,6 +190,49 @@
           </linkerLibItems>
         </linkerTool>
       </compileType>
+      <item path="conf/engine.conf" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="conf/engine.conf.erb" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/AlertProcessor.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/AlertSender.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/CompareMethods.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/ToolsEngine.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="main.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="plugin.yaml.yml" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="scripts/database_content_production.sql"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="scripts/fill_echoes_database_sensor.sql"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="scripts/fill_echoes_model_inauguration.sql"
+            ex="false"
+            tool="3"
+            flavor2="0">
+      </item>
+      <item path="scripts/histo_tracking_tsa.sql" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="scripts/log-echoes.sh" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="scripts/rsyslog.conf" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/AlertProcessor.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/AlertSender.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/ToolsEngine.cpp" ex="false" tool="1" flavor2="0">
+      </item>
     </conf>
   </confs>
 </configurationDescriptor>

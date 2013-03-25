@@ -24,7 +24,6 @@ ToolsEngine::ToolsEngine(std::string confFile) {
     }
     //creating SQL sessions
     sessionParser = new Session(sqlCredentials);
-    sessionParserGlobal = new Session(sqlCredentials);
     sessionAlertProcessor = new Session(sqlCredentials);
     sessionOldValues = new Session(sqlCredentials);
     sessionCalculate = new Session(sqlCredentials);
@@ -71,7 +70,6 @@ int ToolsEngine::configFileLoad(std::string fileLocation)
         sleepThreadCheckAlertMilliSec =pt.get<int>("sleep-alert-reading");
         sleepThreadRemoveOldValues = pt.get<int>("sleep-remove-old-values");
         sleepThreadCalculate = pt.get<int>("sleep-calculate");
-        parser = pt.get<bool>("parser");
         alerter = pt.get<bool>("alerter");
         cleaner = pt.get<bool>("cleaner");
         calculator = pt.get<bool>("calculator");
@@ -138,10 +136,6 @@ int ToolsEngine::configFileLoad(std::string fileLocation)
 //    return;
 //}
 
-bool ToolsEngine::isParser()
-{
-    return this->parser;
-}
 bool ToolsEngine::isAlerter()
 {
     return this->alerter;
