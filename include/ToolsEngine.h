@@ -63,7 +63,6 @@ public:
     std::string sqlCredentials;
     std::string apiUrl;
     std::string logFile;
-    int sleepThreadReadDatasMilliSec; //the milliseconds to wait between each loop in our process (reading the database for new info)
     int sleepThreadCheckAlertMilliSec; //the milliseconds to wait between each loop in our process ( calculate alerts)
     int sleepThreadRemoveOldValues; //the milliseconds to wait between each old values cleaning
     int sleepThreadCalculate;

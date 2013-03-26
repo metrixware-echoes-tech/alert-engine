@@ -11,7 +11,6 @@
       <itemPath>include/AlertProcessor.h</itemPath>
       <itemPath>include/AlertSender.h</itemPath>
       <itemPath>include/CompareMethods.h</itemPath>
-      <itemPath>include/Parser.h</itemPath>
       <itemPath>include/ToolsEngine.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"

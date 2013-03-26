@@ -66,7 +66,6 @@ int ToolsEngine::configFileLoad(std::string fileLocation)
                      " user=" + pt.get<std::string>("database-login") +
                      " password=" + pt.get<std::string>("database-password");
         apiUrl = pt.get<std::string>("api-url");
-        sleepThreadReadDatasMilliSec = pt.get<int>("sleep-database-reading");
         sleepThreadCheckAlertMilliSec =pt.get<int>("sleep-alert-reading");
         sleepThreadRemoveOldValues = pt.get<int>("sleep-remove-old-values");
         sleepThreadCalculate = pt.get<int>("sleep-calculate");

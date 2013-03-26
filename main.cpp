@@ -16,7 +16,6 @@ void checkNewAlerts();
 void removeOldValues();
 void calculate();
 void cleanAll();
-std::string getSyslogListSqlPrepared(int size, long long syslogId[]);
 
 Wt::WLogger ToolsEngine::logger;
 boost::mutex ToolsEngine::mutex;
@@ -134,28 +133,6 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-std::string getSyslogListSqlPrepared(int size, long long syslogId[])
-{
-    std::string res = "(";
-    int idx = 0;
-    for (int i = 0; i < size; i++)
-    {
-        if (syslogId[i] == -1)
-        {
-            break;
-        }
-        idx++;
-        res += boost::lexical_cast<std::string > (syslogId[i]) + ",";
-    }
-    res.replace(res.size() - 1, 1, "");
-    if (idx == 0)
-    {
-        res += "0";
-    }
-    res += ")";
-    return res;
-}
-
 void checkNewAlerts()
 {
     AlertProcessor *alertProcessor = new AlertProcessor();
@@ -196,24 +173,6 @@ void cleanAll()
                 " WHERE"
                 " \"IVA_STATE\" = 0"
                 " AND \"IVA_CREA_DATE\" < (NOW() - interval '1 day')";
-        te->sessionOldValues->execute(queryString);
-        transaction.commit();
-    }
-    catch (Wt::Dbo::Exception e)
-    {
-        ToolsEngine::log("error") << " [Class:main] " << e.what();
-    }
-
-    //remove values older than 1 day from t_syslog_slo
-    try
-    {
-        Wt::Dbo::Transaction transaction(*(te->sessionOldValues));
-        std::string queryString = "DELETE FROM \"T_SYSLOG_SLO\""
-                " WHERE \"SLO_ID\" IN"
-                "(SELECT \"SLO_ID\" FROM \"T_SYSLOG_SLO\""
-                " WHERE \"SLO_STATE\" != 0"
-                " AND \"SLO_RCPT_DATE\" < (NOW() - interval '1 day')"
-                " LIMIT 50)";
         te->sessionOldValues->execute(queryString);
         transaction.commit();
     }
