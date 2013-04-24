@@ -61,7 +61,8 @@ public:
     static Wt::WLogEntry log(std::string criticity);
     static int criticity; //log criticity
     std::string sqlCredentials;
-    std::string apiUrl;
+    std::string apiHost;
+    unsigned apiPort;
     std::string logFile;
     int sleepThreadCheckAlertMilliSec; //the milliseconds to wait between each loop in our process ( calculate alerts)
     int sleepThreadRemoveOldValues; //the milliseconds to wait between each old values cleaning
@@ -70,6 +71,10 @@ public:
     bool isAlerter();
     bool isCleaner();
     bool isCalculator();
+    
+    long long getId() const;
+    bool isInDB();
+
 protected:
     static bool alreadyCreated;
     static boost::mutex mutex;
@@ -79,6 +84,10 @@ protected:
     bool cleaner;
     bool calculator;
 
+    private:
+        long long _id;
+
+        void setId(long long id);
 
 };
 

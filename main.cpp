@@ -4,14 +4,12 @@
 #include <Wt/Dbo/Dbo>
 #include <tools/Session.h>
 #include "ToolsEngine.h"
-#include <boost/thread/thread.hpp>
 #include <boost/program_options.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <tools/SessionPool.h>
 
 ToolsEngine *te;
 
-void checkNewDatas();
 void checkNewAlerts();
 void removeOldValues();
 void calculate();
@@ -49,14 +47,16 @@ int main(int argc, char *argv[])
         return 0;
     }
 
+#ifdef NDEBUG
     if (vm.count("logfile"))
     {
         ToolsEngine::logger.setFile(vm["logfile"].as<std::string > ());
     }
     else
     {
-        ToolsEngine::logger.setFile("/tmp/engine.log");
+        ToolsEngine::logger.setFile("/var/log/echoes-alert/engine.log");
     }
+#endif
 
     if (vm.count("logcriticity"))
     {
@@ -93,7 +93,11 @@ int main(int argc, char *argv[])
     ToolsEngine::logger.configure("-debug");
 
     te = new ToolsEngine(confFile);
-
+    if (!te->isInDB())
+    {
+        ToolsEngine::log("critical") << " [Class:Main] " << "This Engine ID is not in the database.";
+        return EXIT_FAILURE;
+    }
 
     //création des tables de la bdd (to remove)    
     try

@@ -1,116 +1,85 @@
-/** 
+/* 
+ * Header of Engine Alert Processor
+ * @author ECHOES Technologies (RHI, FPO)
+ * @date 07/08/2012
  * 
- * This class process the different received value with the existing alerts and start the workflow when the 
- * threshold occurs
+ * THIS PROGRAM IS CONFIDENTIAL AND PROPRIETARY TO ECHOES TECHNOLOGIES SAS
+ * AND MAY NOT BE REPRODUCED, PUBLISHED OR DISCLOSED TO OTHERS WITHOUT
+ * COMPANY AUTHORIZATION.
  * 
- * @author ECHOES Technologies (RHI)
- * @date 2012-08-07
+ * COPYRIGHT 2012-2013 BY ECHOES TECHNOLGIES SAS
+ * 
  */
 
 #ifndef ALERTPROCESSOR_H
 #define	ALERTPROCESSOR_H
 
-#include <tools/Session.h>
-#include <string>
-#include <vector>
-#include <queue>
-#include <iostream>
-#include <Wt/Dbo/Dbo>
-#include <Wt/WDateTime>
-#include "ToolsEngine.h"
-#include <information/InformationValue.h>
-#include <information/Information.h>
-#include <alert/Alert.h>
-#include <alert/AlertValue.h>
-#include <alert/AlertType.h>
-#include <alert/AlertCriteria.h>
-#include <media/MediaValue.h>
+#include <signal.h>
+#include <wait.h>
+
 #include <boost/thread/thread.hpp>
-#include <boost/bind/bind.hpp>
-#include <boost/thread/mutex.hpp>
-#include <tools/Session.h>
-#include <boost/lexical_cast.hpp>
-#include "AlertSender.h"
+
+#include <Wt/Utils>
+#include <Wt/WDateTime>
+
+#include <tools/Enums.h>
+
+#include "ToolsEngine.h"
 
 typedef Wt::Dbo::collection<Wt::Dbo::ptr<InformationValue> > tbInformationValue;
 
 class AlertProcessor {
-public:
-    /**
-     * class' builder
-     */
-    AlertProcessor();
-    virtual ~AlertProcessor();
-    
-   /**
-    * method that create a thread for each alert resgistered in the database
-    * @return error or success
-    */
-    int verifyAlerts();  
-    
-    
-   /**
-    * method to evaluate the InformationValue table with one alert
-    * @param the id of the alert
-    * @return code for the parent thread
-    */ 
-    void InformationValueLoop(long long idAlert);
-    
-    /**
-    * Method to get the pos key from an information pk.
-    * @param pluginId
-    * @param sourceId
-    * @param searchId
-    * @param valueNum
-    * @param unitId
-    * @param list of assets
-    * @return pos key value ; -1 if error
-    */
-    int getPosKey(Session *sessionThread, int pluginId,int sourceId,int searchId,double valueNum, int unitId, std::string assetList);
-    
-    /**
-    * Method to get an asset list to put it in a "in" sql request
-    * @param assets
-    * @return asset list
-    */
-    std::string getAssetListSqlPrepared(Wt::Dbo::collection<Wt::Dbo::ptr<Asset> > assets);
-    std::string getInformationValueListSqlPrepared(Wt::Dbo::collection<Wt::Dbo::ptr<InformationValue> > informationValues, int state);
-    
-    /**
-    * method compare a numerical value with an alert value and a mathematics operator
-    * @param the table of informationvalue received and ready to be checked
-    * @param the operator method
-    * @param the value to compare with (set in the alert value)
-    * @param the ptr of the current alert
-    * @param optionnal, the line number if we have a value linked to a key transmitted
-    * @return void
-    */ 
-    int compareNumberValue(std::string valuesToCheck,bool (*mathOperator)(double,double), double valueSetInDb, long long idAlert, int lineNumber=0);
+    public:
+        AlertProcessor();
+        AlertProcessor(const AlertProcessor& orig);
+        virtual ~AlertProcessor();
 
-    /**
-    * method compare a text value with an alert value
-    * @param the table of informationvalue received and ready to be checked
-    * @param the value to compare with (set in the alert value)
-    * @param the ptr of the current alert
-    * @param optionnal, the line number if we have a value linked to a key transmitted
-    * @return void
-    */ 
-    int compareTextValue(std::string valuesToCheck, Wt::WString valueSetInDb, long long idAlert, int lineNumber=0);
-    
-private:
-    boost::mutex mutex;
-    
-    enum criteria{lt = 1,le = 2,eq = 3,ne = 4,ge = 5,gt = 6};
-    
-    enum informationUnitType{number = 2,text = 1};
-    
-    bool (*ltPtr)(double, double);
-    bool (*lePtr)(double, double);
-    bool (*eqPtr)(double, double);
-    bool (*nePtr)(double, double);
-    bool (*gePtr)(double, double);
-    bool (*gtPtr)(double, double);
-       
+        /**
+         * Launch a SEC instance and create a thread to retrieve Information Value for each alert resgistered in the database
+         * @return error or success
+         */
+        int verifyAlerts();
+        
+    private:
+        struct SecondStructure {
+            bool check;
+            const char* secConfFilename;
+            pid_t secPID;
+            int secInFP, secOutFP;
+            boost::thread *ivaThread;
+        };
+        
+        std::map<long long, SecondStructure> _alertsMap;
+
+        /*
+         * Source : http://www.dzone.com/snippets/simple-popen2-implementation
+         */
+#define READ 0
+#define WRITE 1
+        pid_t popen2(const char *command, int *infp, int *outfp);
+        
+        /**
+         * Write SEC config file and launch it
+         */
+        void startAlert(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<EngOrg> engOrgPtr);
+        /**
+         * Stop SEC and remove its config file
+         * @param IDentifier of the alert
+         */
+        void stopAlert(const long long idAlert);
+
+        /**
+         * Retrieve InformationValue from table for one alert
+         * @param IDentifier of the alert
+         */
+        void informationValueLoop(const long long idAlert);
+
+        /**
+         * Method to know when continue the collect
+         * @param Period
+         * @param Previous Date Time
+         */
+        void informationValueSleep(const unsigned period, Wt::WDateTime &previousDateTime);
 };
 
 #endif	/* ALERTPROCESSOR_H */

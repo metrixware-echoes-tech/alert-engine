@@ -60,18 +60,20 @@ int ToolsEngine::configFileLoad(std::string fileLocation)
     try
     {
         boost::property_tree::read_ini(fileLocation, pt);
-        sqlCredentials = "hostaddr=" + pt.get<std::string>("database-hostname") + 
-                     " port=" + pt.get<std::string>("database-port") + 
-                     " dbname=" + pt.get<std::string>("database-name") +
-                     " user=" + pt.get<std::string>("database-login") +
-                     " password=" + pt.get<std::string>("database-password");
-        apiUrl = pt.get<std::string>("api-url");
-        sleepThreadCheckAlertMilliSec =pt.get<int>("sleep-alert-reading");
-        sleepThreadRemoveOldValues = pt.get<int>("sleep-remove-old-values");
-        sleepThreadCalculate = pt.get<int>("sleep-calculate");
-        alerter = pt.get<bool>("alerter");
-        cleaner = pt.get<bool>("cleaner");
-        calculator = pt.get<bool>("calculator");
+        setId(pt.get<long long>("engine.id"));
+        alerter = pt.get<bool>("engine.alerter");
+        cleaner = pt.get<bool>("engine.cleaner");
+        calculator = pt.get<bool>("engine.calculator");
+        sleepThreadCheckAlertMilliSec =pt.get<int>("engine.sleep-alert-reading");
+        sleepThreadRemoveOldValues = pt.get<int>("engine.sleep-remove-old-values");
+        sleepThreadCalculate = pt.get<int>("engine.sleep-calculate");
+        sqlCredentials = "hostaddr=" + pt.get<std::string>("database.host") + 
+                     " port=" + pt.get<std::string>("database.port") + 
+                     " dbname=" + pt.get<std::string>("database.dbname") +
+                     " user=" + pt.get<std::string>("database.username") +
+                     " password=" + pt.get<std::string>("database.password");
+        apiHost = pt.get<std::string>("api.host");
+        apiPort = pt.get<unsigned>("api.port");
         result = 1;
     }
     catch (boost::property_tree::ini_parser_error e)
@@ -147,3 +149,43 @@ bool ToolsEngine::isCalculator()
 {
     return this->calculator;
 }
+
+void ToolsEngine::setId(long long id)
+{
+    _id = id;
+    return;
+}
+
+long long ToolsEngine::getId() const
+{
+    return _id;
+}
+    
+
+bool ToolsEngine::isInDB()
+{
+    bool res = false;
+
+    Session *session = new Session(sqlCredentials);
+    try
+    {
+        Wt::Dbo::Transaction transaction(*session);
+        Wt::Dbo::ptr<Engine> enginePtr = session->find<Engine>().where("\"ENG_ID\" = ?").bind(boost::lexical_cast<std::string>(_id)).limit(1);
+        if (enginePtr)
+        {
+            res = true;
+        }
+
+        transaction.commit();
+    }
+    catch (Wt::Dbo::Exception e)
+    {
+        ToolsEngine::log("error") << " [Class:ToolsEngien] " << " - " << e.what();
+    }
+    delete session;
+    session = NULL;
+    
+    return res;
+}
+
+
