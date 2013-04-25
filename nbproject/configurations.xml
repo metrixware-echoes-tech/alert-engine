@@ -72,7 +72,6 @@
           <commandlineTool>DISTCC_FALLBACK=0 distcc</commandlineTool>
           <incDir>
             <pElem>include</pElem>
-            <pElem>../UnitTest++/src</pElem>
             <pElem>../dbo/include</pElem>
           </incDir>
           <commandLine>-pedantic</commandLine>
@@ -156,12 +155,11 @@
         <ccTool>
           <developmentMode>6</developmentMode>
           <stripSymbols>true</stripSymbols>
-          <commandlineTool>g++-4.4</commandlineTool>
+          <commandlineTool>g++</commandlineTool>
           <incDir>
             <pElem>include</pElem>
-            <pElem>../UnitTest++/src</pElem>
             <pElem>../dbo/include</pElem>
-            <pElem>/var/lib/jenkins/jobs/ea-dbo-develop/workspace/include</pElem>
+            <pElem>/var/lib/jenkins/jobs/ea-dbo-${target}/workspace/include</pElem>
           </incDir>
           <commandLine>-DNDEBUG -std=c++0x</commandLine>
         </ccTool>
@@ -174,10 +172,11 @@
         <linkerTool>
           <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engine</output>
           <linkerAddLib>
-            <pElem>/var/lib/jenkins/jobs/ea-dbo-develop/workspace/default/dist/Release_SharedObject/GNU-Linux-x86</pElem>
+            <pElem>/var/lib/jenkins/jobs/ea-dbo-${target}/workspace/default/dist/Release_SharedObject/GNU-Linux-x86</pElem>
             <pElem>../dbo/dist/Release_SharedObject/GNU-Linux-x86</pElem>
           </linkerAddLib>
           <stripSymbols>true</stripSymbols>
+          <commandlineTool>g++</commandlineTool>
           <linkerLibItems>
             <linkerLibLibItem>boost_system</linkerLibLibItem>
             <linkerLibLibItem>pthread</linkerLibLibItem>
