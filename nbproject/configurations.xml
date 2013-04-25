@@ -155,7 +155,7 @@
         <ccTool>
           <developmentMode>6</developmentMode>
           <stripSymbols>true</stripSymbols>
-          <commandlineTool>g++</commandlineTool>
+          <commandlineTool>g++-4.4</commandlineTool>
           <incDir>
             <pElem>include</pElem>
             <pElem>../dbo/include</pElem>
@@ -176,7 +176,7 @@
             <pElem>../dbo/dist/Release_SharedObject/GNU-Linux-x86</pElem>
           </linkerAddLib>
           <stripSymbols>true</stripSymbols>
-          <commandlineTool>g++</commandlineTool>
+          <commandlineTool>g++-4.4</commandlineTool>
           <linkerLibItems>
             <linkerLibLibItem>boost_system</linkerLibLibItem>
             <linkerLibLibItem>pthread</linkerLibLibItem>

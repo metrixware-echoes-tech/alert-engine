@@ -120,17 +120,17 @@ int AlertProcessor::verifyAlerts()
             ToolsEngine::log("error") << "[Class:AlertProcessor] - " << e.what();
         }
 
-        for (map<long long, SecondStructure>::const_iterator i = _alertsMap.begin(); i != _alertsMap.end(); ++i)
+        for (map<long long, SecondStructure>::iterator it = _alertsMap.begin(); it != _alertsMap.end(); ++it)
         {
-            if(i->second.check)
+            if(it->second.check)
             {
-                _alertsMap[i->first].check = false;
+                _alertsMap[it->first].check = false;
             }
             else
             {
-                stopAlert(i->first);
-                threads.remove_thread(i->second.ivaThread);
-                _alertsMap.erase(i);
+                stopAlert(it->first);
+                threads.remove_thread(it->second.ivaThread);
+                _alertsMap.erase(it);
             }
         }
         
@@ -434,7 +434,7 @@ void AlertProcessor::informationValueLoop(const long long idAlert)
                     inputSEC += "\n";
 
                     ToolsEngine::log("debug") << "[Class:AlertProcessor - Send IVA to SEC";
-                    write(_alertsMap[alertPtr.id()].secInFP, inputSEC.c_str(), inputSEC.size());
+                     write(_alertsMap[alertPtr.id()].secInFP, inputSEC.c_str(), inputSEC.size());
                 }
 
                 ToolsEngine::log("debug") << "[Class:AlertProcessor]" << " - Retrieve IVA";
