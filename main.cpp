@@ -31,9 +31,9 @@ int main(int argc, char *argv[])
     boost::program_options::options_description desc("Allowed options");
     desc.add_options()
             ("help", "That is where you are, it displays help and quits.")
-            ("logfile", boost::program_options::value<std::string > (), "logfile path")
+            ("logfile", boost::program_options::value<std::string>(), "logfile path")
             ("logcriticity", boost::program_options::value<int>(), "log criticity level : debug = 1 / info = 2 / warning = 3 / secure = 4 / error = 5/ fatal = 6")
-            ("conffile", boost::program_options::value<std::string > (), "conffile path")
+            ("conffile", boost::program_options::value<std::string>(), "conffile path")
             ;
 
     boost::program_options::variables_map vm;
@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 #ifdef NDEBUG
     if (vm.count("logfile"))
     {
-        ToolsEngine::logger.setFile(vm["logfile"].as<std::string > ());
+        ToolsEngine::logger.setFile(vm["logfile"].as<std::string>());
     }
     else
     {
@@ -99,18 +99,10 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    //création des tables de la bdd (to remove)    
-    try
-    {
-        te->sessionParser->createTables();
-        Wt::Dbo::Transaction transaction(*(te->sessionParser));
-        ToolsEngine::log("debug") << " [Class:Main] " << "Created database.";
-    }
-    catch (std::exception& e)
-    {
-        std::cerr << e.what() << std::endl;
-        ToolsEngine::log("info") << " [Class:Main] " << "Using existing database." << e.what();
-    }
+    if (vm.count("logfile"))
+        te->logFile = vm["logfile"].as<std::string >();
+    else
+        te->logFile = "/var/log/echoes-alert/engine.log";
 
     cleanAll();
 
