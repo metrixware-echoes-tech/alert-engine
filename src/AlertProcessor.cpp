@@ -259,11 +259,11 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<EngOr
                 "    }; \\\n"
                 "  }; \\\n"
                 "}\n"
-                "desc=POST /alerts/" << alertPtr.id() << "/trackings?eno_token=" << engOrgPtr->token<< " HTTP/1.0\\n"
+                "desc=POST /alerts/" << alertPtr.id() << "/trackings?eno_token=" << engOrgPtr->token<< " HTTP/1.1\\n"
                        "Host: " << te->apiHost << "\\n"
                        "Content-Type: application/json; charset=utf-8\\n"
                        "Content-length: $3\\n\\n"
-                       "$1\\n\n"
+                       "$1\\n\\n\n"
                     "action=shellcmd /usr/bin/printf \"%s\" | /usr/bin/openssl s_client -quiet -connect " << te->apiHost << ":" << te->apiPort;
         
         secConfFile.close();
@@ -273,7 +273,7 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<EngOr
         ToolsEngine::log("error") << "[Class:AlertProcessor] - Unable to open/create file: " << secConfFilename;
     }
 
-    string secCommand("sec -conf=" + secConfFilename + " -input=-");
+    string secCommand("sec -conf=" + secConfFilename + " -input=- -log=" + te->logFile);
     
     _alertsMap[alertPtr.id()].secPID = popen2(secCommand.c_str(), &_alertsMap[alertPtr.id()].secInFP, &_alertsMap[alertPtr.id()].secOutFP);
     if (_alertsMap[alertPtr.id()].secPID <= 0)
@@ -433,7 +433,7 @@ void AlertProcessor::informationValueLoop(const long long idAlert)
                     }
                     inputSEC += "\n";
 
-                    ToolsEngine::log("debug") << "[Class:AlertProcessor - Send IVA to SEC";
+                    ToolsEngine::log("debug") << "[Class:AlertProcessor] - Send IVA to SEC";
                      write(_alertsMap[alertPtr.id()].secInFP, inputSEC.c_str(), inputSEC.size());
                 }
 
