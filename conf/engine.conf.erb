@@ -1,22 +1,33 @@
-# config file of the engine #
-###DATABASE SECTION###
-database-hostname = <%= hostname %>
-database-port = 5432
-database-name = <%= dbname %>
-database-login = <%= user %>
-database-password = <%= password %>
-###ENGINE SECTION###
-#pause time between reading new syslog entries in milliseconds
-sleep-database-reading = 20
-#pause time between calculating alerts on new datas in milliseconds
-sleep-alert-reading = 29000
-#pause time between checks to remove old values
-sleep-remove-old-values = 300000
-sleep-calculate = 1000
-#url of the api
-api-url =  <%= api_url %>
-#engine mode
-parser = true
+##
+# ECHOES Alert Engine Conf File
+#
+# THIS FILE IS CONFIDENTIAL AND PROPRIETARY TO ECHOES TECHNOLOGIES SAS
+# AND MAY NOT BE REPRODUCED, PUBLISHED OR DISCLOSED TO OTHERS WITHOUT
+# COMPANY AUTHORIZATION.
+# 
+# COPYRIGHT 2013 BY ECHOES TECHNOLGIES SAS
+# 
+##
+
+[engine]
+id = 1
+#mode
 alerter = true
 cleaner = true
 calculator = true
+#pause time between calculating alerts on new datas in milliseconds
+sleep-alert-reading = 100
+#pause time between checks to remove old values
+sleep-remove-old-values = 3600000
+sleep-calculate = 10
+
+[database]
+host = <%= db_host %>
+port = 5432
+dbname = <%= db_name %> 
+username = <%= db_username %>
+password = <%= db_password %>
+
+[api]
+host = <%= api_host %>
+port = <%= api_port %>

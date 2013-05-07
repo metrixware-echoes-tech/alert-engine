@@ -1,23 +1,19 @@
-#include "Parser.h"
 #include "AlertProcessor.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <Wt/Dbo/Dbo>
 #include <tools/Session.h>
 #include "ToolsEngine.h"
-#include <boost/thread/thread.hpp>
 #include <boost/program_options.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <tools/SessionPool.h>
 
 ToolsEngine *te;
 
-void checkNewDatas();
 void checkNewAlerts();
 void removeOldValues();
 void calculate();
 void cleanAll();
-std::string getSyslogListSqlPrepared(int size, long long syslogId[]);
 
 Wt::WLogger ToolsEngine::logger;
 boost::mutex ToolsEngine::mutex;
@@ -35,9 +31,9 @@ int main(int argc, char *argv[])
     boost::program_options::options_description desc("Allowed options");
     desc.add_options()
             ("help", "That is where you are, it displays help and quits.")
-            ("logfile", boost::program_options::value<std::string > (), "logfile path")
+            ("logfile", boost::program_options::value<std::string>(), "logfile path")
             ("logcriticity", boost::program_options::value<int>(), "log criticity level : debug = 1 / info = 2 / warning = 3 / secure = 4 / error = 5/ fatal = 6")
-            ("conffile", boost::program_options::value<std::string > (), "conffile path")
+            ("conffile", boost::program_options::value<std::string>(), "conffile path")
             ;
 
     boost::program_options::variables_map vm;
@@ -51,14 +47,16 @@ int main(int argc, char *argv[])
         return 0;
     }
 
+#ifdef NDEBUG
     if (vm.count("logfile"))
     {
-        ToolsEngine::logger.setFile(vm["logfile"].as<std::string > ());
+        ToolsEngine::logger.setFile(vm["logfile"].as<std::string>());
     }
     else
     {
-        ToolsEngine::logger.setFile("/tmp/engine.log");
+        ToolsEngine::logger.setFile("/var/log/echoes-alert/engine.log");
     }
+#endif
 
     if (vm.count("logcriticity"))
     {
@@ -95,63 +93,23 @@ int main(int argc, char *argv[])
     ToolsEngine::logger.configure("-debug");
 
     te = new ToolsEngine(confFile);
-
-
-    //création des tables de la bdd (to remove)    
-    try
+    if (!te->isInDB())
     {
-        te->sessionParser->createTables();
-        Wt::Dbo::Transaction transaction(*(te->sessionParser));
-        ToolsEngine::log("debug") << " [Class:Main] " << "Created database.";
-        te->sessionParser->execute(
-                                   "CREATE OR REPLACE FUNCTION trg_slo_slh()"
-                                   "  RETURNS trigger AS"
-                                   " $BODY$"
-                                   " BEGIN"
-                                   " INSERT INTO \"T_SYSLOG_HISTORY_SLH\" "
-                                   " VALUES (NEW.\"SLO_ID\","
-                                   "NEW.\"version\","
-                                   "NEW.\"SLO_APP_NAME\","
-                                   "NEW.\"SLO_HOSTNAME\","
-                                   "NEW.\"SLO_MSG_ID\","
-                                   "NEW.\"SLO_SD\","
-                                   "NEW.\"SLO_DELETE\","
-                                   "NEW.\"SLO_RCPT_DATE\","
-                                   "NEW.\"SLO_SENT_DATE\","
-                                   "NEW.\"SLO_PRI\","
-                                   "NEW.\"SLO_PROC_ID\","
-                                   "NEW.\"SLO_STATE\","
-                                   "NEW.\"SLO_VERSION\","
-                                   "NEW.\"SLO_PRB_PRB_ID\") ;"
-                                   " RETURN NULL;"
-                                   " END;"
-                                   " $BODY$"
-                                   " LANGUAGE plpgsql VOLATILE;"
-                                   );
-        te->sessionParser->execute(
-                                   "CREATE TRIGGER insert_slo"
-                                   " AFTER INSERT"
-                                   " ON \"T_SYSLOG_SLO\""
-                                   " FOR EACH ROW"
-                                   " EXECUTE PROCEDURE trg_slo_slh();"
-                                   );
+        ToolsEngine::log("critical") << " [Class:Main] " << "This Engine ID is not in the database.";
+        return EXIT_FAILURE;
     }
-    catch (std::exception& e)
-    {
-        std::cerr << e.what() << std::endl;
-        ToolsEngine::log("info") << " [Class:Main] " << "Using existing database." << e.what();
-    }
+
+    if (vm.count("logfile"))
+        te->logFile = vm["logfile"].as<std::string >();
+    else
+        te->logFile = "/var/log/echoes-alert/engine.log";
 
     cleanAll();
 
     // thread's creation
     boost::thread_group threadsEngine;
 
-    // execute the method checkNewDatas() removeOldValues() checkNewAlerts() in parallel
-    if (te->isParser())
-    {
-        threadsEngine.create_thread(&checkNewDatas);
-    }
+    // execute the method removeOldValues() checkNewAlerts() in parallel
     if (te->isAlerter())
     {
         threadsEngine.create_thread(&checkNewAlerts);
@@ -169,128 +127,6 @@ int main(int argc, char *argv[])
     threadsEngine.join_all();
 
     return 0;
-}
-
-void checkNewDatas()
-{
-    Parser *parser = new Parser();
-    //result
-    int res = -1;
-    const int syslogSize = 100;
-    while (true)
-    {
-        long long syslogId[syslogSize];
-        for (int i = 0; i < syslogSize; i++)
-        {
-            syslogId[i] = -1;
-        }
-        //SQL session
-        try
-        {
-            Wt::Dbo::Transaction transaction0(*(te->sessionParserGlobal));
-            //            Wt::Dbo::collection<Wt::Dbo::ptr<Syslog> > receivedSyslogCollection = te->sessionParser->find<Syslog>().where("\"SLO_STATE\" = ?) FOR UPDATE ").limit(100).bind("0");
-            Wt::Dbo::collection<Wt::Dbo::ptr<Syslog> > receivedSyslogCollection =
-                    te->sessionParserGlobal->query<Wt::Dbo::ptr<Syslog> >(
-                    "SELECT slo FROM \"T_SYSLOG_SLO\" slo WHERE \"SLO_STATE\" = 0 FOR UPDATE LIMIT ?"
-                    ).bind(syslogSize);
-
-            ToolsEngine::log("debug") << " [Class:main] avant for";
-            int idx = 0;
-
-            for (Wt::Dbo::collection<Wt::Dbo::ptr<Syslog> > ::const_iterator j = receivedSyslogCollection.begin(); j != receivedSyslogCollection.end(); ++j)
-            {
-                syslogId[idx] = j->id();
-                idx++;
-            }
-            if (idx > 0)
-            {
-                std::string listSloId = getSyslogListSqlPrepared(syslogSize, syslogId);
-                std::string qryString = "UPDATE \"T_SYSLOG_SLO\" SET \"SLO_STATE\" = ? WHERE \"SLO_ID\" IN " + listSloId;
-                ToolsEngine::log("debug") << " [Class:main] qyrStr : " << qryString;
-                te->sessionParserGlobal->execute(qryString).bind(1);
-            }
-            transaction0.commit();
-        }
-        catch (Wt::Dbo::Exception e)
-        {
-            ToolsEngine::log("error") << " [Class:main] data 2 : " << e.what();
-        }
-
-        for (int i = 0; i < syslogSize; i++)
-        {
-            ToolsEngine::log("debug") << " [Class:main] boucle syslog, i : " << i << " id : " << syslogId[i];
-            if (syslogId[i] == -1)
-            {
-                break;
-            }
-
-            res = parser->unserializeStructuredData(syslogId[i]);
-
-            if (res == 0)
-            {
-                //state = 2 is "processing complete"
-                try
-                {
-                    Wt::Dbo::Transaction transaction(*(te->sessionParserGlobal));
-                    te->sessionParserGlobal->execute("SELECT slo FROM \"T_SYSLOG_SLO\" slo WHERE \"SLO_ID\" = ? FOR UPDATE").bind(syslogId[i]);
-                    te->sessionParserGlobal->execute("UPDATE \"T_SYSLOG_SLO\" SET \"SLO_STATE\" = ? WHERE \"SLO_ID\" = ?").bind(2).bind(syslogId[i]);
-                    te->sessionParserGlobal->execute("UPDATE \"T_SYSLOG_HISTORY_SLH\" SET \"SLH_STATE\" = ? WHERE \"SLH_ID\" = ?").bind(2).bind(syslogId[i]);
-                    te->sessionParserGlobal->execute("DELETE FROM \"T_SYSLOG_SLO\" WHERE \"SLO_ID\" = ?").bind(syslogId[i]);
-                    //                    Wt::Dbo::ptr<Syslog> ptrSyslog = te->sessionParserGlobal->find<Syslog>().where("\"SLO_ID\" = ?").bind(syslogId[i]).limit(1);
-                    //                    ptrSyslog.modify()->state = 2;
-                    transaction.commit();
-                }
-                catch (Wt::Dbo::Exception e)
-                {
-                    ToolsEngine::log("error") << " [Class:main] data 1.1 : " << e.what() << " || res = " << res << " || id syslog : " << syslogId[i];
-                }
-            }
-            else if (res == -1)
-            {
-                //state = 3 is "error"
-                try
-                {
-                    Wt::Dbo::Transaction transaction(*(te->sessionParserGlobal));
-                    te->sessionParserGlobal->execute("SELECT slo FROM \"T_SYSLOG_SLO\" slo WHERE \"SLO_ID\" = ? FOR UPDATE").bind(syslogId[i]);
-                    te->sessionParserGlobal->execute("UPDATE \"T_SYSLOG_SLO\" SET \"SLO_STATE\" = ? WHERE \"SLO_ID\" = ?").bind(3).bind(syslogId[i]);
-                    te->sessionParserGlobal->execute("UPDATE \"T_SYSLOG_HISTORY_SLH\" SET \"SLH_STATE\" = ? WHERE \"SLH_ID\" = ?").bind(3).bind(syslogId[i]);
-                    te->sessionParserGlobal->execute("DELETE FROM \"T_SYSLOG_SLO\" WHERE \"SLO_ID\" = ?").bind(syslogId[i]);
-                    //                    Wt::Dbo::ptr<Syslog> ptrSyslog = te->sessionParserGlobal->find<Syslog>().where("\"SLO_ID\" = ?").bind(syslogId[i]).limit(1);
-                    //                    ptrSyslog.modify()->state = 3;
-                    transaction.commit();
-                }
-                catch (Wt::Dbo::Exception e)
-                {
-                    ToolsEngine::log("error") << " [Class:main] data 1.2 : " << e.what() << " || res = " << res << " || id syslog : " << syslogId[i];
-                }
-            }
-
-        }
-
-        boost::this_thread::sleep(boost::posix_time::milliseconds(te->sleepThreadReadDatasMilliSec));
-    };
-}
-
-std::string getSyslogListSqlPrepared(int size, long long syslogId[])
-{
-    std::string res = "(";
-    int idx = 0;
-    for (int i = 0; i < size; i++)
-    {
-        if (syslogId[i] == -1)
-        {
-            break;
-        }
-        idx++;
-        res += boost::lexical_cast<std::string > (syslogId[i]) + ",";
-    }
-    res.replace(res.size() - 1, 1, "");
-    if (idx == 0)
-    {
-        res += "0";
-    }
-    res += ")";
-    return res;
 }
 
 void checkNewAlerts()
@@ -333,24 +169,6 @@ void cleanAll()
                 " WHERE"
                 " \"IVA_STATE\" = 0"
                 " AND \"IVA_CREA_DATE\" < (NOW() - interval '1 day')";
-        te->sessionOldValues->execute(queryString);
-        transaction.commit();
-    }
-    catch (Wt::Dbo::Exception e)
-    {
-        ToolsEngine::log("error") << " [Class:main] " << e.what();
-    }
-
-    //remove values older than 1 day from t_syslog_slo
-    try
-    {
-        Wt::Dbo::Transaction transaction(*(te->sessionOldValues));
-        std::string queryString = "DELETE FROM \"T_SYSLOG_SLO\""
-                " WHERE \"SLO_ID\" IN"
-                "(SELECT \"SLO_ID\" FROM \"T_SYSLOG_SLO\""
-                " WHERE \"SLO_STATE\" != 0"
-                " AND \"SLO_RCPT_DATE\" < (NOW() - interval '1 day')"
-                " LIMIT 50)";
         te->sessionOldValues->execute(queryString);
         transaction.commit();
     }

@@ -106,7 +106,7 @@ int AlertSender::sendSMS(Wt::Dbo::ptr<InformationValue> informationValuePtr, Wt:
         message.addBodyText(bodyText);
         message.setHeader("Content-Type", "application/x-www-form-urlencoded");
 
-        std::string apiAddress = te->apiUrl;
+        std::string apiAddress = "https://" + te->apiHost + ":" + boost::lexical_cast<std::string>(te->apiPort);
         ToolsEngine::log("info") << " [Class:AlertSender] " << "[SMS] Trying to send request to API. Address : " << apiAddress;
         client->post(apiAddress, message);
 
