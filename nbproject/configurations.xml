@@ -9,29 +9,17 @@
                    displayName="Header Files"
                    projectFiles="true">
       <itemPath>include/AlertProcessor.h</itemPath>
-      <itemPath>include/AlertSender.h</itemPath>
-      <itemPath>include/CompareMethods.h</itemPath>
       <itemPath>include/ToolsEngine.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
                    displayName="Resource Files"
                    projectFiles="true">
     </logicalFolder>
-    <logicalFolder name="f1" displayName="Scripts" projectFiles="true">
-      <itemPath>scripts/database_content_production.sql</itemPath>
-      <itemPath>scripts/fill_echoes_database_sensor.sql</itemPath>
-      <itemPath>scripts/fill_echoes_model_inauguration.sql</itemPath>
-      <itemPath>scripts/histo_tracking_tsa.sql</itemPath>
-      <itemPath>scripts/log-echoes.sh</itemPath>
-      <itemPath>scripts/rsyslog.conf</itemPath>
-    </logicalFolder>
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
       <logicalFolder name="src" displayName="src" projectFiles="true">
         <itemPath>src/AlertProcessor.cpp</itemPath>
-        <itemPath>src/AlertSender.cpp</itemPath>
-        <itemPath>src/Parser.cpp</itemPath>
         <itemPath>src/ToolsEngine.cpp</itemPath>
       </logicalFolder>
       <itemPath>main.cpp</itemPath>
@@ -47,7 +35,6 @@
                    kind="IMPORTANT_FILES_FOLDER">
       <itemPath>Makefile</itemPath>
     </logicalFolder>
-    <itemPath>plugin.yaml.yml</itemPath>
   </logicalFolder>
   <sourceRootList>
     <Elem>.</Elem>
@@ -94,6 +81,7 @@
             <linkerLibLibItem>boost_program_options</linkerLibLibItem>
             <linkerLibLibItem>boost_unit_test_framework</linkerLibLibItem>
             <linkerLibLibItem>boost_signals</linkerLibLibItem>
+            <linkerLibLibItem>stdc++</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>
@@ -103,40 +91,11 @@
       </item>
       <item path="include/AlertProcessor.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="include/AlertSender.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="include/CompareMethods.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="include/ToolsEngine.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="main.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="plugin.yaml.yml" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="scripts/database_content_production.sql"
-            ex="false"
-            tool="3"
-            flavor2="0">
-      </item>
-      <item path="scripts/fill_echoes_database_sensor.sql"
-            ex="false"
-            tool="3"
-            flavor2="0">
-      </item>
-      <item path="scripts/fill_echoes_model_inauguration.sql"
-            ex="false"
-            tool="3"
-            flavor2="0">
-      </item>
-      <item path="scripts/histo_tracking_tsa.sql" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="scripts/log-echoes.sh" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="scripts/rsyslog.conf" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="src/AlertProcessor.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="src/AlertSender.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/ToolsEngine.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -198,40 +157,11 @@
       </item>
       <item path="include/AlertProcessor.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="include/AlertSender.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="include/CompareMethods.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="include/ToolsEngine.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="main.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="plugin.yaml.yml" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="scripts/database_content_production.sql"
-            ex="false"
-            tool="3"
-            flavor2="0">
-      </item>
-      <item path="scripts/fill_echoes_database_sensor.sql"
-            ex="false"
-            tool="3"
-            flavor2="0">
-      </item>
-      <item path="scripts/fill_echoes_model_inauguration.sql"
-            ex="false"
-            tool="3"
-            flavor2="0">
-      </item>
-      <item path="scripts/histo_tracking_tsa.sql" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="scripts/log-echoes.sh" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="scripts/rsyslog.conf" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="src/AlertProcessor.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="src/AlertSender.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/ToolsEngine.cpp" ex="false" tool="1" flavor2="0">
       </item>

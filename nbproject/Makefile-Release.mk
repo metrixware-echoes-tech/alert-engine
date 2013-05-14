@@ -37,7 +37,6 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 OBJECTFILES= \
 	${OBJECTDIR}/main.o \
 	${OBJECTDIR}/src/AlertProcessor.o \
-	${OBJECTDIR}/src/AlertSender.o \
 	${OBJECTDIR}/src/ToolsEngine.o
 
 
@@ -74,11 +73,6 @@ ${OBJECTDIR}/src/AlertProcessor.o: src/AlertProcessor.cpp
 	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} $@.d
 	$(COMPILE.cc) -O3 -s -Iinclude -I../dbo/include -I/var/lib/jenkins/jobs/ea-dbo-${target}/workspace/include -DNDEBUG -std=c++0x -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/AlertProcessor.o src/AlertProcessor.cpp
-
-${OBJECTDIR}/src/AlertSender.o: src/AlertSender.cpp 
-	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.cc) -O3 -s -Iinclude -I../dbo/include -I/var/lib/jenkins/jobs/ea-dbo-${target}/workspace/include -DNDEBUG -std=c++0x -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/AlertSender.o src/AlertSender.cpp
 
 ${OBJECTDIR}/src/ToolsEngine.o: src/ToolsEngine.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src

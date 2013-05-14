@@ -46,34 +46,37 @@ int AlertProcessor::verifyAlerts()
 
             ToolsEngine::log("debug") << "[Class:AlertProcessor] - We have " << alertPtrCollection.size() << " Alert(s) for this Engine in the database";
 
-            for (Wt::Dbo::collection<Wt::Dbo::ptr<Alert>>::const_iterator i = alertPtrCollection.begin(); i != alertPtrCollection.end(); ++i)
+            for (Wt::Dbo::collection<Wt::Dbo::ptr<Alert>>::const_iterator it = alertPtrCollection.begin(); it != alertPtrCollection.end(); ++it)
             {
-                if(_alertsMap.find(i->id()) == _alertsMap.end())
+                if(_alertsMap.find(it->id()) == _alertsMap.end())
                 {
-                    
                     Wt::Dbo::ptr<EngOrg> engOrgPtr = te->sessionAlertProcessor->find<EngOrg>()
                             .where("\"ENG_ID_ENG_ID\" = ?").bind(enginePtr.id())
-                            .where("\"ORG_ID_ORG_ID\" = ?").bind(i->get()->alertValue->asset->organization.id())
+                            .where("\"ORG_ID_ORG_ID\" = ?").bind(it->get()->alertValue->asset->organization.id())
                             .where("\"ENO_DELETE\" IS NULL")
                             .limit(1);
 
                     if(engOrgPtr)
                     {
-                        _alertsMap[i->id()] = {
+                        _alertsMap[it->id()] = {
                             true,
-                            "",
+#ifdef NDEBUG
+                            "/opt/echoes-alert/engine/etc/sec-" + boost::lexical_cast<string>(it->id()) + ".conf",
+#else
+                            "conf/sec-" + boost::lexical_cast<string>(it->id()) + ".conf",
+#endif
                             -1,
                             0,
                             0,
-                            threads.create_thread(boost::bind(&AlertProcessor::informationValueLoop, this, i->id()))
+                            threads.create_thread(boost::bind(&AlertProcessor::informationValueLoop, this, it->id()))
                         };
-                        startAlert(*i, engOrgPtr);
+                        startAlert(*it, engOrgPtr);
                     }
                     else
-                        ToolsEngine::log("debug") << "[Class:AlertProcessor] - No Token for Alert: " << i->id();
+                        ToolsEngine::log("debug") << "[Class:AlertProcessor] - No Token for Alert: " << it->id();
                 }
                 else
-                    _alertsMap[i->id()].check = true;
+                    _alertsMap[it->id()].check = true;
             }
 
             if (alertPtrCollection.size() < (unsigned)enginePtr->nbThread)
@@ -85,31 +88,35 @@ int AlertProcessor::verifyAlerts()
 
                 ToolsEngine::log("debug") << "[Class:AlertProcessor] - We have " << newAlertPtrCollection.size() << " more Alert(s) for this Engine in the database";
 
-                for (Wt::Dbo::collection<Wt::Dbo::ptr<Alert>>::const_iterator i = newAlertPtrCollection.begin(); i != newAlertPtrCollection.end(); ++i)
+                for (Wt::Dbo::collection<Wt::Dbo::ptr<Alert>>::const_iterator it = newAlertPtrCollection.begin(); it != newAlertPtrCollection.end(); ++it)
                 {
                     Wt::Dbo::ptr<EngOrg> engOrgPtr = te->sessionAlertProcessor->find<EngOrg>()
                             .where("\"ENG_ID_ENG_ID\" = ?").bind(enginePtr.id())
-                            .where("\"ORG_ID_ORG_ID\" = ?").bind(i->get()->alertValue->asset->organization.id())
+                            .where("\"ORG_ID_ORG_ID\" = ?").bind(it->get()->alertValue->asset->organization.id())
                             .where("\"ENO_DELETE\" IS NULL")
                             .limit(1);
 
                     if(engOrgPtr)
                     {
-                        i->modify()->engine = enginePtr;
-                        i->flush();
+                        it->modify()->engine = enginePtr;
+                        it->flush();
 
-                        _alertsMap[i->id()] = {
+                        _alertsMap[it->id()] = {
                             true,
-                            "",
+#ifdef NDEBUG
+                            "/opt/echoes-alert/engine/etc/sec-" + boost::lexical_cast<string>(it->id()) + ".conf",
+#else
+                            "conf/sec-" + boost::lexical_cast<string>(it->id()) + ".conf",
+#endif
                             -1,
                             0,
                             0,
-                            threads.create_thread(boost::bind(&AlertProcessor::informationValueLoop, this, i->id()))
+                            threads.create_thread(boost::bind(&AlertProcessor::informationValueLoop, this, it->id()))
                         };
-                        startAlert(*i, engOrgPtr);
+                        startAlert(*it, engOrgPtr);
                     }
                     else
-                        ToolsEngine::log("debug") << "[Class:AlertProcessor] - No Token for Alert: " << i->id();
+                        ToolsEngine::log("debug") << "[Class:AlertProcessor] - No Token for Alert: " << it->id();
                 }
             }
 
@@ -120,7 +127,8 @@ int AlertProcessor::verifyAlerts()
             ToolsEngine::log("error") << "[Class:AlertProcessor] - " << e.what();
         }
 
-        for (map<long long, SecondStructure>::iterator it = _alertsMap.begin(); it != _alertsMap.end(); ++it)
+        vector<long long> alertToErase;
+        for (map<long long, SecondStructure>::const_iterator it = _alertsMap.begin(); it != _alertsMap.end(); ++it)
         {
             if(it->second.check)
             {
@@ -130,8 +138,13 @@ int AlertProcessor::verifyAlerts()
             {
                 stopAlert(it->first);
                 threads.remove_thread(it->second.ivaThread);
-                _alertsMap.erase(it);
+                alertToErase.push_back(it->first);
             }
+        }
+
+        for (unsigned i(0); i < alertToErase.size(); ++i)
+        {
+            _alertsMap.erase(alertToErase[i]);
         }
         
         boost::this_thread::sleep(boost::posix_time::seconds(10));
@@ -140,10 +153,10 @@ int AlertProcessor::verifyAlerts()
     return res;
 }
 
-pid_t AlertProcessor::popen2(const char *command, int *infp, int *outfp)
+pid_t AlertProcessor::popen_sec(const string &confFilename, int *infp, int *outfp)
 {
     int p_stdin[2], p_stdout[2];
-    pid_t pid;
+    pid_t pid = 0;
 
     if (pipe(p_stdin) != 0 || pipe(p_stdout) != 0)
         return -1;
@@ -158,9 +171,17 @@ pid_t AlertProcessor::popen2(const char *command, int *infp, int *outfp)
         dup2(p_stdin[READ], READ);
         close(p_stdout[READ]);
         dup2(p_stdout[WRITE], WRITE);
-
-        execl("/bin/sh", "sh", "-c", command, NULL);
-        perror("execl");
+        execl(
+              "/usr/bin/sec",
+              "sec",
+              ("-conf=" + confFilename).c_str(),
+              "-input=-",
+#ifdef NDEBUG
+              ("-log=" + te->logFile).c_str(),
+#endif
+              NULL
+              );
+        ToolsEngine::log("info") << "[Class:AlertProcessor] execl: " << strerror(errno);
         exit(1);
     }
 
@@ -179,15 +200,7 @@ pid_t AlertProcessor::popen2(const char *command, int *infp, int *outfp)
 
 void AlertProcessor::startAlert(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<EngOrg> engOrgPtr)
 {
-#ifdef NDEBUG
-    string secConfFilename("/opt/echoes-alert/engine/etc/sec-" + boost::lexical_cast<string>(alertPtr.id()) + ".conf");
-#else
-    string secConfFilename("conf/sec-" + boost::lexical_cast<string>(alertPtr.id()) + ".conf");
-#endif
-    
-    _alertsMap[alertPtr.id()].secConfFilename = secConfFilename.c_str();
-
-    ofstream secConfFile(_alertsMap[alertPtr.id()].secConfFilename);
+    ofstream secConfFile(_alertsMap[alertPtr.id()].secConfFilename.c_str());
     if(secConfFile)
     {
         secConfFile << "type=Single\n"
@@ -270,14 +283,12 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<EngOr
     }
     else
     {
-        ToolsEngine::log("error") << "[Class:AlertProcessor] - Unable to open/create file: " << secConfFilename;
+        ToolsEngine::log("error") << "[Class:AlertProcessor] - Unable to open/create file: " << _alertsMap[alertPtr.id()].secConfFilename;
     }
 
-    string secCommand("sec -conf=" + secConfFilename + " -input=- -log=" + te->logFile);
-    
-    _alertsMap[alertPtr.id()].secPID = popen2(secCommand.c_str(), &_alertsMap[alertPtr.id()].secInFP, &_alertsMap[alertPtr.id()].secOutFP);
+    _alertsMap[alertPtr.id()].secPID = popen_sec(_alertsMap[alertPtr.id()].secConfFilename, &_alertsMap[alertPtr.id()].secInFP, &_alertsMap[alertPtr.id()].secOutFP);
     if (_alertsMap[alertPtr.id()].secPID <= 0)
-        ToolsEngine::log("error") << "[Class:AlertProcessor] - Unable to exec SEC: " << secCommand;
+        ToolsEngine::log("error") << "[Class:AlertProcessor] - Unable to exec SEC: " << _alertsMap[alertPtr.id()].secConfFilename;
 }
 
 void AlertProcessor::stopAlert(const long long idAlert)
@@ -287,7 +298,8 @@ void AlertProcessor::stopAlert(const long long idAlert)
     waitpid(_alertsMap[idAlert].secPID, NULL, 0);
     _alertsMap[idAlert].secPID = -1;
     
-    remove(_alertsMap[idAlert].secConfFilename);
+    if(remove(_alertsMap[idAlert].secConfFilename.c_str()) < 0)
+        ToolsEngine::log("info") << "[Class:AlertProcessor]" << _alertsMap[idAlert].secConfFilename << ": " << strerror(errno);
 }
 
 void AlertProcessor::informationValueLoop(const long long idAlert)

@@ -126,6 +126,8 @@ int main(int argc, char *argv[])
     // wait the end of the created thread
     threadsEngine.join_all();
 
+    delete te;
+
     return 0;
 }
 
