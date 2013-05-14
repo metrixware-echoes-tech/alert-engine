@@ -43,7 +43,7 @@ class AlertProcessor {
     private:
         struct SecondStructure {
             bool check;
-            const char* secConfFilename;
+            std::string secConfFilename;
             pid_t secPID;
             int secInFP, secOutFP;
             boost::thread *ivaThread;
@@ -56,7 +56,7 @@ class AlertProcessor {
          */
 #define READ 0
 #define WRITE 1
-        pid_t popen2(const char *command, int *infp, int *outfp);
+        pid_t popen_sec(const std::string &confFilename, int *infp, int *outfp);
         
         /**
          * Write SEC config file and launch it
