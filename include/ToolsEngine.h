@@ -64,7 +64,7 @@ public:
     std::string apiHost;
     unsigned apiPort;
     std::string logFile;
-    int sleepThreadCheckAlertSec; //the seconds to wait between each loop in our process ( calculate alerts)
+    int sleepThreadCheckAlert; //the seconds to wait between each loop in our process ( calculate alerts)
     int sleepThreadRemoveOldValues; //the seconds to wait between each old values cleaning
     int sleepThreadCalculate;
     Wt::WIOService *ioService; //ioservice used for the http client

@@ -64,7 +64,7 @@ int ToolsEngine::configFileLoad(std::string fileLocation)
         alerter = pt.get<bool>("engine.alerter");
         cleaner = pt.get<bool>("engine.cleaner");
         calculator = pt.get<bool>("engine.calculator");
-        sleepThreadCheckAlertSec =pt.get<int>("engine.sleep-alert-reading");
+        sleepThreadCheckAlert = pt.get<int>("engine.sleep-alert-reading");
         sleepThreadRemoveOldValues = pt.get<int>("engine.sleep-remove-old-values");
         sleepThreadCalculate = pt.get<int>("engine.sleep-calculate");
         sqlCredentials = "hostaddr=" + pt.get<std::string>("database.host") + 

@@ -147,7 +147,7 @@ int AlertProcessor::verifyAlerts()
             _alertsMap.erase(alertToErase[i]);
         }
         
-        boost::this_thread::sleep(boost::posix_time::seconds(10));
+        boost::this_thread::sleep(boost::posix_time::seconds(te->sleepThreadCheckAlert));
     }
 
     return res;
