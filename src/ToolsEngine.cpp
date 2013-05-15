@@ -64,7 +64,7 @@ int ToolsEngine::configFileLoad(std::string fileLocation)
         alerter = pt.get<bool>("engine.alerter");
         cleaner = pt.get<bool>("engine.cleaner");
         calculator = pt.get<bool>("engine.calculator");
-        sleepThreadCheckAlertMilliSec =pt.get<int>("engine.sleep-alert-reading");
+        sleepThreadCheckAlertSec =pt.get<int>("engine.sleep-alert-reading");
         sleepThreadRemoveOldValues = pt.get<int>("engine.sleep-remove-old-values");
         sleepThreadCalculate = pt.get<int>("engine.sleep-calculate");
         sqlCredentials = "hostaddr=" + pt.get<std::string>("database.host") + 
@@ -120,22 +120,9 @@ int ToolsEngine::configFileLoad(std::string fileLocation)
                 break;
         }               
       }
-//      ToolsEngine::log("info") << " [Class:main] "<< sqlCredentials;
-//      ToolsEngine::log("info") << " [Class:main] "<< sleepThreadReadDatasMilliSec;
-//      ToolsEngine::log("info") << " [Class:main] "<< sleepThreadCheckAlertMilliSec;
       
       return result;
 }
-
-//void ToolsEngine::reloadSessionCalculate()
-//{
-//    {
-//        boost::lock_guard<boost::recursive_mutex> lock(mutexCalculate);
-//        sessionCalculate->~Session();
-//        sessionCalculate = new Session(sqlCredentials);
-//    }
-//    return;
-//}
 
 bool ToolsEngine::isAlerter()
 {

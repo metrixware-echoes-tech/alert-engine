@@ -66,13 +66,13 @@ class AlertProcessor {
          * Stop SEC and remove its config file
          * @param IDentifier of the alert
          */
-        void stopAlert(const long long idAlert);
+        void stopAlert(const long long alertID);
 
         /**
          * Retrieve InformationValue from table for one alert
          * @param IDentifier of the alert
          */
-        void informationValueLoop(const long long idAlert);
+        void informationValueLoop(const long long alertID);
 
         /**
          * Method to know when continue the collect
