@@ -142,7 +142,7 @@ void removeOldValues()
     while (true)
     {
         cleanAll();
-        boost::this_thread::sleep(boost::posix_time::milliseconds(te->sleepThreadRemoveOldValues));
+        boost::this_thread::sleep(boost::posix_time::seconds(te->sleepThreadRemoveOldValues));
     };
 }
 
@@ -335,9 +335,6 @@ void calculate()
                 ToolsEngine::log("error") << " [Class:main] iva data : " << e.what();
             }
 
-
-
-
             //calcul
             try
             {
@@ -371,7 +368,6 @@ void calculate()
 
         }
 
-
-        boost::this_thread::sleep(boost::posix_time::milliseconds(te->sleepThreadCalculate));
+        boost::this_thread::sleep(boost::posix_time::seconds(te->sleepThreadCalculate));
     }
 }

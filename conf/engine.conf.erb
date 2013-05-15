@@ -15,11 +15,11 @@ id = 1
 alerter = true
 cleaner = true
 calculator = true
-#pause time between calculating alerts on new datas in milliseconds
-sleep-alert-reading = 100
+#pause time between calculating alerts on new datas in seconds
+sleep-alert-reading = 10
 #pause time between checks to remove old values
-sleep-remove-old-values = 3600000
-sleep-calculate = 10
+sleep-remove-old-values = 3600
+sleep-calculate = 1
 
 [database]
 host = <%= db_host %>
