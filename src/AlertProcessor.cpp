@@ -224,7 +224,7 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<EngOr
                 ToolsEngine::log("debug") << "[Alert Processor] - We are entering in the switch of the case number";
 
                 secConfFile << "    if ($value =~ /^([+-]?)(?=\\d|\\.\\d)\\d*(\\.\\d*)?([Ee]([+-]?\\d+))?$/) \\\n"
-                        "      { \\\n";
+                        "    { \\\n";
 
                 switch(alertPtr->alertValue->alertCriteria.id())
                 {
@@ -265,11 +265,17 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<EngOr
                 break;               
         }
 
-        secConfFile << "      { \\\n"
+        if (alertPtr->alertValue->information->pk.unit->unitType.id() == Enums::NUMBER)
+            secConfFile << "  ";
+        
+        secConfFile << "    { \\\n"
                 "        my $res = '{\\\"alert_ids\\\": ['.$id.']}'; \\\n"
-                "        return ($res, $value, length($res)) \\\n"
-                "      }; \\\n"
-                "    }; \\\n"
+                "        return ($res, $value, length($res)) \\\n";
+
+        if (alertPtr->alertValue->information->pk.unit->unitType.id() == Enums::NUMBER)
+            secConfFile << "      }; \\\n";
+
+        secConfFile << "    }; \\\n"
                 "  }; \\\n"
                 "}\n"
                 "desc=POST /alerts/" << alertPtr.id() << "/trackings?eno_token=" << engOrgPtr->token<< " HTTP/1.1\\n"
@@ -277,7 +283,7 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<EngOr
                        "Content-Type: application/json; charset=utf-8\\n"
                        "Content-length: $3\\n\\n"
                        "$1\\n\\n\n"
-                    "action=shellcmd /usr/bin/printf \"%s\" | /usr/bin/openssl s_client -quiet -connect " << te->apiHost << ":" << te->apiPort;
+                "action=shellcmd /usr/bin/printf \"%s\" | /usr/bin/openssl s_client -quiet -connect " << te->apiHost << ":" << te->apiPort << "\n";
         
         secConfFile.close();
     }
