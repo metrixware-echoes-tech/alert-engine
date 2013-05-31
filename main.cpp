@@ -215,8 +215,6 @@ void calculate()
             ToolsEngine::log("error") << " [Class:main] iva selection : " << e.what();
         }
 
-
-
         for (int i = 0; i < ivaListSize; i++)
         {
             if (ivaIdList[i] == -1)
@@ -363,8 +361,6 @@ void calculate()
             }
             ToolsEngine::log("debug") << " [Class:Main] " << "launching calcul";
             // We launch the calcul
-
-
 
         }
 
