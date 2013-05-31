@@ -7,7 +7,7 @@ bool ToolsEngine::alreadyCreated = false;
 ToolsEngine::ToolsEngine(std::string confFile) {
     if (alreadyCreated)
     {
-        ToolsEngine::log("error") << " [Class:ToolsEngine] " << "Can't create a second instance of the singleton class";
+        logger.entry("error") << "[Tools Engine] Can't create a second instance of the singleton class";
     }
     // Sinon, on construit la classe et on déclare l'objet créé
     alreadyCreated = true;
@@ -15,35 +15,23 @@ ToolsEngine::ToolsEngine(std::string confFile) {
     //loading config file
     if (configFileLoad(confFile) == -1)
     {
-        ToolsEngine::log("fatal") << " [Class:ToolsEngine] " << "Can't load config file";
+        logger.entry("fatal") << "[Tools Engine] Can't load config file";
         exit(1);
     }
     else
     {
-        ToolsEngine::log("info") << " [Class:ToolsEngine] " << "conf file loaded";
+        logger.entry("info") << "[Tools Engine] Conf file loaded";
     }
     //creating SQL sessions
     sessionParser = new Session(sqlCredentials);
     sessionAlertProcessor = new Session(sqlCredentials);
     sessionOldValues = new Session(sqlCredentials);
     sessionCalculate = new Session(sqlCredentials);
-    
-    ioService = new Wt::WIOService();
-    ioService->start();
 }
 
 ToolsEngine::~ToolsEngine() {
     // Si on veut pouvoir recréer la classe plus tard, on déclare l'objet non-existant
-    alreadyCreated = false;    
-    ioService->stop();
-}
-
-Wt::WLogEntry ToolsEngine::log(std::string logCriticity)
-{
-    ToolsEngine::mutex.lock();
-    Wt::WLogEntry log = ToolsEngine::logger.entry(logCriticity) << logCriticity << Wt::WLogger::sep << Wt::WLogger::timestamp << Wt::WLogger::sep << (unsigned int)pthread_self() << Wt::WLogger::sep;
-    ToolsEngine::mutex.unlock();
-    return log;
+    alreadyCreated = false;
 }
 
 
@@ -78,50 +66,10 @@ int ToolsEngine::configFileLoad(std::string fileLocation)
     }
     catch (boost::property_tree::ini_parser_error e)
     {
-        Wt::log("error") << "[TE] " << e.what();
+        logger.entry("error") << "[Tools Engine] " << e.what();
     }
-    
 
-    switch (ToolsEngine::criticity)
-    {
-        case debug:
-        {
-                ToolsEngine::logger.configure("*");
-                break;
-        }
-        case info:
-        {
-                ToolsEngine::logger.configure("* -debug");
-                break;
-        } 
-        case warning:
-        {
-                ToolsEngine::logger.configure("* -debug -info");
-                break;
-        } 
-        case secure:
-        {
-                ToolsEngine::logger.configure("* -debug -info -warning");
-                break;
-        } 
-        case error:
-        {
-                ToolsEngine::logger.configure("* -debug -info -warning -secure");
-                break;
-        }  
-        case fatal:
-        {
-                ToolsEngine::logger.configure("* -debug -info -warning -secure -error");
-                break;
-        }
-        default:
-        {
-                ToolsEngine::logger.configure("* -debug");
-                break;
-        }               
-      }
-      
-      return result;
+    return result;
 }
 
 bool ToolsEngine::isAlerter()
@@ -153,11 +101,11 @@ bool ToolsEngine::isInDB()
 {
     bool res = false;
 
-    Session *session = new Session(sqlCredentials);
+    Session session(sqlCredentials);
     try
     {
-        Wt::Dbo::Transaction transaction(*session);
-        Wt::Dbo::ptr<Engine> enginePtr = session->find<Engine>().where("\"ENG_ID\" = ?").bind(boost::lexical_cast<std::string>(_id)).limit(1);
+        Wt::Dbo::Transaction transaction(session);
+        Wt::Dbo::ptr<Engine> enginePtr = session.find<Engine>().where("\"ENG_ID\" = ?").bind(_id).limit(1);
         if (enginePtr)
         {
             res = true;
@@ -167,11 +115,9 @@ bool ToolsEngine::isInDB()
     }
     catch (Wt::Dbo::Exception e)
     {
-        ToolsEngine::log("error") << " [Class:ToolsEngien] " << " - " << e.what();
+        logger.entry("error") << "[Tools Engine] " << e.what();
     }
-    delete session;
-    session = NULL;
-    
+
     return res;
 }
 

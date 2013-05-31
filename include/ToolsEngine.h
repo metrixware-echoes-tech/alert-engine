@@ -24,13 +24,12 @@
 #include <fstream>
 #include <sstream>
 #include <set>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/recursive_mutex.hpp>
-#include <Wt/WIOService>
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/algorithm/string.hpp>
+
+#include "Logger.h"
 
 class ToolsEngine;
 
@@ -57,17 +56,13 @@ public:
     Session *sessionOldValues;
     Session *sessionCalculate;
 //    void reloadSessionCalculate();
-    static Wt::WLogger logger;
-    static Wt::WLogEntry log(std::string criticity);
     static int criticity; //log criticity
     std::string sqlCredentials;
     std::string apiHost;
     unsigned apiPort;
-    std::string logFile;
     int sleepThreadCheckAlert; //the seconds to wait between each loop in our process ( calculate alerts)
     int sleepThreadRemoveOldValues; //the seconds to wait between each old values cleaning
     int sleepThreadCalculate;
-    Wt::WIOService *ioService; //ioservice used for the http client
     bool isAlerter();
     bool isCleaner();
     bool isCalculator();
@@ -77,8 +72,6 @@ public:
 
 protected:
     static bool alreadyCreated;
-    static boost::mutex mutex;
-    static boost::recursive_mutex mutexCalculate;
     enum logCriticity{debug = 1,info = 2, warning = 3, secure = 4, error = 5, fatal = 6};
     bool alerter;
     bool cleaner;

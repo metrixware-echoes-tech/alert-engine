@@ -1,12 +1,27 @@
-#include "AlertProcessor.h"
+/* 
+ * Main
+ * @author ECHOES Technologies (RHI)
+ * @date 20/02/2012
+ * 
+ * THIS PROGRAM IS CONFIDENTIAL AND PROPRIETARY TO ECHOES TECHNOLOGIES SAS
+ * AND MAY NOT BE REPRODUCED, PUBLISHED OR DISCLOSED TO OTHERS
+ * WITHOUT COMPANY AUTHORIZATION.
+ * 
+ * COPYRIGHT 2012-2013 BY ECHOES TECHNOLGIES SAS
+ * 
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
-#include <Wt/Dbo/Dbo>
-#include <tools/Session.h>
-#include "ToolsEngine.h"
+
 #include <boost/program_options.hpp>
 #include <boost/program_options/variables_map.hpp>
+
 #include <tools/SessionPool.h>
+
+#include "Logger.h"
+#include "ToolsEngine.h"
+#include "AlertProcessor.h"
 
 ToolsEngine *te;
 
@@ -15,15 +30,15 @@ void removeOldValues();
 void calculate();
 void cleanAll();
 
-Wt::WLogger ToolsEngine::logger;
-boost::mutex ToolsEngine::mutex;
-boost::recursive_mutex ToolsEngine::mutexCalculate;
 //default criticity to log before reading file config : debug = 1 / info = 2 / warning = 3 / secure = 4 / error = 5/ fatal = 6
 int ToolsEngine::criticity = 1;
 
 SessionPool* SessionPool::instance = 0;
 std::string SessionPool::credentials = "";
 boost::mutex SessionPool::mutex;
+
+#define SOFTWARE_NAME "ECHOES Alert - Engine"
+#define SOFTWARE_VERSION "0.1.0"
 
 int main(int argc, char *argv[])
 {
@@ -32,7 +47,7 @@ int main(int argc, char *argv[])
     desc.add_options()
             ("help", "That is where you are, it displays help and quits.")
             ("logfile", boost::program_options::value<std::string>(), "logfile path")
-            ("logcriticity", boost::program_options::value<int>(), "log criticity level : debug = 1 / info = 2 / warning = 3 / secure = 4 / error = 5/ fatal = 6")
+            ("logcriticity", boost::program_options::value<unsigned short>(), "log criticity level : debug = 1 / info = 2 / warning = 3 / secure = 4 / error = 5/ fatal = 6")
             ("conffile", boost::program_options::value<std::string>(), "conffile path")
             ;
 
@@ -44,23 +59,25 @@ int main(int argc, char *argv[])
     if (vm.count("help"))
     {
         std::cout << desc << "\n";
-        return 0;
+        return EXIT_SUCCESS;
     }
 
 #ifdef NDEBUG
     if (vm.count("logfile"))
     {
-        ToolsEngine::logger.setFile(vm["logfile"].as<std::string>());
+        logger.setFile(vm["logfile"].as<std::string>());
     }
     else
     {
-        ToolsEngine::logger.setFile("/var/log/echoes-alert/engine.log");
+        logger.setFile("/var/log/echoes-alert/engine.log");
     }
 #endif
 
+    logger.entry("info") << "[origin enterpriseId=\"40311\" software=\"" << SOFTWARE_NAME << "\" swVersion=\"" << SOFTWARE_VERSION << "\"] (re)start";
+    
     if (vm.count("logcriticity"))
     {
-        ToolsEngine::criticity = vm["logcriticity"].as<int>();
+        logger.setType(vm["logcriticity"].as<unsigned short>());
     }
     std::cout << "INFO: log criticity = " << ToolsEngine::criticity << "\n";
 
@@ -85,24 +102,12 @@ int main(int argc, char *argv[])
         exit(EXIT_SUCCESS);
 #endif
 
-
-    //TODO : verif si le dossier n'existe pas le créer
-    ToolsEngine::logger.addField("type", false);
-    ToolsEngine::logger.addField("datetime", false);
-    ToolsEngine::logger.addField("message", true);
-    ToolsEngine::logger.configure("-debug");
-
     te = new ToolsEngine(confFile);
     if (!te->isInDB())
     {
-        ToolsEngine::log("critical") << " [Class:Main] " << "This Engine ID is not in the database.";
+        logger.entry("critical") << " [Class:Main] " << "This Engine ID is not in the database.";
         return EXIT_FAILURE;
     }
-
-    if (vm.count("logfile"))
-        te->logFile = vm["logfile"].as<std::string >();
-    else
-        te->logFile = "/var/log/echoes-alert/engine.log";
 
     cleanAll();
 
@@ -128,7 +133,9 @@ int main(int argc, char *argv[])
 
     delete te;
 
-    return 0;
+    logger.entry("info") << "[origin enterpriseId=\"40311\" software=\"" << SOFTWARE_NAME << "\" swVersion=\"" << SOFTWARE_VERSION << "\"] stop";
+    
+    return EXIT_SUCCESS;
 }
 
 void checkNewAlerts()
@@ -160,7 +167,7 @@ void cleanAll()
     }
     catch (Wt::Dbo::Exception e)
     {
-        ToolsEngine::log("error") << " [Class:main] " << e.what();
+        logger.entry("error") << " [Class:main] " << e.what();
     }
 
     //remove values older than 1 day from information_value (duplicated in T_INFORMATION_HISTORICAL_VALUE_IHV)
@@ -176,7 +183,7 @@ void cleanAll()
     }
     catch (Wt::Dbo::Exception e)
     {
-        ToolsEngine::log("error") << " [Class:main] " << e.what();
+        logger.entry("error") << " [Class:main] " << e.what();
     }
 }
 
@@ -212,7 +219,7 @@ void calculate()
         }
         catch (Wt::Dbo::Exception e)
         {
-            ToolsEngine::log("error") << " [Class:main] iva selection : " << e.what();
+            logger.entry("error") << " [Class:main] iva selection : " << e.what();
         }
 
         for (int i = 0; i < ivaListSize; i++)
@@ -268,14 +275,14 @@ void calculate()
                     }
                     else
                     {
-                        ToolsEngine::log("error") << " [Class:Main] " << "no calculate";
+                        logger.entry("error") << " [Class:Main] " << "no calculate";
                         transactionIvaData.commit();
                         break;
                     }
                 }
                 else
                 {
-                    ToolsEngine::log("error") << " [Class:Main] " << "no calculate";
+                    logger.entry("error") << " [Class:Main] " << "no calculate";
                     transactionIvaData.commit();
                     break;
                 }
@@ -283,13 +290,13 @@ void calculate()
             }
             catch (Wt::Dbo::Exception e)
             {
-                ToolsEngine::log("error") << " [Class:main] iva data : " << e.what();
+                logger.entry("error") << " [Class:main] iva data : " << e.what();
             }
 
             //we get the calculation data
             try
             {
-                ToolsEngine::log("debug") << " [Class:Main] " << "calculate value : " << calculate;
+                logger.entry("debug") << " [Class:Main] " << "calculate value : " << calculate;
                 Wt::Dbo::Transaction transactionCalcData(*(te->sessionCalculate));
                 Wt::Dbo::ptr<Information2> ptrInfRes;
                 if (calculate == "searchValueToCalculate")
@@ -310,14 +317,14 @@ void calculate()
                         }
                         else
                         {
-                            ToolsEngine::log("error") << " [Class:Main] " << "no real calculate";
+                            logger.entry("error") << " [Class:Main] " << "no real calculate";
                             transactionCalcData.commit();
                             break;
                         }
                     }
                     else
                     {
-                        ToolsEngine::log("error") << " [Class:Main] " << "no real calculate";
+                        logger.entry("error") << " [Class:Main] " << "no real calculate";
                         transactionCalcData.commit();
                         break;
                     }
@@ -330,7 +337,7 @@ void calculate()
             }
             catch (Wt::Dbo::Exception e)
             {
-                ToolsEngine::log("error") << " [Class:main] iva data : " << e.what();
+                logger.entry("error") << " [Class:main] iva data : " << e.what();
             }
 
             //calcul
@@ -350,16 +357,16 @@ void calculate()
                         + "," + boost::lexical_cast<std::string > (ivaId)
                         + ")"
                         ;
-                ToolsEngine::log("debug") << " [Class:Main] calc query : " << queryStr;
+                logger.entry("debug") << " [Class:Main] calc query : " << queryStr;
                 te->sessionCalculate->execute(queryStr);
-                ToolsEngine::log("debug") << " [Class:Main] calc done.";
+                logger.entry("debug") << " [Class:Main] calc done.";
                 transactionCalcul.commit();
             }
             catch (Wt::Dbo::Exception e)
             {
-                ToolsEngine::log("error") << " [Class:main] iva data : " << e.what();
+                logger.entry("error") << " [Class:main] iva data : " << e.what();
             }
-            ToolsEngine::log("debug") << " [Class:Main] " << "launching calcul";
+            logger.entry("debug") << " [Class:Main] " << "launching calcul";
             // We launch the calcul
 
         }
