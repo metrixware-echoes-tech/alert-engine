@@ -12,6 +12,7 @@
  */
 
 #include "AlertProcessor.h"
+#include "Conf.h"
 
 using namespace std;
 
@@ -31,16 +32,17 @@ int AlertProcessor::verifyAlerts()
 {
     int res = -1;
     boost::thread_group threads;
+    Session session(conf.getSessConnectParams());
 
     while (true)
     {
         try
         {
-            Wt::Dbo::Transaction transaction(*(te->sessionAlertProcessor));
+            Wt::Dbo::Transaction transaction(session);
 
-            Wt::Dbo::ptr<Engine> enginePtr = te->sessionAlertProcessor->find<Engine>().where("\"ENG_ID\" = ?").bind(te->getId()).limit(1);
+            Wt::Dbo::ptr<Engine> enginePtr = session.find<Engine>().where("\"ENG_ID\" = ?").bind(conf.getId()).limit(1);
             
-            Wt::Dbo::collection<Wt::Dbo::ptr<Alert>> alertPtrCollection = te->sessionAlertProcessor->find<Alert>()
+            Wt::Dbo::collection<Wt::Dbo::ptr<Alert>> alertPtrCollection = session.find<Alert>()
                     .where("\"ALE_ENG_ENG_ID\" = ?").bind(enginePtr.id())
                     .where("\"ALE_DELETE\" IS NULL");
 
@@ -50,7 +52,7 @@ int AlertProcessor::verifyAlerts()
             {
                 if(_alertsMap.find(it->id()) == _alertsMap.end())
                 {
-                    Wt::Dbo::ptr<EngOrg> engOrgPtr = te->sessionAlertProcessor->find<EngOrg>()
+                    Wt::Dbo::ptr<EngOrg> engOrgPtr = session.find<EngOrg>()
                             .where("\"ENG_ID_ENG_ID\" = ?").bind(enginePtr.id())
                             .where("\"ORG_ID_ORG_ID\" = ?").bind(it->get()->alertValue->asset->organization.id())
                             .where("\"ENO_DELETE\" IS NULL")
@@ -81,7 +83,7 @@ int AlertProcessor::verifyAlerts()
 
             if (alertPtrCollection.size() < (unsigned)enginePtr->nbThread)
             {
-                Wt::Dbo::collection<Wt::Dbo::ptr<Alert>> newAlertPtrCollection = te->sessionAlertProcessor->find<Alert>()
+                Wt::Dbo::collection<Wt::Dbo::ptr<Alert>> newAlertPtrCollection = session.find<Alert>()
                         .where("\"ALE_ENG_ENG_ID\" is NULL")
                         .where("\"ALE_DELETE\" IS NULL")
                         .limit(enginePtr->nbThread - alertPtrCollection.size());
@@ -90,7 +92,7 @@ int AlertProcessor::verifyAlerts()
 
                 for (Wt::Dbo::collection<Wt::Dbo::ptr<Alert>>::const_iterator it = newAlertPtrCollection.begin(); it != newAlertPtrCollection.end(); ++it)
                 {
-                    Wt::Dbo::ptr<EngOrg> engOrgPtr = te->sessionAlertProcessor->find<EngOrg>()
+                    Wt::Dbo::ptr<EngOrg> engOrgPtr = session.find<EngOrg>()
                             .where("\"ENG_ID_ENG_ID\" = ?").bind(enginePtr.id())
                             .where("\"ORG_ID_ORG_ID\" = ?").bind(it->get()->alertValue->asset->organization.id())
                             .where("\"ENO_DELETE\" IS NULL")
@@ -147,7 +149,7 @@ int AlertProcessor::verifyAlerts()
             _alertsMap.erase(alertToErase[i]);
         }
         
-        boost::this_thread::sleep(boost::posix_time::seconds(te->sleepThreadCheckAlert));
+        boost::this_thread::sleep(boost::posix_time::seconds(conf.sleepThreadCheckAlert));
     }
 
     return res;
@@ -281,11 +283,11 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<EngOr
                 "  }; \\\n"
                 "}\n"
                 "desc=POST /alerts/" << alertPtr.id() << "/trackings?eno_token=" << engOrgPtr->token<< " HTTP/1.1\\n"
-                       "Host: " << te->apiHost << "\\n"
+                       "Host: " << conf.getAPIHost() << "\\n"
                        "Content-Type: application/json; charset=utf-8\\n"
                        "Content-length: $3\\n\\n"
                        "$1\\n\\n\n"
-                "action=shellcmd /usr/bin/printf \"%s\" | /usr/bin/openssl s_client -quiet -connect " << te->apiHost << ":" << te->apiPort << "\n";
+                "action=shellcmd /usr/bin/printf \"%s\" | /usr/bin/openssl s_client -quiet -connect " << conf.getAPIHost() << ":" << conf.getAPIPort() << "\n";
         
         secConfFile.close();
     }
@@ -334,7 +336,7 @@ void AlertProcessor::informationValueLoop(const long long alertID)
     }
     logger.entry("info") << "[Alert Processor] SEC instance after " << boost::lexical_cast<string>(idx) << "s for alert ID: " << alertID;
 
-    Session sessionThread(te->sqlCredentials);
+    Session sessionThread(conf.getSessConnectParams());
     long long pluginID = 0, sourceID = 0, searchID = 0, infoUnitID = 0, infoUnitTypeID = 0, assetID = 0;
     int infValueNum = 0, posKeyValue = 0;
     string keyValue = "";

@@ -64,10 +64,12 @@ void Logger::setType(unsigned short type)
             break;            
     }
 
+    logger.entry("debug") << "[Logger] log criticity = " << type;
+
     return;
 }
 
-void Logger::setFile(const std::string& path)
+void Logger::setFile(const string& path)
 {
     Wt::WLogger::setFile(path);
     _path = path;
