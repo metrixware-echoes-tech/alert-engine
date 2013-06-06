@@ -394,7 +394,7 @@ void AlertProcessor::informationValueLoop(const long long alertID)
 
         while(ivaKeyID < 1 && _alertsMap[alertID].secPID > 0)
         {
-            logger.entry("debug") << "[Alert Processor] Retrieve IVA Key";
+            logger.entry("debug") << "[Alert Processor] Retrieve IVA Key after: " << searchDateTime.toString("yyyy-MM-dd hh:mm:ss");
             try 
             {
                 Wt::Dbo::Transaction transaction(sessionThread);
@@ -407,7 +407,7 @@ void AlertProcessor::informationValueLoop(const long long alertID)
                         .where("\"IVA_STATE\" = ?").bind(0)
                         .where("\"IVA_AST_AST_ID\" = ?").bind(assetID)
                         .where("\"IVA_VALUE\" = ?").bind(keyValue)
-                        .where("\"IVA_CREA_DATE\" >= ?").bind(searchDateTime.toString().toUTF8())
+                        .where("\"IVA_CREA_DATE\" >= ?").bind(searchDateTime.toString("yyyy-MM-dd hh:mm:ss").toUTF8())
                         .orderBy("\"IVA_ID\" DESC")
                         .limit(1);
 
@@ -433,7 +433,7 @@ void AlertProcessor::informationValueLoop(const long long alertID)
 
         if (_alertsMap[alertID].secPID > 0)
         {
-            logger.entry("debug") << "[Alert Processor] Retrieve IVA";
+            logger.entry("debug") << "[Alert Processor] Retrieve IVA after: " << searchDateTime.toString("yyyy-MM-dd hh:mm:ss");
             try 
             {
                 Wt::Dbo::Transaction transaction(sessionThread);
@@ -445,7 +445,7 @@ void AlertProcessor::informationValueLoop(const long long alertID)
                         .where("\"INU_ID_INU_ID\" = ?").bind(infoUnitID)
                         .where("\"IVA_STATE\" = ?").bind(0)
                         .where("\"IVA_AST_AST_ID\" = ?").bind(assetID)
-                        .where("\"IVA_CREA_DATE\" >= ?").bind(searchDateTime.toString().toUTF8())
+                        .where("\"IVA_CREA_DATE\" >= ?").bind(searchDateTime.toString("yyyy-MM-dd hh:mm:ss").toUTF8())
                         .where("\"IVA_LOT_NUM\" = ?").bind(lotNumber)
                         .where("\"IVA_LINE_NUM\" = ?").bind(lineNumber)
                         .orderBy("\"IVA_ID\" DESC")
@@ -468,7 +468,7 @@ void AlertProcessor::informationValueLoop(const long long alertID)
     {
         while(ivaID < 1 && _alertsMap[alertID].secPID > 0)
         {
-            logger.entry("debug") << "[Alert Processor] Retrieve IVA";
+            logger.entry("debug") << "[Alert Processor] Retrieve IVA after: " << searchDateTime.toString("yyyy-MM-dd hh:mm:ss");
             try
             {
                 Wt::Dbo::Transaction transaction(sessionThread);
@@ -481,7 +481,7 @@ void AlertProcessor::informationValueLoop(const long long alertID)
                         .where("\"INU_ID_INU_ID\" = ?").bind(infoUnitID)
                         .where("\"IVA_STATE\" = ?").bind(0)
                         .where("\"IVA_AST_AST_ID\" = ?").bind(assetID)
-                        .where("\"IVA_CREA_DATE\" >= ?").bind(searchDateTime.toString().toUTF8())
+                        .where("\"IVA_CREA_DATE\" >= ?").bind(searchDateTime.toString("yyyy-MM-dd hh:mm:ss").toUTF8())
                         .orderBy("\"IVA_ID\" DESC")
                         .limit(1);
                 ivaID = ivaPtr.id();
