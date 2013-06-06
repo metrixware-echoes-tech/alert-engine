@@ -42,7 +42,7 @@ int main(int argc, char **argv)
         if (chdir("/") != 0)
         {
             std::cerr << "failed to reach root \n";
-//            return EXIT_FAILURE;
+            return res;
         }
         if (fork() != 0)
             exit(EXIT_SUCCESS);

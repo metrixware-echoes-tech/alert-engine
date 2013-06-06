@@ -61,9 +61,9 @@ class Conf {
          * @return True or False
          */
         bool isInDB();
-        bool isAlerter();
-        bool isCleaner();
-        bool isCalculator();
+        bool isAlerter() const;
+        bool isCleaner() const;
+        bool isCalculator() const;
 
     protected:
         std::string _dbHost, _dbName, _dbUser, _dbPassword, _sessConnectParams, _path, _apiHost;

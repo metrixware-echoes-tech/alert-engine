@@ -24,6 +24,7 @@ Conf::Conf()
 
 Conf::Conf(const Conf& orig)
 {
+    setPath(orig.getPath());
     setDBHost(orig.getDBHost());
     setDBPort(orig.getDBPort());
     setDBName(orig.getDBName());
@@ -31,6 +32,9 @@ Conf::Conf(const Conf& orig)
     setDBPassword(orig.getDBPassword());
     setSessConnectParams(_dbHost, _dbPort, _dbName, _dbUser, _dbPassword);
     setCriticity(orig.getCriticity());
+    setAPIHost(orig.getAPIHost());
+    setAPIPort(orig.getAPIPort());
+    setId(orig.getId());
 }
 
 Conf::~Conf()
@@ -156,15 +160,15 @@ bool Conf::isInDB()
     return res;
 }
 
-bool Conf::isAlerter()
+bool Conf::isAlerter() const
 {
     return this->alerter;
 }
-bool Conf::isCleaner()
+bool Conf::isCleaner() const
 {
     return this->cleaner;
 }
-bool Conf::isCalculator()
+bool Conf::isCalculator() const
 {
     return this->calculator;
 }

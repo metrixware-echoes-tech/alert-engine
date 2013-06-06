@@ -31,7 +31,6 @@ AlertProcessor::~AlertProcessor()
 int AlertProcessor::verifyAlerts()
 {
     int res = -1;
-    boost::thread_group threads;
     Session session(conf.getSessConnectParams());
 
     while (true)
@@ -70,7 +69,7 @@ int AlertProcessor::verifyAlerts()
                             -1,
                             0,
                             0,
-                            threads.create_thread(boost::bind(&AlertProcessor::informationValueLoop, this, it->id()))
+                            new boost::thread(boost::bind(&AlertProcessor::informationValueLoop, this, it->id()))
                         };
                         startAlert(*it, engOrgPtr);
                     }
@@ -113,7 +112,7 @@ int AlertProcessor::verifyAlerts()
                             -1,
                             0,
                             0,
-                            threads.create_thread(boost::bind(&AlertProcessor::informationValueLoop, this, it->id()))
+                            new boost::thread(boost::bind(&AlertProcessor::informationValueLoop, this, it->id()))
                         };
                         startAlert(*it, engOrgPtr);
                     }
@@ -139,7 +138,8 @@ int AlertProcessor::verifyAlerts()
             else
             {
                 stopAlert(it->first);
-                threads.remove_thread(it->second.ivaThread);
+                it->second.ivaThread->interrupt();
+                delete it->second.ivaThread;
                 alertToErase.push_back(it->first);
             }
         }
@@ -223,7 +223,7 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<EngOr
         switch(alertPtr->alertValue->information->pk.unit->unitType.id())
         {
             case Enums::NUMBER:
-                logger.entry("debug") << "[Alert Processor] - We are entering in the switch of the case number";
+                logger.entry("debug") << "[Alert Processor] We are entering in the switch of the case number";
 
                 secConfFile << "    if ($value =~ /^([+-]?)(?=\\d|\\.\\d)\\d*(\\.\\d*)?([Ee]([+-]?\\d+))?$/) \\\n"
                         "    { \\\n"
@@ -392,7 +392,7 @@ void AlertProcessor::informationValueLoop(const long long alertID)
     {
         int lotNumber = 0, lineNumber = 0;
 
-        while(ivaKeyID < 1)
+        while(ivaKeyID < 1 && _alertsMap[alertID].secPID > 0)
         {
             logger.entry("debug") << "[Alert Processor] Retrieve IVA Key";
             try 
@@ -429,43 +429,44 @@ void AlertProcessor::informationValueLoop(const long long alertID)
                 searchDateTime = searchDateTime.addSecs(period);
                 informationValueSleep(period, searchDateTime);
             }
-            if (_alertsMap[alertID].secPID <= 0)
+        }
+
+        if (_alertsMap[alertID].secPID > 0)
+        {
+            logger.entry("debug") << "[Alert Processor] Retrieve IVA";
+            try 
             {
-                return;
+                Wt::Dbo::Transaction transaction(sessionThread);
+                Wt::Dbo::ptr<InformationValue> ivaPtr = sessionThread.find<InformationValue>()
+                        .where("\"PLG_ID_PLG_ID\" = ?").bind(pluginID)
+                        .where("\"SRC_ID\" = ?").bind(sourceID)
+                        .where("\"SEA_ID\" = ?").bind(searchID)
+                        .where("\"INF_VALUE_NUM\" = ?").bind(infValueNum)
+                        .where("\"INU_ID_INU_ID\" = ?").bind(infoUnitID)
+                        .where("\"IVA_STATE\" = ?").bind(0)
+                        .where("\"IVA_AST_AST_ID\" = ?").bind(assetID)
+                        .where("\"IVA_CREA_DATE\" >= ?").bind(searchDateTime.toString().toUTF8())
+                        .where("\"IVA_LOT_NUM\" = ?").bind(lotNumber)
+                        .where("\"IVA_LINE_NUM\" = ?").bind(lineNumber)
+                        .orderBy("\"IVA_ID\" DESC")
+                        .limit(1);
+
+                ivaID = ivaPtr.id();
+                if (ivaPtr)
+                    ivaValue = ivaPtr->value.toUTF8();
+                transaction.commit();
+            }
+            catch (Wt::Dbo::Exception e)
+            {
+                logger.entry("error") << "[Alert Processor] " << e.what();
             }
         }
-
-        logger.entry("debug") << "[Alert Processor] Retrieve IVA";
-        try 
-        {
-            Wt::Dbo::Transaction transaction(sessionThread);
-            Wt::Dbo::ptr<InformationValue> ivaPtr = sessionThread.find<InformationValue>()
-                    .where("\"PLG_ID_PLG_ID\" = ?").bind(pluginID)
-                    .where("\"SRC_ID\" = ?").bind(sourceID)
-                    .where("\"SEA_ID\" = ?").bind(searchID)
-                    .where("\"INF_VALUE_NUM\" = ?").bind(infValueNum)
-                    .where("\"INU_ID_INU_ID\" = ?").bind(infoUnitID)
-                    .where("\"IVA_STATE\" = ?").bind(0)
-                    .where("\"IVA_AST_AST_ID\" = ?").bind(assetID)
-                    .where("\"IVA_CREA_DATE\" >= ?").bind(searchDateTime.toString().toUTF8())
-                    .where("\"IVA_LOT_NUM\" = ?").bind(lotNumber)
-                    .where("\"IVA_LINE_NUM\" = ?").bind(lineNumber)
-                    .orderBy("\"IVA_ID\" DESC")
-                    .limit(1);
-
-            ivaID = ivaPtr.id();
-            if (ivaPtr)
-                ivaValue = ivaPtr->value.toUTF8();
-            transaction.commit();
-        }
-        catch (Wt::Dbo::Exception e)
-        {
-            logger.entry("error") << "[Alert Processor] " << e.what();
-        }
+        else
+            return;
     }
     else
     {
-        while(ivaID < 1)
+        while(ivaID < 1 && _alertsMap[alertID].secPID > 0)
         {
             logger.entry("debug") << "[Alert Processor] Retrieve IVA";
             try
@@ -497,10 +498,6 @@ void AlertProcessor::informationValueLoop(const long long alertID)
             {
                 searchDateTime = searchDateTime.addSecs(period);
                 informationValueSleep(period, searchDateTime);
-            }
-            if (_alertsMap[alertID].secPID <= 0)
-            {
-                return;
             }
         }
     }
