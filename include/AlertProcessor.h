@@ -24,7 +24,7 @@
 
 #include <tools/Enums.h>
 
-#include "ToolsEngine.h"
+#include "Conf.h"
 
 typedef Wt::Dbo::collection<Wt::Dbo::ptr<InformationValue> > tbInformationValue;
 
