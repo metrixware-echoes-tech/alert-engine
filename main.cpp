@@ -137,11 +137,8 @@ void calculate()
 
     while (true)
     {
-        long long ivaIdList[ivaListSize];
-        for (int i = 0; i < ivaListSize; i++)
-        {
-            ivaIdList[i] = -1;
-        }
+        std::vector<long long> ivaIdList;
+
         try
         {
             Wt::Dbo::Transaction transaction1(session);
@@ -150,13 +147,13 @@ void calculate()
                     " WHERE \"IVA_STATE\" = 9 FOR UPDATE LIMIT ?";
             Wt::Dbo::collection<Wt::Dbo::ptr<InformationValue>> ivaList = session.query<Wt::Dbo::ptr<InformationValue>>(queryString).bind(ivaListSize);
 
-            int idx = 0;
-            for (Wt::Dbo::collection<Wt::Dbo::ptr<InformationValue> >::const_iterator j = ivaList.begin(); j != ivaList.end(); ++j)
+            for (Wt::Dbo::collection<Wt::Dbo::ptr<InformationValue> >::const_iterator it = ivaList.begin(); it != ivaList.end(); ++it)
             {
-                session.execute("UPDATE \"T_INFORMATION_VALUE_IVA\" SET \"IVA_STATE\" = ? WHERE \"IVA_ID\" = ?").bind(1).bind(j->id());
-                ivaIdList[idx] = j->id();
-                idx++;
+                session.execute("UPDATE \"T_INFORMATION_VALUE_IVA\" SET \"IVA_STATE\" = ? WHERE \"IVA_ID\" = ?").bind(1).bind(it->id());
+                ivaIdList.push_back(it->id());
             }
+
+            logger.entry("debug") << "[Main] " << ivaIdList.size() << " IVA retrieved to calculate";
             transaction1.commit();
         }
         catch (Wt::Dbo::Exception e)
@@ -164,13 +161,8 @@ void calculate()
             logger.entry("error") << "[Main] IVA selection: " << e.what();
         }
 
-        for (int i = 0; i < ivaListSize; i++)
+        for (unsigned short i(0); i < ivaIdList.size(); ++i)
         {
-            if (ivaIdList[i] == -1)
-            {
-                break;
-            }
-
             int ivaLotNum, ivaLineNum, infValueNum;
             long long ivaAssetId, ivaId, plgId, seaId, srcId, untId;
 
@@ -202,101 +194,84 @@ void calculate()
                     {
                         calculate = ivaPtr->information->calculate.get();
                     }
-                    else
-                    {
-                        logger.entry("error") << "[Main] no calculate";
-                        transactionIvaData.commit();
-                        break;
-                    }
-                }
-                else
-                {
-                    logger.entry("error") << "[Main] no calculate";
-                    transactionIvaData.commit();
-                    break;
                 }
                 transactionIvaData.commit();
             }
             catch (Wt::Dbo::Exception e)
             {
                 logger.entry("error") << "[Main] IVA data: " << e.what();
+                continue;
             }
-
-            //we get the calculation data
-            try
+            
+            if(calculate != "")
             {
+
                 logger.entry("debug") << "[Main] calculate value: " << calculate;
 
                 if (calculate == "searchValueToCalculate")
                 {
-                    Wt::Dbo::Transaction transactionCalcData(session);
-                    Wt::Dbo::ptr<Information2> ptrInfRes = session.find<Information2>()
-                            .where("\"PLG_ID_PLG_ID\" = ?").bind(plgId)
-                            .where("\"SRC_ID\" = ?").bind(srcId)
-                            .where("\"SEA_ID\" = ?").bind(seaId)
-                            .where("\"INF_VALUE_NUM\" = ?").bind(-1)
-                            .limit(1);
+                    //we get the calculation data
+                    try
+                    {
+                        Wt::Dbo::Transaction transactionCalcData(session);
+                        Wt::Dbo::ptr<Information2> ptrInfRes = session.find<Information2>()
+                                .where("\"PLG_ID_PLG_ID\" = ?").bind(plgId)
+                                .where("\"SRC_ID\" = ?").bind(srcId)
+                                .where("\"SEA_ID\" = ?").bind(seaId)
+                                .where("\"INF_VALUE_NUM\" = ?").bind(-1)
+                                .limit(1);
 
-                    if (ptrInfRes->calculate)
-                    {
-                        if (!ptrInfRes->calculate.get().empty())
+                        if (ptrInfRes->calculate)
                         {
-                            realCalculate = ptrInfRes->calculate.get();
+                            if (!ptrInfRes->calculate.get().empty())
+                            {
+                                realCalculate = ptrInfRes->calculate.get();
+                            }
                         }
-                        else
-                        {
-                            logger.entry("error") << "[Main] no real calculate";
-                            transactionCalcData.commit();
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        logger.entry("error") << "[Main] no real calculate";
                         transactionCalcData.commit();
-                        break;
                     }
-                    transactionCalcData.commit();
+                    catch (Wt::Dbo::Exception e)
+                    {
+                        logger.entry("error") << "[Main] IVA data: " << e.what();
+                        continue;
+                    }
                 }
                 else
                 {
                     realCalculate = calculate;
                 }
-            }
-            catch (Wt::Dbo::Exception e)
-            {
-                logger.entry("error") << "[Main] iva data: " << e.what();
-            }
 
-            //calcul
-            try
-            {
-                Wt::Dbo::Transaction transactionCalcul(session);
-                std::string queryStr = "SELECT " + realCalculate.toUTF8() + "(" + boost::lexical_cast<std::string>(seaId)
-                        + "," + boost::lexical_cast<std::string>(srcId)
-                        + "," + boost::lexical_cast<std::string>(plgId)
-                        + "," + boost::lexical_cast<std::string>(infValueNum)
-                        + "," + boost::lexical_cast<std::string>(untId)
-                        + "," + boost::lexical_cast<std::string>(ivaLotNum)
-                        + ",9" //state
-                        + "," + boost::lexical_cast<std::string>(ivaLineNum)
-                        + "," + boost::lexical_cast<std::string>(ivaAssetId)
-                        + ",10" // limit
-                        + "," + boost::lexical_cast<std::string>(ivaId)
-                        + ")"
-                        ;
-                logger.entry("debug") << "[Main] calc query: " << queryStr;
-                session.execute(queryStr);
-                logger.entry("debug") << "[Main] calc done.";
-                transactionCalcul.commit();
+                if(realCalculate != "")
+                {
+                    //calcul
+                    try
+                    {
+                        Wt::Dbo::Transaction transactionCalcul(session);
+                        logger.entry("debug") << "[Main] Launch calc query: " << realCalculate;
+                        session.execute("SELECT " + realCalculate.toUTF8() + "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                        .bind(seaId).bind(srcId).bind(plgId).bind(infValueNum).bind(untId).bind(ivaLotNum)
+                        .bind(9) // state
+                        .bind(ivaLineNum).bind(ivaAssetId)
+                        .bind(10) // limit
+                        .bind(ivaId);
+                        logger.entry("debug") << "[Main] calc done.";
+                        transactionCalcul.commit();
+                    }
+                    catch (Wt::Dbo::Exception e)
+                    {
+                        logger.entry("error") << "[Main] IVA data: " << e.what();
+                        continue;
+                    }   
+                }
+                else
+                {
+                    logger.entry("error") << "[Main] no real calculate";
+                }
             }
-            catch (Wt::Dbo::Exception e)
+            else
             {
-                logger.entry("error") << "[Main] iva data: " << e.what();
+                logger.entry("debug") << "[Main] no calculate";
             }
-            logger.entry("debug") << "[Main] launching calcul";
-            // We launch the calcul
-
         }
 
         boost::this_thread::sleep(boost::posix_time::seconds(conf.sleepThreadCalculate));
