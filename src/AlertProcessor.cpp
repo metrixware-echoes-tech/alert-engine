@@ -298,7 +298,8 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<EngOr
                 "desc=POST /alerts/" << alertPtr.id() << "/trackings?eno_token=" << engOrgPtr->token<< " HTTP/1.1\\n"
                        "Host: " << conf.getAPIHost() << "\\n"
                        "Content-Type: application/json; charset=utf-8\\n"
-                       "Content-length: $3\\n\\n"
+                       "Content-length: $3\\n"
+                       "Connection: close\\n\\n"
                        "$1\\n\\n\n"
                 "action=shellcmd /usr/bin/printf \"%s\" | /usr/bin/openssl s_client -quiet -connect " << conf.getAPIHost() << ":" << conf.getAPIPort() << "\n";
         
@@ -316,10 +317,10 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<EngOr
 
 void AlertProcessor::stopAlert(const long long alertID)
 {
+    kill(_alertsMap[alertID].secPID, SIGTERM);
     close(_alertsMap[alertID].secInFP);
     close(_alertsMap[alertID].secOutFP);
     close(_alertsMap[alertID].secErrFP);
-    kill(_alertsMap[alertID].secPID, SIGTERM);
     waitpid(_alertsMap[alertID].secPID, NULL, 0);
     _alertsMap[alertID].secPID = -1;
     
