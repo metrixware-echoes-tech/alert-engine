@@ -69,6 +69,7 @@ int AlertProcessor::verifyAlerts()
                             -1,
                             0,
                             0,
+                            0,
                             new boost::thread(boost::bind(&AlertProcessor::informationValueLoop, this, it->id()))
                         };
                         startAlert(*it, engOrgPtr);
@@ -110,6 +111,7 @@ int AlertProcessor::verifyAlerts()
                             "conf/sec-" + boost::lexical_cast<string>(it->id()) + ".conf",
 #endif
                             -1,
+                            0,
                             0,
                             0,
                             new boost::thread(boost::bind(&AlertProcessor::informationValueLoop, this, it->id()))
@@ -155,24 +157,24 @@ int AlertProcessor::verifyAlerts()
     return res;
 }
 
-pid_t AlertProcessor::popen_sec(const string &confFilename, int *infp, int *outfp)
+pid_t AlertProcessor::popen_sec(const string &confFilename, int *infp, int *outfp, int *errfp)
 {
-    int p_stdin[2], p_stdout[2];
+    int p_stdin[2], p_stdout[2], p_stderr[2];
     pid_t pid = 0;
 
-    if (pipe(p_stdin) != 0 || pipe(p_stdout) != 0)
+    if (pipe(p_stdin) != 0 || pipe(p_stdout) != 0 || pipe(p_stderr) != 0)
         return -1;
 
     pid = fork();
 
-    if (pid < 0)
-        return pid;
-    else if (pid == 0)
+    if (pid == 0) // Child
     {
         close(p_stdin[WRITE]);
-        dup2(p_stdin[READ], READ);
+        dup2(p_stdin[READ], 0);
         close(p_stdout[READ]);
-        dup2(p_stdout[WRITE], WRITE);
+        dup2(p_stdout[WRITE], 1);
+        close(p_stderr[READ]);
+        dup2(p_stderr[WRITE], 2);
         execl(
               "/usr/bin/sec",
               "sec",
@@ -181,21 +183,32 @@ pid_t AlertProcessor::popen_sec(const string &confFilename, int *infp, int *outf
 #ifdef NDEBUG
               ("-log=" + logger.getPath()).c_str(),
 #endif
+//              Not supported before SEC 2.7.4
+//              "--childterm",
               NULL
               );
         logger.entry("info") << "[Alert Processor] execl: " << strerror(errno);
-        exit(1);
+        _exit(EXIT_FAILURE);
     }
+    else if (pid > 0) // Parent
+    {
+        if (infp == NULL)
+            close(p_stdin[WRITE]);
+        else
+            *infp = p_stdin[WRITE];
 
-    if (infp == NULL)
-        close(p_stdin[WRITE]);
-    else
-        *infp = p_stdin[WRITE];
+        if (outfp == NULL)
+            close(p_stdout[READ]);
+        else
+            *outfp = p_stdout[READ];
 
-    if (outfp == NULL)
-        close(p_stdout[READ]);
+        if (errfp == NULL)
+            close(p_stderr[READ]);
+        else
+            *errfp = p_stderr[READ];
+    }
     else
-        *outfp = p_stdout[READ];
+        logger.entry("error") << "[Alert Processor] fork: " << strerror(errno);
 
     return pid;
 }
@@ -285,7 +298,8 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<EngOr
                 "desc=POST /alerts/" << alertPtr.id() << "/trackings?eno_token=" << engOrgPtr->token<< " HTTP/1.1\\n"
                        "Host: " << conf.getAPIHost() << "\\n"
                        "Content-Type: application/json; charset=utf-8\\n"
-                       "Content-length: $3\\n\\n"
+                       "Content-length: $3\\n"
+                       "Connection: close\\n\\n"
                        "$1\\n\\n\n"
                 "action=shellcmd /usr/bin/printf \"%s\" | /usr/bin/openssl s_client -quiet -connect " << conf.getAPIHost() << ":" << conf.getAPIPort() << "\n";
         
@@ -296,15 +310,17 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<EngOr
         logger.entry("error") << "[Alert Processor] Unable to open/create file: " << _alertsMap[alertPtr.id()].secConfFilename;
     }
 
-    _alertsMap[alertPtr.id()].secPID = popen_sec(_alertsMap[alertPtr.id()].secConfFilename, &_alertsMap[alertPtr.id()].secInFP, &_alertsMap[alertPtr.id()].secOutFP);
+    _alertsMap[alertPtr.id()].secPID = popen_sec(_alertsMap[alertPtr.id()].secConfFilename, &_alertsMap[alertPtr.id()].secInFP, &_alertsMap[alertPtr.id()].secOutFP, &_alertsMap[alertPtr.id()].secErrFP);
     if (_alertsMap[alertPtr.id()].secPID <= 0)
         logger.entry("error") << "[Alert Processor] Unable to exec SEC: " << _alertsMap[alertPtr.id()].secConfFilename;
 }
 
 void AlertProcessor::stopAlert(const long long alertID)
 {
-    close(_alertsMap[alertID].secInFP);
     kill(_alertsMap[alertID].secPID, SIGTERM);
+    close(_alertsMap[alertID].secInFP);
+    close(_alertsMap[alertID].secOutFP);
+    close(_alertsMap[alertID].secErrFP);
     waitpid(_alertsMap[alertID].secPID, NULL, 0);
     _alertsMap[alertID].secPID = -1;
     
@@ -508,19 +524,19 @@ void AlertProcessor::informationValueLoop(const long long alertID)
         {
             string inputSEC = boost::lexical_cast<string>(ivaID);
 
-            switch(infoUnitTypeID)
+            switch (infoUnitTypeID)
             {
-                case Enums::NUMBER:
-                    inputSEC += ":" + ivaValue;
-                    break;
-                default:
-                    inputSEC += ":" + Wt::Utils::base64Encode(ivaValue);
-                    break;
+            case Enums::NUMBER:
+                inputSEC += ":" + ivaValue;
+                break;
+            default:
+                inputSEC += ":" + Wt::Utils::base64Encode(ivaValue);
+                break;
             }
             inputSEC += "\n";
 
             logger.entry("debug") << "[Alert Processor] Send IVA to SEC";
-             write(_alertsMap[alertID].secInFP, inputSEC.c_str(), inputSEC.size());
+            write(_alertsMap[alertID].secInFP, inputSEC.c_str(), inputSEC.size());
         }
 
         searchDateTime = searchDateTime.addSecs(period);
