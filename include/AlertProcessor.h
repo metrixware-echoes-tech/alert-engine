@@ -17,6 +17,10 @@
 #include <signal.h>
 #include <wait.h>
 
+#include <ext/stdio_filebuf.h>
+#include <iostream>
+#include <fstream>
+
 #include <boost/thread/thread.hpp>
 
 #include <Wt/Utils>
@@ -51,9 +55,6 @@ class AlertProcessor {
         
         std::map<long long, SecondStructure> _alertsMap;
 
-        /*
-         * Source : http://www.dzone.com/snippets/simple-popen2-implementation
-         */
 #define READ 0
 #define WRITE 1
         pid_t popen_sec(const std::string &confFilename, int *infp, int *outfp, int *errfp);
@@ -80,6 +81,13 @@ class AlertProcessor {
          * @param Previous Date Time
          */
         void informationValueSleep(const unsigned period, Wt::WDateTime &previousDateTime);
+
+        /**
+         * Write SEC log to file log
+         * @param fd File Descriptor
+         * @param logLevel Log Level
+         */
+        void secLogLoop(const int fd, const std::string &logLevel);
 };
 
 #endif	/* ALERTPROCESSOR_H */

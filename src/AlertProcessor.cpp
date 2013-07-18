@@ -159,7 +159,7 @@ int AlertProcessor::verifyAlerts()
 
 pid_t AlertProcessor::popen_sec(const string &confFilename, int *infp, int *outfp, int *errfp)
 {
-    int p_stdin[2], p_stdout[2], p_stderr[2];
+    int p_stdin[2] = {0}, p_stdout[2] = {0}, p_stderr[2] = {0};
     pid_t pid = 0;
 
     if (pipe(p_stdin) != 0 || pipe(p_stdout) != 0 || pipe(p_stderr) != 0)
@@ -167,14 +167,14 @@ pid_t AlertProcessor::popen_sec(const string &confFilename, int *infp, int *outf
 
     pid = fork();
 
-    if (pid == 0) // Child
+    if (pid == 0) // Child process
     {
         close(p_stdin[WRITE]);
-        dup2(p_stdin[READ], 0);
+        dup2(p_stdin[READ], 0); // Standard input
         close(p_stdout[READ]);
-        dup2(p_stdout[WRITE], 1);
+        dup2(p_stdout[WRITE], 1); // Standard output
         close(p_stderr[READ]);
-        dup2(p_stderr[WRITE], 2);
+        dup2(p_stderr[WRITE], 2); // Standard error
         execl(
               "/usr/bin/sec",
               "sec",
@@ -351,6 +351,9 @@ void AlertProcessor::informationValueLoop(const long long alertID)
         }
     }
     logger.entry("info") << "[Alert Processor] SEC instance after " << boost::lexical_cast<string>(idx) << "s for alert ID: " << alertID;
+
+    boost::thread(boost::bind(&AlertProcessor::secLogLoop, this, _alertsMap[alertID].secOutFP, "info"));
+    boost::thread(boost::bind(&AlertProcessor::secLogLoop, this, _alertsMap[alertID].secErrFP, "error"));
 
     Session sessionThread(conf.getSessConnectParams());
     long long pluginID = 0, sourceID = 0, searchID = 0, infoUnitID = 0, infoUnitTypeID = 0, assetID = 0;
@@ -615,5 +618,18 @@ void AlertProcessor::informationValueSleep(const unsigned period, Wt::WDateTime 
 {
     boost::this_thread::sleep(boost::posix_time::seconds(period - previousDateTime.secsTo(Wt::WDateTime::currentDateTime())));
     return;
+}
+
+void AlertProcessor::secLogLoop(const int fd, const string &logLevel)
+{
+    string line = "";
+
+     __gnu_cxx::stdio_filebuf<char> fileBuf(fd, std::ios::in);
+     istream is(&fileBuf);
+
+    while (getline(is, line))
+        logger.entry(logLevel) << "[Alert Processor] SEC: " << line;
+
+     return;
 }
 
