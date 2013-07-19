@@ -286,8 +286,8 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<EngOr
             secConfFile << "  ";
         
         secConfFile << "    { \\\n"
-                "        my $res = '{\\\"alert_ids\\\": ['.$id.']}'; \\\n"
-                "        return ($res, $value, length($res)) \\\n";
+                "        my $res = '{\\\\\\\\\\\\\"alert_ids\\\\\\\\\\\\\": ['.$id.']}'; \\\n"
+                "        return ($res, $value, (length($res) - 6)) \\\n";
 
         if (alertPtr->alertValue->information->pk.unit->unitType.id() == Enums::NUMBER)
             secConfFile << "      }; \\\n";
@@ -295,13 +295,13 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<EngOr
         secConfFile << "    }; \\\n"
                 "  }; \\\n"
                 "}\n"
-                "desc=POST /alerts/" << alertPtr.id() << "/trackings?eno_token=" << engOrgPtr->token<< " HTTP/1.1\\n"
+                "desc=POST /alerts/" << alertPtr.id() << "/trackings?eno_token=" << engOrgPtr->token << " HTTP/1.1\\n"
                        "Host: " << conf.getAPIHost() << "\\n"
                        "Content-Type: application/json; charset=utf-8\\n"
                        "Content-length: $3\\n"
                        "Connection: close\\n\\n"
                        "$1\\n\\n\n"
-                "action=shellcmd /usr/bin/printf \"%s\" | /usr/bin/openssl s_client -quiet -connect " << conf.getAPIHost() << ":" << conf.getAPIPort() << "\n";
+                "action=shellcmd (/usr/bin/perl -e \"alarm(2); exec(\\\"/usr/bin/printf \\'%s\\' | /usr/bin/openssl s_client -quiet -connect " << conf.getAPIHost() << ":" << conf.getAPIPort() << "\\\")\")\n";
         
         secConfFile.close();
     }
