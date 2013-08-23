@@ -19,7 +19,7 @@ int EAEngine::_signum = 0;
 boost::thread_group EAEngine::_threads;
 
 EAEngine::EAEngine(const std::string& name, const std::string& version) :
-        _confOK(false), _name(name), _version(version)
+_confOK(false), _name(name), _version(version)
 {
      _signum = 0;
     signalsHangler();
@@ -99,7 +99,6 @@ int EAEngine::waitForShutdown()
 
 void EAEngine::stop()
 {
-    _alertProcessor.stopAllAlerts();
     logger.entry("info") << "[origin enterpriseId=\"40311\" software=\"" << _name << "\" swVersion=\"" << _version << "\"] stop";
 }
 
@@ -121,9 +120,10 @@ void EAEngine::signalHandling(int signum)
 
 void EAEngine::checkNewAlerts()
 {
+    AlertProcessor alertProcessor;
     logger.entry("info") << "[EAEngine] Mode Alerter start";
 
-    _alertProcessor.verifyAlerts(&_signum);
+    alertProcessor.verifyAlerts(&_signum);
 }
 
 void EAEngine::removeOldValues()

@@ -16,142 +16,167 @@
 
 using namespace std;
 
-AlertProcessor::AlertProcessor() 
+AlertProcessor::AlertProcessor() :
+_session(conf.getSessConnectParams())
 {
+    try
+    {
+        Wt::Dbo::Transaction transaction(_session);
+
+        _enginePtr = _session.find<Engine>().where("\"ENG_ID\" = ?").bind(conf.getId()).limit(1);
+
+        transaction.commit();
+    }
+    catch (Wt::Dbo::Exception e)
+    {
+        logger.entry("error") << "[Alert Processor] " << e.what();
+    }
 }
 
-AlertProcessor::AlertProcessor(const AlertProcessor& orig)
+AlertProcessor::AlertProcessor(const AlertProcessor& orig) :
+_session(conf.getSessConnectParams())
 {
+    try
+    {
+        Wt::Dbo::Transaction transaction(_session);
+
+        _enginePtr = _session.find<Engine>().where("\"ENG_ID\" = ?").bind(conf.getId()).limit(1);
+
+        transaction.commit();
+    }
+    catch (Wt::Dbo::Exception e)
+    {
+        logger.entry("error") << "[Alert Processor] " << e.what();
+    }
 }
 
 AlertProcessor::~AlertProcessor()
 {
+    stopAllAlerts();
 }
 
 int AlertProcessor::verifyAlerts(int *sig)
 {
     int res = -1;
-    Session session(conf.getSessConnectParams());
 
-    while (*sig == 0)
+    if (_enginePtr)
     {
-        try
+        while (*sig == 0)
         {
-            Wt::Dbo::Transaction transaction(session);
-
-            Wt::Dbo::ptr<Engine> enginePtr = session.find<Engine>().where("\"ENG_ID\" = ?").bind(conf.getId()).limit(1);
-            
-            Wt::Dbo::collection<Wt::Dbo::ptr<Alert>> alertPtrCollection = session.find<Alert>()
-                    .where("\"ALE_ENG_ENG_ID\" = ?").bind(enginePtr.id())
-                    .where("\"ALE_DELETE\" IS NULL");
-
-            logger.entry("debug") << "[Alert Processor] We have " << alertPtrCollection.size() << " Alert(s) for this Engine in the database";
-
-            for (Wt::Dbo::collection<Wt::Dbo::ptr<Alert>>::const_iterator it = alertPtrCollection.begin(); it != alertPtrCollection.end(); ++it)
+            try
             {
-                if(_alertsMap.find(it->id()) == _alertsMap.end())
-                {
-                    Wt::Dbo::ptr<EngOrg> engOrgPtr = session.find<EngOrg>()
-                            .where("\"ENG_ID_ENG_ID\" = ?").bind(enginePtr.id())
-                            .where("\"ORG_ID_ORG_ID\" = ?").bind(it->get()->alertValue->asset->organization.id())
-                            .where("\"ENO_DELETE\" IS NULL")
-                            .limit(1);
+                Wt::Dbo::Transaction transaction(_session);
 
-                    if(engOrgPtr)
+                Wt::Dbo::collection<Wt::Dbo::ptr<Alert>> alertPtrCollection = _session.find<Alert>()
+                        .where("\"ALE_ENG_ENG_ID\" = ?").bind(_enginePtr.id())
+                        .where("\"ALE_DELETE\" IS NULL");
+
+                logger.entry("debug") << "[Alert Processor] We have " << alertPtrCollection.size() << " Alert(s) for this Engine in the database";
+
+                for (Wt::Dbo::collection<Wt::Dbo::ptr<Alert>>::const_iterator it = alertPtrCollection.begin(); it != alertPtrCollection.end(); ++it)
+                {
+                    if(_alertsMap.find(it->id()) == _alertsMap.end())
                     {
-                        _alertsMap[it->id()] = {
-                            true,
-#ifdef NDEBUG
-                            "/opt/echoes-alert/engine/etc/sec-" + boost::lexical_cast<string>(it->id()) + ".conf",
-#else
-                            "conf/sec-" + boost::lexical_cast<string>(it->id()) + ".conf",
-#endif
-                            -1,
-                            0,
-                            0,
-                            0,
-                            new boost::thread(boost::bind(&AlertProcessor::informationValueLoop, this, it->id()))
-                        };
-                        startAlert(*it, engOrgPtr);
+                        Wt::Dbo::ptr<EngOrg> engOrgPtr = _session.find<EngOrg>()
+                                .where("\"ENG_ID_ENG_ID\" = ?").bind(_enginePtr.id())
+                                .where("\"ORG_ID_ORG_ID\" = ?").bind(it->get()->alertValue->asset->organization.id())
+                                .where("\"ENO_DELETE\" IS NULL")
+                                .limit(1);
+
+                        if(engOrgPtr)
+                        {
+                            _alertsMap[it->id()] = {
+                                true,
+    #ifdef NDEBUG
+                                "/opt/echoes-alert/engine/etc/sec-" + boost::lexical_cast<string>(it->id()) + ".conf",
+    #else
+                                "conf/sec-" + boost::lexical_cast<string>(it->id()) + ".conf",
+    #endif
+                                -1,
+                                0,
+                                0,
+                                0,
+                                new boost::thread(boost::bind(&AlertProcessor::informationValueLoop, this, it->id()))
+                            };
+                            startAlert(*it, engOrgPtr);
+                        }
+                        else
+                            logger.entry("debug") << "[Alert Processor] No Token for Alert: " << it->id();
                     }
                     else
-                        logger.entry("debug") << "[Alert Processor] No Token for Alert: " << it->id();
+                        _alertsMap[it->id()].check = true;
                 }
+
+                if (alertPtrCollection.size() < (unsigned)_enginePtr->nbThread)
+                {
+                    Wt::Dbo::collection<Wt::Dbo::ptr<Alert>> newAlertPtrCollection = _session.find<Alert>()
+                            .where("\"ALE_ENG_ENG_ID\" is NULL")
+                            .where("\"ALE_DELETE\" IS NULL")
+                            .limit(_enginePtr->nbThread - alertPtrCollection.size());
+
+                    logger.entry("debug") << "[Alert Processor] We have " << newAlertPtrCollection.size() << " more Alert(s) for this Engine in the database";
+
+                    for (Wt::Dbo::collection<Wt::Dbo::ptr<Alert>>::const_iterator it = newAlertPtrCollection.begin(); it != newAlertPtrCollection.end(); ++it)
+                    {
+                        Wt::Dbo::ptr<EngOrg> engOrgPtr = _session.find<EngOrg>()
+                                .where("\"ENG_ID_ENG_ID\" = ?").bind(_enginePtr.id())
+                                .where("\"ORG_ID_ORG_ID\" = ?").bind(it->get()->alertValue->asset->organization.id())
+                                .where("\"ENO_DELETE\" IS NULL")
+                                .limit(1);
+
+                        if(engOrgPtr)
+                        {
+                            it->modify()->engine = _enginePtr;
+                            it->flush();
+
+                            _alertsMap[it->id()] = {
+                                true,
+    #ifdef NDEBUG
+                                "/opt/echoes-alert/engine/etc/sec-" + boost::lexical_cast<string>(it->id()) + ".conf",
+    #else
+                                "conf/sec-" + boost::lexical_cast<string>(it->id()) + ".conf",
+    #endif
+                                -1,
+                                0,
+                                0,
+                                0,
+                                new boost::thread(boost::bind(&AlertProcessor::informationValueLoop, this, it->id()))
+                            };
+                            startAlert(*it, engOrgPtr);
+                        }
+                        else
+                            logger.entry("debug") << "[Alert Processor] No Token for Alert: " << it->id();
+                    }
+                }
+
+                transaction.commit();
+            }
+            catch (Wt::Dbo::Exception e)
+            {
+                logger.entry("error") << "[Alert Processor] " << e.what();
+            }
+
+            vector<long long> alertToErase;
+            for (map<long long, SecondStructure>::const_iterator it = _alertsMap.begin(); it != _alertsMap.end(); ++it)
+            {
+                if(it->second.check)
+                    _alertsMap[it->first].check = false;
                 else
-                    _alertsMap[it->id()].check = true;
-            }
-
-            if (alertPtrCollection.size() < (unsigned)enginePtr->nbThread)
-            {
-                Wt::Dbo::collection<Wt::Dbo::ptr<Alert>> newAlertPtrCollection = session.find<Alert>()
-                        .where("\"ALE_ENG_ENG_ID\" is NULL")
-                        .where("\"ALE_DELETE\" IS NULL")
-                        .limit(enginePtr->nbThread - alertPtrCollection.size());
-
-                logger.entry("debug") << "[Alert Processor] We have " << newAlertPtrCollection.size() << " more Alert(s) for this Engine in the database";
-
-                for (Wt::Dbo::collection<Wt::Dbo::ptr<Alert>>::const_iterator it = newAlertPtrCollection.begin(); it != newAlertPtrCollection.end(); ++it)
                 {
-                    Wt::Dbo::ptr<EngOrg> engOrgPtr = session.find<EngOrg>()
-                            .where("\"ENG_ID_ENG_ID\" = ?").bind(enginePtr.id())
-                            .where("\"ORG_ID_ORG_ID\" = ?").bind(it->get()->alertValue->asset->organization.id())
-                            .where("\"ENO_DELETE\" IS NULL")
-                            .limit(1);
-
-                    if(engOrgPtr)
-                    {
-                        it->modify()->engine = enginePtr;
-                        it->flush();
-
-                        _alertsMap[it->id()] = {
-                            true,
-#ifdef NDEBUG
-                            "/opt/echoes-alert/engine/etc/sec-" + boost::lexical_cast<string>(it->id()) + ".conf",
-#else
-                            "conf/sec-" + boost::lexical_cast<string>(it->id()) + ".conf",
-#endif
-                            -1,
-                            0,
-                            0,
-                            0,
-                            new boost::thread(boost::bind(&AlertProcessor::informationValueLoop, this, it->id()))
-                        };
-                        startAlert(*it, engOrgPtr);
-                    }
-                    else
-                        logger.entry("debug") << "[Alert Processor] No Token for Alert: " << it->id();
+                    stopAlert(it->first);
+                    it->second.ivaThread->interrupt();
+                    delete it->second.ivaThread;
+                    alertToErase.push_back(it->first);
                 }
             }
 
-            transaction.commit();
-        }
-        catch (Wt::Dbo::Exception e)
-        {
-            logger.entry("error") << "[Alert Processor] " << e.what();
-        }
-
-        vector<long long> alertToErase;
-        for (map<long long, SecondStructure>::const_iterator it = _alertsMap.begin(); it != _alertsMap.end(); ++it)
-        {
-            if(it->second.check)
+            for (unsigned i(0); i < alertToErase.size(); ++i)
             {
-                _alertsMap[it->first].check = false;
+                _alertsMap.erase(alertToErase[i]);
             }
-            else
-            {
-                stopAlert(it->first);
-                it->second.ivaThread->interrupt();
-                delete it->second.ivaThread;
-                alertToErase.push_back(it->first);
-            }
-        }
 
-        for (unsigned i(0); i < alertToErase.size(); ++i)
-        {
-            _alertsMap.erase(alertToErase[i]);
+            boost::this_thread::sleep(boost::posix_time::seconds(conf.sleepThreadCheckAlert));
         }
-        
-        boost::this_thread::sleep(boost::posix_time::seconds(conf.sleepThreadCheckAlert));
     }
 
     return res;
@@ -326,6 +351,25 @@ void AlertProcessor::stopAlert(const long long alertID)
     
     if(remove(_alertsMap[alertID].secConfFilename.c_str()) < 0)
         logger.entry("info") << "[Alert Processor] " << _alertsMap[alertID].secConfFilename << ": " << strerror(errno);
+
+    try
+    {
+        Wt::Dbo::Transaction transaction(_session);
+
+        Wt::Dbo::ptr<Alert> alertPtr = _session.find<Alert>()
+                .where("\"ALE_ID\" = ?").bind(alertID)
+                .where("\"ALE_DELETE\" IS NULL")
+                .limit(1);
+        
+        alertPtr.modify()->engine = Wt::Dbo::ptr<Engine>();
+        alertPtr.flush();
+
+        transaction.commit();
+    }
+    catch (Wt::Dbo::Exception e)
+    {
+        logger.entry("error") << "[Alert Processor] " << e.what();
+    }
 }
 
 void AlertProcessor::stopAllAlerts()

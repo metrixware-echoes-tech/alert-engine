@@ -65,7 +65,6 @@ class EAEngine
 
         bool _confOK;
         std::string _name, _version;
-        AlertProcessor _alertProcessor;
         
         static boost::thread_group _threads;
         static int _signum;

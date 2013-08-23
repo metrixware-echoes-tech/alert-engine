@@ -61,6 +61,9 @@ class AlertProcessor {
         
         std::map<long long, SecondStructure> _alertsMap;
 
+        Session _session;
+        Wt::Dbo::ptr<Engine> _enginePtr;
+        
 #define READ 0
 #define WRITE 1
         pid_t popen_sec(const std::string &confFilename, int *infp, int *outfp, int *errfp);
