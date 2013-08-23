@@ -55,13 +55,13 @@ AlertProcessor::~AlertProcessor()
     stopAllAlerts();
 }
 
-int AlertProcessor::verifyAlerts(int *sig)
+int AlertProcessor::verifyAlerts(int *signum)
 {
     int res = -1;
 
     if (_enginePtr)
     {
-        while (*sig == 0)
+        while (*signum == 0)
         {
             try
             {

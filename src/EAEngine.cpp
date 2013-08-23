@@ -19,10 +19,10 @@ int EAEngine::_signum = 0;
 boost::thread_group EAEngine::_threads;
 
 EAEngine::EAEngine(const std::string& name, const std::string& version) :
-_confOK(false), _name(name), _version(version)
+_optionsOK(false), _name(name), _version(version)
 {
-     _signum = 0;
-    signalsHangler();
+    _signum = 0;
+    signalsHandler();
 }
 
 EAEngine::EAEngine(const EAEngine& orig)
@@ -36,53 +36,56 @@ EAEngine::~EAEngine()
 void EAEngine::setServerConfiguration(int argc, char **argv)
 {
     if (conf.readProgramOptions(argc, argv))
-        _confOK = true;
+        _optionsOK = true;
 }
 
 bool EAEngine::start()
 {
     bool res = false;
 
-    logger.entry("info") << "[origin enterpriseId=\"40311\" software=\"" << _name << "\" swVersion=\"" << _version << "\"] (re)start";
-
-    /* Daemonization */
-#ifdef NDEBUG
-    if (chdir("/") != 0)
+    if (_optionsOK)
     {
-        cerr << "failed to reach root \n";
-        return res;
-    }
-    if (fork() != 0)
-        exit(EXIT_SUCCESS);
-    setsid();
-    if (fork() != 0)
-        exit(EXIT_SUCCESS);
+        logger.entry("info") << "[origin enterpriseId=\"40311\" software=\"" << _name << "\" swVersion=\"" << _version << "\"] (re)start";
+
+        /* Daemonization */
+#ifdef NDEBUG
+        if (chdir("/") != 0)
+        {
+            cerr << "failed to reach root \n";
+            return res;
+        }
+        if (fork() != 0)
+            exit(EXIT_SUCCESS);
+        setsid();
+        if (fork() != 0)
+            exit(EXIT_SUCCESS);
 #endif
 
-    if (conf.readConfFile())
-    {
-        if (conf.isInDB())
+        if (conf.readConfFile())
         {
-            if (conf.isCleaner())
-                _threads.create_thread(boost::bind(&EAEngine::removeOldValues, this));
-            else
-                logger.entry("info") << "[EAEngine] Mode Cleaner disable";
+            if (conf.isInDB())
+            {
+                if (conf.isCleaner())
+                    _threads.create_thread(boost::bind(&EAEngine::removeOldValues, this));
+                else
+                    logger.entry("info") << "[EAEngine] Mode Cleaner disable";
 
-            if (conf.isAlerter())
-                _threads.create_thread(boost::bind(&EAEngine::checkNewAlerts, this));
-            else
-                logger.entry("info") << "[EAEngine] Mode Alerter disable";
+                if (conf.isAlerter())
+                    _threads.create_thread(boost::bind(&EAEngine::checkNewAlerts, this));
+                else
+                    logger.entry("info") << "[EAEngine] Mode Alerter disable";
 
-            if (conf.isCalculator())
-                _threads.create_thread(boost::bind(&EAEngine::calculate, this));
-            else
-                logger.entry("info") << "[EAEngine] Mode Calculator disable";
+                if (conf.isCalculator())
+                    _threads.create_thread(boost::bind(&EAEngine::calculate, this));
+                else
+                    logger.entry("info") << "[EAEngine] Mode Calculator disable";
 
-            res = true;
-        }
-        else
-        {
-            logger.entry("error") << "[EAEngine] This Engine ID is not in the database.";
+                res = true;
+            }
+            else
+            {
+                logger.entry("error") << "[EAEngine] This Engine ID is not in the database.";
+            }
         }
     }
 
@@ -102,7 +105,7 @@ void EAEngine::stop()
     logger.entry("info") << "[origin enterpriseId=\"40311\" software=\"" << _name << "\" swVersion=\"" << _version << "\"] stop";
 }
 
-void EAEngine::signalsHangler()
+void EAEngine::signalsHandler()
 {
     for (unsigned short i = 1; i < SIGWINCH; i++)
     {

@@ -52,7 +52,7 @@ class EAEngine
         /**
          * Set up signals handler for every signals
          */
-        void signalsHangler();
+        void signalsHandler();
         /**
          * Unix Signal Handling
          * @param signum Signal number
@@ -63,7 +63,7 @@ class EAEngine
         void removeOldValues();
         void calculate();
 
-        bool _confOK;
+        bool _optionsOK;
         std::string _name, _version;
         
         static boost::thread_group _threads;
