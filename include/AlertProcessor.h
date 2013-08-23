@@ -14,12 +14,12 @@
 #ifndef ALERTPROCESSOR_H
 #define	ALERTPROCESSOR_H
 
-#include <signal.h>
 #include <wait.h>
 
-#include <ext/stdio_filebuf.h>
+#include <csignal>
 #include <iostream>
 #include <fstream>
+#include <ext/stdio_filebuf.h>
 
 #include <boost/thread/thread.hpp>
 
@@ -40,10 +40,16 @@ class AlertProcessor {
 
         /**
          * Launch a SEC instance and create a thread to retrieve Information Value for each alert resgistered in the database
+         * @param sig Pointer of Signal number
          * @return error or success
          */
-        int verifyAlerts();
-        
+        int verifyAlerts(int *signum);
+
+        /**
+         * Stop All Alerts
+         */
+        void stopAllAlerts();
+
     private:
         struct SecondStructure {
             bool check;

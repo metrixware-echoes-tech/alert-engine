@@ -28,12 +28,12 @@ AlertProcessor::~AlertProcessor()
 {
 }
 
-int AlertProcessor::verifyAlerts()
+int AlertProcessor::verifyAlerts(int *sig)
 {
     int res = -1;
     Session session(conf.getSessConnectParams());
 
-    while (true)
+    while (*sig == 0)
     {
         try
         {
@@ -326,6 +326,16 @@ void AlertProcessor::stopAlert(const long long alertID)
     
     if(remove(_alertsMap[alertID].secConfFilename.c_str()) < 0)
         logger.entry("info") << "[Alert Processor] " << _alertsMap[alertID].secConfFilename << ": " << strerror(errno);
+}
+
+void AlertProcessor::stopAllAlerts()
+{
+    for (map<long long, SecondStructure>::const_iterator it = _alertsMap.begin(); it != _alertsMap.end(); ++it)
+    {
+        stopAlert(it->first);
+        it->second.ivaThread->interrupt();
+        delete it->second.ivaThread;
+    }
 }
 
 void AlertProcessor::informationValueLoop(const long long alertID)
