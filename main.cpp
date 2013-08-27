@@ -33,24 +33,22 @@ int main(int argc, char **argv)
     int res = EXIT_FAILURE, signum = 0;
     const string name = "ECHOES Alert - Engine", version = "0.1.0";
 
-    do {
-        res = EXIT_FAILURE;
-        signum = 0;
+    EAEngine engine(name, version);
+    engine.setServerConfiguration(argc, argv);
 
-        EAEngine engine(name, version);
-        engine.setServerConfiguration(argc, argv);
-        
-        if (engine.start())
-        {
-            signum = engine.waitForShutdown();
+    if (engine.start())
+    {
+        signum = engine.waitForShutdown();
 
-            logger.entry("info") << "[Main] Shutdown (signal = " << signum << ")";
+        logger.entry("info") << "[Main] Shutdown (signal = " << signum << ")";
 
-            engine.stop();
+        engine.stop();
 
-            res = EXIT_SUCCESS;
-        }
-    } while (signum == SIGHUP);
+        if (signum == SIGHUP)
+            EAEngine::restart(argc, argv, environ);
+
+        res = EXIT_SUCCESS;
+    }
 
     return res;
 }

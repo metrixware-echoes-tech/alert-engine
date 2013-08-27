@@ -47,6 +47,13 @@ class EAEngine
          * Stop the ECHOES Alert Engine.
          */
         void stop();
+        /**
+         * A utility method to restart the ECHOES Alert Engine.
+         * @param argc Number of arguments passed to the program
+         * @param argv Array of arguments passed to the program
+         * @param envp NULL-terminated array of "NAME=VALUE" environment variables
+         */
+        static void restart(int argc, char **argv, char **envp);
         
     private:
         /**

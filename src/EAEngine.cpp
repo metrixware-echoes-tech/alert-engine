@@ -105,6 +105,22 @@ void EAEngine::stop()
     logger.entry("info") << "[origin enterpriseId=\"40311\" software=\"" << _name << "\" swVersion=\"" << _version << "\"] stop";
 }
 
+void EAEngine::restart(int argc, char **argv, char **envp)
+{
+  char *path = realpath(argv[0], 0);
+
+  // Try a few times since this may fail because we have an incomplete
+  // binary...
+  for (int i = 0; i < 5; ++i)
+  {
+    int result = execve(path, argv, envp);
+    if (result != 0)
+      sleep(1);
+  }
+
+  perror("execve");
+}
+
 void EAEngine::signalsHandler()
 {
     for (unsigned short i = 1; i < SIGWINCH; i++)
