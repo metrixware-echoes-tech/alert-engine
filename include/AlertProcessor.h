@@ -30,7 +30,7 @@
 
 #include "Conf.h"
 
-typedef Wt::Dbo::collection<Wt::Dbo::ptr<InformationValue> > tbInformationValue;
+typedef Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::InformationValue> > tbInformationValue;
 
 class AlertProcessor {
     public:
@@ -62,7 +62,7 @@ class AlertProcessor {
         /**
          * Write SEC config file and launch it
          */
-        void startAlert(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<EngOrg> engOrgPtr);
+        void startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alertPtr, Wt::Dbo::ptr<Echoes::Dbo::EngOrg> engOrgPtr);
         /**
          * Stop SEC and remove its config file
          * @param IDentifier of the alert

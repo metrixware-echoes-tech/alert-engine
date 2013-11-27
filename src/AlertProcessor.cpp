@@ -16,7 +16,7 @@
 
 using namespace std;
 
-AlertProcessor::AlertProcessor() 
+AlertProcessor::AlertProcessor()
 {
 }
 
@@ -31,7 +31,7 @@ AlertProcessor::~AlertProcessor()
 int AlertProcessor::verifyAlerts()
 {
     int res = -1;
-    Session session(conf.getSessConnectParams());
+    Echoes::Dbo::Session session(conf.getSessConnectParams());
 
     while (true)
     {
@@ -39,25 +39,25 @@ int AlertProcessor::verifyAlerts()
         {
             Wt::Dbo::Transaction transaction(session);
 
-            Wt::Dbo::ptr<Engine> enginePtr = session.find<Engine>().where("\"ENG_ID\" = ?").bind(conf.getId()).limit(1);
-            
-            Wt::Dbo::collection<Wt::Dbo::ptr<Alert>> alertPtrCollection = session.find<Alert>()
+            Wt::Dbo::ptr<Echoes::Dbo::Engine> enginePtr = session.find<Echoes::Dbo::Engine>().where("\"ENG_ID\" = ?").bind(conf.getId()).limit(1);
+
+            Wt::Dbo::collection < Wt::Dbo::ptr < Echoes::Dbo::Alert >> alertPtrCollection = session.find<Echoes::Dbo::Alert>()
                     .where("\"ALE_ENG_ENG_ID\" = ?").bind(enginePtr.id())
                     .where("\"ALE_DELETE\" IS NULL");
 
             logger.entry("debug") << "[Alert Processor] We have " << alertPtrCollection.size() << " Alert(s) for this Engine in the database";
 
-            for (Wt::Dbo::collection<Wt::Dbo::ptr<Alert>>::const_iterator it = alertPtrCollection.begin(); it != alertPtrCollection.end(); ++it)
+            for (Wt::Dbo::collection < Wt::Dbo::ptr < Echoes::Dbo::Alert >> ::const_iterator it = alertPtrCollection.begin(); it != alertPtrCollection.end(); ++it)
             {
-                if(_alertsMap.find(it->id()) == _alertsMap.end())
+                if (_alertsMap.find(it->id()) == _alertsMap.end())
                 {
-                    Wt::Dbo::ptr<EngOrg> engOrgPtr = session.find<EngOrg>()
+                    Wt::Dbo::ptr<Echoes::Dbo::EngOrg> engOrgPtr = session.find<Echoes::Dbo::EngOrg>()
                             .where("\"ENG_ID_ENG_ID\" = ?").bind(enginePtr.id())
-                            .where("\"ORG_ID_ORG_ID\" = ?").bind(it->get()->alertValue->asset->organization.id())
+                            .where("\"ORG_ID_ORG_ID\" = ?").bind(it->get()->alertValue->informationData->asset->organization.id())
                             .where("\"ENO_DELETE\" IS NULL")
                             .limit(1);
 
-                    if(engOrgPtr)
+                    if (engOrgPtr)
                     {
                         _alertsMap[it->id()] = {
                             true,
@@ -81,24 +81,24 @@ int AlertProcessor::verifyAlerts()
                     _alertsMap[it->id()].check = true;
             }
 
-            if (alertPtrCollection.size() < (unsigned)enginePtr->nbThread)
+            if (alertPtrCollection.size() < (unsigned) enginePtr->nbThread)
             {
-                Wt::Dbo::collection<Wt::Dbo::ptr<Alert>> newAlertPtrCollection = session.find<Alert>()
+                Wt::Dbo::collection < Wt::Dbo::ptr < Echoes::Dbo::Alert >> newAlertPtrCollection = session.find<Echoes::Dbo::Alert>()
                         .where("\"ALE_ENG_ENG_ID\" is NULL")
                         .where("\"ALE_DELETE\" IS NULL")
                         .limit(enginePtr->nbThread - alertPtrCollection.size());
 
                 logger.entry("debug") << "[Alert Processor] We have " << newAlertPtrCollection.size() << " more Alert(s) for this Engine in the database";
 
-                for (Wt::Dbo::collection<Wt::Dbo::ptr<Alert>>::const_iterator it = newAlertPtrCollection.begin(); it != newAlertPtrCollection.end(); ++it)
+                for (Wt::Dbo::collection < Wt::Dbo::ptr < Echoes::Dbo::Alert >> ::const_iterator it = newAlertPtrCollection.begin(); it != newAlertPtrCollection.end(); ++it)
                 {
-                    Wt::Dbo::ptr<EngOrg> engOrgPtr = session.find<EngOrg>()
+                    Wt::Dbo::ptr<Echoes::Dbo::EngOrg> engOrgPtr = session.find<Echoes::Dbo::EngOrg>()
                             .where("\"ENG_ID_ENG_ID\" = ?").bind(enginePtr.id())
-                            .where("\"ORG_ID_ORG_ID\" = ?").bind(it->get()->alertValue->asset->organization.id())
+                            .where("\"ORG_ID_ORG_ID\" = ?").bind(it->get()->alertValue->informationData->asset->organization.id())
                             .where("\"ENO_DELETE\" IS NULL")
                             .limit(1);
 
-                    if(engOrgPtr)
+                    if (engOrgPtr)
                     {
                         it->modify()->engine = enginePtr;
                         it->flush();
@@ -133,7 +133,7 @@ int AlertProcessor::verifyAlerts()
         vector<long long> alertToErase;
         for (map<long long, SecondStructure>::const_iterator it = _alertsMap.begin(); it != _alertsMap.end(); ++it)
         {
-            if(it->second.check)
+            if (it->second.check)
             {
                 _alertsMap[it->first].check = false;
             }
@@ -150,7 +150,7 @@ int AlertProcessor::verifyAlerts()
         {
             _alertsMap.erase(alertToErase[i]);
         }
-        
+
         boost::this_thread::sleep(boost::posix_time::seconds(conf.sleepThreadCheckAlert));
     }
 
@@ -181,10 +181,10 @@ pid_t AlertProcessor::popen_sec(const string &confFilename, int *infp, int *outf
               ("-conf=" + confFilename).c_str(),
               "-input=-",
 #ifdef NDEBUG
-              ("-log=" + logger.getPath()).c_str(),
+                ("-log=" + logger.getPath()).c_str(),
 #endif
-//              Not supported before SEC 2.7.4
-//              "--childterm",
+                //              Not supported before SEC 2.7.4
+              //              "--childterm",
               NULL
               );
         logger.entry("info") << "[Alert Processor] execl: " << strerror(errno);
@@ -213,10 +213,10 @@ pid_t AlertProcessor::popen_sec(const string &confFilename, int *infp, int *outf
     return pid;
 }
 
-void AlertProcessor::startAlert(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<EngOrg> engOrgPtr)
+void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alertPtr, Wt::Dbo::ptr<Echoes::Dbo::EngOrg> engOrgPtr)
 {
     ofstream secConfFile(_alertsMap[alertPtr.id()].secConfFilename.c_str());
-    if(secConfFile)
+    if (secConfFile)
     {
         secConfFile << "type=Single\n"
                 "ptype=PerlFunc\n"
@@ -227,82 +227,82 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Alert> alertPtr, Wt::Dbo::ptr<EngOr
                 "  { \\\n"
                 "    (my $id, my $value) = split(':', $_[0]); \\\n";
 
-        if (alertPtr->alertValue->information->pk.unit->unitType.id() != Enums::NUMBER)
+        if (alertPtr->alertValue->informationData->informationUnit->unitType.id() != Echoes::Dbo::EInformationUnitType::NUMBER)
         {
             secConfFile << "    use MIME::Base64; \\\n"
                     "    $value = decode_base64($value); \\\n";
         }
-        
-        switch(alertPtr->alertValue->information->pk.unit->unitType.id())
+
+        switch (alertPtr->alertValue->informationData->informationUnit->unitType.id())
         {
-            case Enums::NUMBER:
-                logger.entry("debug") << "[Alert Processor] We are entering in the switch of the case number";
+        case Echoes::Dbo::EInformationUnitType::NUMBER:
+            logger.entry("debug") << "[Alert Processor] We are entering in the switch of the case number";
 
-                secConfFile << "    if ($value =~ /^([+-]?)(?=\\d|\\.\\d)\\d*(\\.\\d*)?([Ee]([+-]?\\d+))?$/) \\\n"
-                        "    { \\\n"
-                        "      if ($value ";
+            secConfFile << "    if ($value =~ /^([+-]?)(?=\\d|\\.\\d)\\d*(\\.\\d*)?([Ee]([+-]?\\d+))?$/) \\\n"
+                    "    { \\\n"
+                    "      if ($value ";
 
-                switch(alertPtr->alertValue->alertCriteria.id())
-                {
-                    case Enums::LT: 
-                        logger.entry("debug") << "[Alert Processor] We are entering in the switch of the lt comparison";
-                        secConfFile << "<";
-                        break;
-                    case Enums::LE:
-                        logger.entry("debug") << "[Alert Processor] We are entering in the switch of the le comparison";
-                        secConfFile << "<=";
-                        break;
-                    case Enums::EQ:
-                        logger.entry("debug") << "[Alert Processor] We are entering in the switch of the eq comparison";
-                        secConfFile << "==";
-                        break;
-                    case Enums::NE:
-                        logger.entry("debug") << "[Alert Processor] We are entering in the switch of the ne comparison";
-                        secConfFile << "!=";
-                        break;                            
-                    case Enums::GE:
-                        logger.entry("debug") << "[Alert Processor] We are entering in the switch of the ge comparison";
-                        secConfFile << ">=";
-                        break;
-                    case Enums::GT:
-                        logger.entry("debug") << "[Alert Processor] We are entering in the switch of the gt comparison";
-                        secConfFile << ">";
-                        break;
-                    default:
-                        logger.entry("error") << "[Alert Processor] Switch operator selection failed";
-                        break;
-                }
-                secConfFile << " " << alertPtr->alertValue->value << ") \\\n";
+            switch (alertPtr->alertValue->alertCriteria.id())
+            {
+            case Echoes::Dbo::EAlertCriteria::LT:
+                logger.entry("debug") << "[Alert Processor] We are entering in the switch of the lt comparison";
+                secConfFile << "<";
                 break;
-            case Enums::TEXT:
-                secConfFile << "    if ($value =~ /^" << alertPtr->alertValue->value << "$/) \\\n";
+            case Echoes::Dbo::EAlertCriteria::LE:
+                logger.entry("debug") << "[Alert Processor] We are entering in the switch of the le comparison";
+                secConfFile << "<=";
+                break;
+            case Echoes::Dbo::EAlertCriteria::EQ:
+                logger.entry("debug") << "[Alert Processor] We are entering in the switch of the eq comparison";
+                secConfFile << "==";
+                break;
+            case Echoes::Dbo::EAlertCriteria::NE:
+                logger.entry("debug") << "[Alert Processor] We are entering in the switch of the ne comparison";
+                secConfFile << "!=";
+                break;
+            case Echoes::Dbo::EAlertCriteria::GE:
+                logger.entry("debug") << "[Alert Processor] We are entering in the switch of the ge comparison";
+                secConfFile << ">=";
+                break;
+            case Echoes::Dbo::EAlertCriteria::GT:
+                logger.entry("debug") << "[Alert Processor] We are entering in the switch of the gt comparison";
+                secConfFile << ">";
                 break;
             default:
-                logger.entry("error") << "[Alert Processor] Switch Information unit type check failed";
-                break;               
+                logger.entry("error") << "[Alert Processor] Switch operator selection failed";
+                break;
+            }
+            secConfFile << " " << alertPtr->alertValue->value << ") \\\n";
+            break;
+        case Echoes::Dbo::EInformationUnitType::TEXT:
+            secConfFile << "    if ($value =~ /^" << alertPtr->alertValue->value << "$/) \\\n";
+            break;
+        default:
+            logger.entry("error") << "[Alert Processor] Switch Information unit type check failed";
+            break;
         }
 
-        if (alertPtr->alertValue->information->pk.unit->unitType.id() == Enums::NUMBER)
+        if (alertPtr->alertValue->informationData->informationUnit->unitType.id() == Echoes::Dbo::EInformationUnitType::NUMBER)
             secConfFile << "  ";
-        
+
         secConfFile << "    { \\\n"
                 "        my $res = '{\\\\\\\\\\\\\"alert_ids\\\\\\\\\\\\\": ['.$id.']}'; \\\n"
                 "        return ($res, $value, (length($res) - 6)) \\\n";
 
-        if (alertPtr->alertValue->information->pk.unit->unitType.id() == Enums::NUMBER)
+        if (alertPtr->alertValue->informationData->informationUnit->unitType.id() == Echoes::Dbo::EInformationUnitType::NUMBER)
             secConfFile << "      }; \\\n";
 
         secConfFile << "    }; \\\n"
                 "  }; \\\n"
                 "}\n"
                 "desc=POST /alerts/" << alertPtr.id() << "/trackings?eno_token=" << engOrgPtr->token << " HTTP/1.1\\n"
-                       "Host: " << conf.getAPIHost() << "\\n"
-                       "Content-Type: application/json; charset=utf-8\\n"
-                       "Content-length: $3\\n"
-                       "Connection: close\\n\\n"
-                       "$1\\n\\n\n"
+                "Host: " << conf.getAPIHost() << "\\n"
+                "Content-Type: application/json; charset=utf-8\\n"
+                "Content-length: $3\\n"
+                "Connection: close\\n\\n"
+                "$1\\n\\n\n"
                 "action=shellcmd (/usr/bin/perl -e \"alarm(2); exec(\\\"/usr/bin/printf \\'%s\\' | /usr/bin/openssl s_client -quiet -connect " << conf.getAPIHost() << ":" << conf.getAPIPort() << "\\\")\")\n";
-        
+
         secConfFile.close();
     }
     else
@@ -323,8 +323,8 @@ void AlertProcessor::stopAlert(const long long alertID)
     close(_alertsMap[alertID].secErrFP);
     waitpid(_alertsMap[alertID].secPID, NULL, 0);
     _alertsMap[alertID].secPID = -1;
-    
-    if(remove(_alertsMap[alertID].secConfFilename.c_str()) < 0)
+
+    if (remove(_alertsMap[alertID].secConfFilename.c_str()) < 0)
         logger.entry("info") << "[Alert Processor] " << _alertsMap[alertID].secConfFilename << ": " << strerror(errno);
 }
 
@@ -338,13 +338,13 @@ void AlertProcessor::informationValueLoop(const long long alertID)
 
     unsigned idx = 0;
     // Waiting for SEC instance creation
-    while(_alertsMap[alertID].secPID <= 0)
+    while (_alertsMap[alertID].secPID <= 0)
     {
         boost::this_thread::sleep(boost::posix_time::seconds(1));
         idx++;
         if (idx % 10 == 0)
             logger.entry("warning") << "[Alert Processor] No SEC instance after " << boost::lexical_cast<string>(idx) << "s for alert ID: " << alertID;
-        if(idx == 30)
+        if (idx == 30)
         {
             logger.entry("error") << "[Alert Processor] Stop IVA Collect for alert ID: " << alertID;
             return;
@@ -355,34 +355,68 @@ void AlertProcessor::informationValueLoop(const long long alertID)
     boost::thread(boost::bind(&AlertProcessor::secLogLoop, this, _alertsMap[alertID].secOutFP, "info"));
     boost::thread(boost::bind(&AlertProcessor::secLogLoop, this, _alertsMap[alertID].secErrFP, "error"));
 
-    Session sessionThread(conf.getSessConnectParams());
-    long long pluginID = 0, sourceID = 0, searchID = 0, infoUnitID = 0, infoUnitTypeID = 0, assetID = 0;
-    int infValueNum = 0, posKeyValue = 0;
-    string keyValue = "";
+    Echoes::Dbo::Session sessionThread(conf.getSessConnectParams());
 
-    try 
+    long long idaId = 0;
+    long long filId = 0;
+    long long astId = 0;
+    long long infId = 0;
+    long long iutId = 0;
+    int fieldFilterIndex = 0;
+    int posKeyValue = 0;
+    string keyValue = "";
+    Wt::Dbo::ptr<Echoes::Dbo::InformationData> idakeyPtr;
+
+    // We get the data to be able to find all the IVAs needed
+    try
     {
         logger.entry("debug") << "[Alert Processor] Retrieve Alert in InformationValueLoop";
         Wt::Dbo::Transaction transaction(sessionThread);
 
-        Wt::Dbo::ptr<Alert> alertPtr = sessionThread.find<Alert>()
+        // Getting the dbo ptr on the alert currently processed
+        Wt::Dbo::ptr<Echoes::Dbo::Alert> alertPtr = sessionThread.find<Echoes::Dbo::Alert>()
                 .where("\"ALE_ID\" = ?").bind(boost::lexical_cast<string>(alertID))
                 .where("\"ALE_DELETE\" IS NULL")
                 .limit(1);
 
-        if(alertPtr)
+        if (alertPtr)
         {
-            pluginID = alertPtr->alertValue->information->pk.search->pk.source->pk.plugin.id();
-            sourceID = alertPtr->alertValue->information->pk.search->pk.source->pk.id;
-            searchID = alertPtr->alertValue->information->pk.search->pk.id;
-            infoUnitID = alertPtr->alertValue->information->pk.unit.id();
-            infoUnitTypeID = alertPtr->alertValue->information->pk.unit->unitType.id();
-            assetID = alertPtr->alertValue->asset.id();
+            idaId = alertPtr->alertValue->informationData.id();
+            infId = alertPtr->alertValue->informationData->information.id();
+            filId = alertPtr->alertValue->informationData->filter.id();
+            astId = alertPtr->alertValue->informationData->asset.id();
+            iutId = alertPtr->alertValue->informationData->informationUnit->unitType.id();
+            posKeyValue = alertPtr->alertValue->informationData->filter->posKeyValue;
+            fieldFilterIndex = alertPtr->alertValue->informationData->filterFieldIndex;
 
-            infValueNum = alertPtr->alertValue->information->pk.subSearchNumber;
-            posKeyValue = alertPtr->alertValue->information->pk.search->pos_key_value;
-            
-            keyValue = alertPtr->alertValue->keyValue.get().toUTF8();
+            if (posKeyValue > 0)
+            {
+                //looking for the ida about the key
+                keyValue = alertPtr->alertValue->keyValue.get().toUTF8();
+                idakeyPtr = sessionThread
+                        .find<Echoes::Dbo::InformationData>()
+                        .where(QUOTE(TRIGRAM_INFORMATION_DATA SEP TRIGRAM_FILTER SEP TRIGRAM_FILTER ID) " = ?")
+                        .bind(filId)
+                        .where(QUOTE(TRIGRAM_INFORMATION_DATA SEP TRIGRAM_ASSET SEP TRIGRAM_ASSET ID) " = ?")
+                        .bind(astId)
+                        .where(QUOTE(TRIGRAM_INFORMATION_DATA SEP TRIGRAM_INFORMATION SEP TRIGRAM_INFORMATION ID) " = ?")
+                        .bind(infId)
+                        .where(QUOTE(TRIGRAM_INFORMATION_DATA "FILTER_FIELD_INDEX = ?"))
+                        .bind(posKeyValue)
+                        .limit(1);
+                
+                if (idakeyPtr)
+                {
+                    logger.entry("debug") << "ptr found, ok";
+                }
+                else
+                {
+                    logger.entry("warning") << "[Alert Processor] no Ida in database for this poskey";
+                    transaction.commit();
+                    return;
+                }
+                
+            }
         }
         else
         {
@@ -407,24 +441,20 @@ void AlertProcessor::informationValueLoop(const long long alertID)
     long long ivaID = 0, ivaKeyID = 0;
     string ivaValue = "";
 
-    if(posKeyValue)
+    // first case, we have a pos key value and we need to get the lotNumber and the lineNumber
+    if (posKeyValue > 0)
     {
         int lotNumber = 0, lineNumber = 0;
-
-        while(ivaKeyID < 1 && _alertsMap[alertID].secPID > 0)
+        while (ivaKeyID < 1 && _alertsMap[alertID].secPID > 0)
         {
             logger.entry("debug") << "[Alert Processor] Retrieve IVA Key after: " << searchDateTime.toString("yyyy-MM-dd hh:mm:ss");
-            try 
+            try
             {
                 Wt::Dbo::Transaction transaction(sessionThread);
 
-                Wt::Dbo::ptr<InformationValue> ivaKeyPtr = sessionThread.find<InformationValue>()
-                        .where("\"PLG_ID_PLG_ID\" = ?").bind(pluginID)
-                        .where("\"SRC_ID\" = ?").bind(sourceID)
-                        .where("\"SEA_ID\" = ?").bind(searchID)
-                        .where("\"INF_VALUE_NUM\" = ?").bind(posKeyValue)
+                Wt::Dbo::ptr<Echoes::Dbo::InformationValue> ivaKeyPtr = sessionThread.find<Echoes::Dbo::InformationValue>()
+                        .where("\"IVA_IDA_IDA_ID\" = ?").bind(idakeyPtr.id())
                         .where("\"IVA_STATE\" = ?").bind(0)
-                        .where("\"IVA_AST_AST_ID\" = ?").bind(assetID)
                         .where("\"IVA_VALUE\" = ?").bind(keyValue)
                         .where("\"IVA_CREA_DATE\" >= ?").bind(searchDateTime.toString("yyyy-MM-dd hh:mm:ss").toUTF8())
                         .orderBy("\"IVA_ID\" DESC")
@@ -453,17 +483,12 @@ void AlertProcessor::informationValueLoop(const long long alertID)
         if (_alertsMap[alertID].secPID > 0)
         {
             logger.entry("debug") << "[Alert Processor] Retrieve IVA after: " << searchDateTime.toString("yyyy-MM-dd hh:mm:ss");
-            try 
+            try
             {
                 Wt::Dbo::Transaction transaction(sessionThread);
-                Wt::Dbo::ptr<InformationValue> ivaPtr = sessionThread.find<InformationValue>()
-                        .where("\"PLG_ID_PLG_ID\" = ?").bind(pluginID)
-                        .where("\"SRC_ID\" = ?").bind(sourceID)
-                        .where("\"SEA_ID\" = ?").bind(searchID)
-                        .where("\"INF_VALUE_NUM\" = ?").bind(infValueNum)
-                        .where("\"INU_ID_INU_ID\" = ?").bind(infoUnitID)
+                Wt::Dbo::ptr<Echoes::Dbo::InformationValue> ivaPtr = sessionThread.find<Echoes::Dbo::InformationValue>()
+                        .where("\"IVA_IDA_IDA_ID\" = ?").bind(idaId)
                         .where("\"IVA_STATE\" = ?").bind(0)
-                        .where("\"IVA_AST_AST_ID\" = ?").bind(assetID)
                         .where("\"IVA_CREA_DATE\" >= ?").bind(searchDateTime.toString("yyyy-MM-dd hh:mm:ss").toUTF8())
                         .where("\"IVA_LOT_NUM\" = ?").bind(lotNumber)
                         .where("\"IVA_LINE_NUM\" = ?").bind(lineNumber)
@@ -481,25 +506,24 @@ void AlertProcessor::informationValueLoop(const long long alertID)
             }
         }
         else
+        {
             return;
+        }
+
     }
+    // second case, simple information without poskey
     else
     {
-        while(ivaID < 1 && _alertsMap[alertID].secPID > 0)
+        while (ivaID < 1 && _alertsMap[alertID].secPID > 0)
         {
             logger.entry("debug") << "[Alert Processor] Retrieve IVA after: " << searchDateTime.toString("yyyy-MM-dd hh:mm:ss");
             try
             {
                 Wt::Dbo::Transaction transaction(sessionThread);
 
-                Wt::Dbo::ptr<InformationValue> ivaPtr = sessionThread.find<InformationValue>()
-                        .where("\"PLG_ID_PLG_ID\" = ?").bind(pluginID)
-                        .where("\"SRC_ID\" = ?").bind(sourceID)
-                        .where("\"SEA_ID\" = ?").bind(searchID)
-                        .where("\"INF_VALUE_NUM\" = ?").bind(infValueNum)
-                        .where("\"INU_ID_INU_ID\" = ?").bind(infoUnitID)
-                        .where("\"IVA_STATE\" = ?").bind(0)
-                        .where("\"IVA_AST_AST_ID\" = ?").bind(assetID)
+                Wt::Dbo::ptr<Echoes::Dbo::InformationValue> ivaPtr = sessionThread.find<Echoes::Dbo::InformationValue>()
+                        .where("\"IVA_IDA_IDA_ID\" = ?").bind(idaId)
+                         .where("\"IVA_STATE\" = ?").bind(0)
                         .where("\"IVA_CREA_DATE\" >= ?").bind(searchDateTime.toString("yyyy-MM-dd hh:mm:ss").toUTF8())
                         .orderBy("\"IVA_ID\" DESC")
                         .limit(1);
@@ -513,7 +537,7 @@ void AlertProcessor::informationValueLoop(const long long alertID)
             {
                 logger.entry("error") << "[Alert Processor] " << e.what();
             }
-            if  (ivaID < 1)
+            if (ivaID < 1)
             {
                 searchDateTime = searchDateTime.addSecs(period);
                 informationValueSleep(period, searchDateTime);
@@ -521,15 +545,16 @@ void AlertProcessor::informationValueLoop(const long long alertID)
         }
     }
 
-    while(_alertsMap[alertID].secPID > 0)
+    while (_alertsMap[alertID].secPID > 0)
     {
+        // creating the input for SEC
         if (ivaID > 0)
         {
             string inputSEC = boost::lexical_cast<string>(ivaID);
 
-            switch (infoUnitTypeID)
+            switch (iutId)
             {
-            case Enums::NUMBER:
+            case Echoes::Dbo::EInformationUnitType::NUMBER:
                 inputSEC += ":" + ivaValue;
                 break;
             default:
@@ -549,18 +574,15 @@ void AlertProcessor::informationValueLoop(const long long alertID)
         {
             Wt::Dbo::Transaction transaction(sessionThread);
 
-            Wt::Dbo::ptr<InformationValue> ivaPtr;
-            if(posKeyValue)
+            Wt::Dbo::ptr<Echoes::Dbo::InformationValue> ivaPtr;
+            if (posKeyValue > 0)
             {
                 logger.entry("debug") << "[Alert Processor] Retrieve IVA Key";
-                Wt::Dbo::ptr<InformationValue> ivaKeyPtr = sessionThread.find<InformationValue>()
+                
+                Wt::Dbo::ptr<Echoes::Dbo::InformationValue> ivaKeyPtr = sessionThread.find<Echoes::Dbo::InformationValue>()
                         .where("\"IVA_ID\" > ?").bind(ivaKeyID)
-                        .where("\"PLG_ID_PLG_ID\" = ?").bind(pluginID)
-                        .where("\"SRC_ID\" = ?").bind(sourceID)
-                        .where("\"SEA_ID\" = ?").bind(searchID)
-                        .where("\"INF_VALUE_NUM\" = ?").bind(posKeyValue)
+                        .where("\"IVA_IDA_IDA_ID\" = ?").bind(idakeyPtr.id())
                         .where("\"IVA_STATE\" = ?").bind(0)
-                        .where("\"IVA_AST_AST_ID\" = ?").bind(assetID)
                         .where("\"IVA_VALUE\" = ?").bind(keyValue)
                         .orderBy("\"IVA_ID\" DESC")
                         .limit(1);
@@ -569,32 +591,22 @@ void AlertProcessor::informationValueLoop(const long long alertID)
                 if (ivaKeyPtr)
                 {
                     logger.entry("debug") << "[Alert Processor] Retrieve IVA";
-                    ivaPtr = sessionThread.find<InformationValue>()
-                        .where("\"PLG_ID_PLG_ID\" = ?").bind(pluginID)
-                        .where("\"SRC_ID\" = ?").bind(sourceID)
-                        .where("\"SEA_ID\" = ?").bind(searchID)
-                        .where("\"INF_VALUE_NUM\" = ?").bind(infValueNum)
-                        .where("\"INU_ID_INU_ID\" = ?").bind(infoUnitID)
+                    Wt::Dbo::ptr<Echoes::Dbo::InformationValue> ivaPtr = sessionThread.find<Echoes::Dbo::InformationValue>()
+                        .where("\"IVA_IDA_IDA_ID\" = ?").bind(idaId)
                         .where("\"IVA_STATE\" = ?").bind(0)
-                        .where("\"IVA_AST_AST_ID\" = ?").bind(assetID)
                         .where("\"IVA_LOT_NUM\" = ?").bind(ivaKeyPtr->lotNumber)
                         .where("\"IVA_LINE_NUM\" = ?").bind(ivaKeyPtr->lineNumber)
                         .orderBy("\"IVA_ID\" DESC")
                         .limit(1);
-                }
+                 }
             }
             else
             {
                 logger.entry("debug") << "[Alert Processor] Retrieve IVA";
-                ivaPtr = sessionThread.find<InformationValue>()
+                ivaPtr = sessionThread.find<Echoes::Dbo::InformationValue>()
                         .where("\"IVA_ID\" > ?").bind(ivaID)
-                        .where("\"PLG_ID_PLG_ID\" = ?").bind(pluginID)
-                        .where("\"SRC_ID\" = ?").bind(sourceID)
-                        .where("\"SEA_ID\" = ?").bind(searchID)
-                        .where("\"INF_VALUE_NUM\" = ?").bind(infValueNum)
-                        .where("\"INU_ID_INU_ID\" = ?").bind(infoUnitID)
-                        .where("\"IVA_STATE\" = ?").bind(0)
-                        .where("\"IVA_AST_AST_ID\" = ?").bind(assetID)
+                        .where("\"IVA_IDA_IDA_ID\" = ?").bind(idaId)
+                         .where("\"IVA_STATE\" = ?").bind(0)
                         .orderBy("\"IVA_ID\" DESC")
                         .limit(1);
             }
@@ -624,12 +636,12 @@ void AlertProcessor::secLogLoop(const int fd, const string &logLevel)
 {
     string line = "";
 
-     __gnu_cxx::stdio_filebuf<char> fileBuf(fd, std::ios::in);
-     istream is(&fileBuf);
+    __gnu_cxx::stdio_filebuf<char> fileBuf(fd, std::ios::in);
+    istream is(&fileBuf);
 
     while (getline(is, line))
         logger.entry(logLevel) << "[Alert Processor] SEC: " << line;
 
-     return;
+    return;
 }
 

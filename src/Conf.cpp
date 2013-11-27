@@ -140,11 +140,11 @@ bool Conf::isInDB()
 {
     bool res = false;
 
-    Session session(_sessConnectParams);
+    Echoes::Dbo::Session session(_sessConnectParams);
     try
     {
         Wt::Dbo::Transaction transaction(session);
-        Wt::Dbo::ptr<Engine> enginePtr = session.find<Engine>().where("\"ENG_ID\" = ?").bind(_id).limit(1);
+        Wt::Dbo::ptr<Echoes::Dbo::Engine> enginePtr = session.find<Echoes::Dbo::Engine>().where("\"ENG_ID\" = ?").bind(_id).limit(1);
         if (enginePtr)
         {
             res = true;
