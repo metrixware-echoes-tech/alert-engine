@@ -362,7 +362,7 @@ void AlertProcessor::informationValueLoop(const long long alertID)
     long long astId = 0;
     long long infId = 0;
     long long iutId = 0;
-    int fieldFilterIndex = 0;
+//    int fieldFilterIndex = 0;
     int posKeyValue = 0;
     string keyValue = "";
     Wt::Dbo::ptr<Echoes::Dbo::InformationData> idakeyPtr;
@@ -387,7 +387,7 @@ void AlertProcessor::informationValueLoop(const long long alertID)
             astId = alertPtr->alertValue->informationData->asset.id();
             iutId = alertPtr->alertValue->informationData->informationUnit->unitType.id();
             posKeyValue = alertPtr->alertValue->informationData->filter->posKeyValue;
-            fieldFilterIndex = alertPtr->alertValue->informationData->filterFieldIndex;
+//            fieldFilterIndex = alertPtr->alertValue->informationData->filterFieldIndex;
 
             if (posKeyValue > 0)
             {

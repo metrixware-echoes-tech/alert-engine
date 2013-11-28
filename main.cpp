@@ -169,11 +169,11 @@ void calculate()
             Wt::WString calculate, realCalculate;
 
             // we get the information related to the iva into ptrInfTmp ptr
-
+            Wt::Dbo::ptr<Echoes::Dbo::InformationValue> ivaPtr;
             try
             {
                 Wt::Dbo::Transaction transactionIvaData(session);
-                Wt::Dbo::ptr<Echoes::Dbo::InformationValue> ivaPtr = session.find<Echoes::Dbo::InformationValue>()
+                ivaPtr = session.find<Echoes::Dbo::InformationValue>()
                         .where("\"IVA_ID\" = ?").bind(ivaIdList[i])
                         .limit(1);
 
@@ -182,11 +182,7 @@ void calculate()
                 ivaAssetId = ivaPtr->informationData->asset.id();
                 ivaId = ivaIdList[i];
 
-//                plgId = ivaPtr->information->pk.search->pk.source->pk.plugin.id();
-//                seaId = ivaPtr->information->pk.search->pk.id;
-//                srcId = ivaPtr->information->pk.search->pk.source->pk.id;
-//                untId = ivaPtr->information->pk.unit.id();
-//                infValueNum = ivaPtr->information->pk.subSearchNumber;
+
 
                 if (ivaPtr->informationData->information->calculate)
                 {
@@ -206,64 +202,67 @@ void calculate()
             if(calculate != "")
             {
                 //FIXME
-//                logger.entry("debug") << "[Main] calculate value: " << calculate;
-//
-//                if (calculate == "searchValueToCalculate")
-//                {
-//                    //we get the calculation data
-//                    try
-//                    {
-//                        Wt::Dbo::Transaction transactionCalcData(session);
-//                        Wt::Dbo::ptr<Echoes::Dbo::Information> ptrInfRes = session.find<Echoes::Dbo::Information>()
-//                                .where("\"INF_VALUE_NUM\" = ?").bind(-1)
-//                                .limit(1);
-//
-//                        if (ptrInfRes->calculate)
-//                        {
-//                            if (!ptrInfRes->calculate.get().empty())
-//                            {
-//                                realCalculate = ptrInfRes->calculate.get();
-//                            }
-//                        }
-//                        transactionCalcData.commit();
-//                    }
-//                    catch (Wt::Dbo::Exception e)
-//                    {
-//                        logger.entry("error") << "[Main] IVA data: " << e.what();
-//                        continue;
-//                    }
-//                }
-//                else
-//                {
-//                    realCalculate = calculate;
-//                }
-//
-//                if(realCalculate != "")
-//                {
-//                    //calcul
-//                    try
-//                    {
-//                        Wt::Dbo::Transaction transactionCalcul(session);
-//                        logger.entry("debug") << "[Main] Launch calc query: " << realCalculate;
-//                        session.execute("SELECT " + realCalculate.toUTF8() + "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-//                        .bind(seaId).bind(srcId).bind(plgId).bind(infValueNum).bind(untId).bind(ivaLotNum)
-//                        .bind(9) // state
-//                        .bind(ivaLineNum).bind(ivaAssetId)
-//                        .bind(10) // limit
-//                        .bind(ivaId);
-//                        logger.entry("debug") << "[Main] calc done.";
-//                        transactionCalcul.commit();
-//                    }
-//                    catch (Wt::Dbo::Exception e)
-//                    {
-//                        logger.entry("error") << "[Main] IVA data: " << e.what();
-//                        continue;
-//                    }   
-//                }
-//                else
-//                {
-//                    logger.entry("error") << "[Main] no real calculate";
-//                }
+                logger.entry("debug") << "[Main] calculate value: " << calculate;
+
+                if (calculate == "searchValueToCalculate")
+                {
+                    //we get the calculation data
+                    try
+                    {
+                        Wt::Dbo::Transaction transactionCalcData(session);
+                        
+                        Wt::Dbo::ptr<Echoes::Dbo::InformationData> ptrInfData = session.find<Echoes::Dbo::InformationData>()
+                                .where("\"IDA_FIL_FIL_ID\" = ?").bind(ivaPtr->informationData->filter.id())
+                                .where("\"IDA_AST_AST_ID\" = ?").bind(ivaPtr->informationData->asset.id())
+                                .where("\"IDA_FILTER_FIELD_INDEX\" = ?").bind(-1)
+                                .limit(1);
+
+                        if (ptrInfData->information->calculate)
+                        {
+                            if (!ptrInfData->information->calculate.get().empty())
+                            {
+                                realCalculate = ptrInfData->information->calculate.get();
+                            }
+                        }
+                        transactionCalcData.commit();
+                    }
+                    catch (Wt::Dbo::Exception e)
+                    {
+                        logger.entry("error") << "[Main] IVA data: " << e.what();
+                        continue;
+                    }
+                }
+                else
+                {
+                    realCalculate = calculate;
+                }
+
+                if(realCalculate != "")
+                {
+                    //calcul
+                    try
+                    {
+                        Wt::Dbo::Transaction transactionCalcul(session);
+                        logger.entry("debug") << "[Main] Launch calc query: " << realCalculate;
+                        session.execute("SELECT " + realCalculate.toUTF8() + "(?, ?, ?, ?, ?, ?, ?)")
+                        .bind(ivaPtr->informationData.id()).bind(ivaLotNum)
+                        .bind(9) // state
+                        .bind(ivaLineNum).bind(ivaAssetId)
+                        .bind(10) // limit
+                        .bind(ivaId);
+                        logger.entry("debug") << "[Main] calc done.";
+                        transactionCalcul.commit();
+                    }
+                    catch (Wt::Dbo::Exception e)
+                    {
+                        logger.entry("error") << "[Main] IVA data: " << e.what();
+                        continue;
+                    }   
+                }
+                else
+                {
+                    logger.entry("error") << "[Main] no real calculate";
+                }
             }
             else
             {
