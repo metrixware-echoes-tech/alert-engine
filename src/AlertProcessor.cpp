@@ -286,7 +286,7 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alertPtr, Wt::D
             secConfFile << "  ";
 
         secConfFile << "    { \\\n"
-                "        my $res = '{\\\\\\\\\\\\\"alert_ids\\\\\\\\\\\\\": ['.$id.']}'; \\\n"
+                "        my $res = '{\\\\\\\\\\\\\"information_value_ids\\\\\\\\\\\\\": ['.$id.']}'; \\\n"
                 "        return ($res, $value, (length($res) - 6)) \\\n";
 
         if (alertPtr->alertValue->informationData->informationUnit->unitType.id() == Echoes::Dbo::EInformationUnitType::NUMBER)
