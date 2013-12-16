@@ -10,7 +10,6 @@
                    projectFiles="true">
       <itemPath>include/AlertProcessor.h</itemPath>
       <itemPath>include/Conf.h</itemPath>
-      <itemPath>include/EAEngine.h</itemPath>
       <itemPath>include/Logger.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
@@ -23,7 +22,6 @@
       <logicalFolder name="src" displayName="src" projectFiles="true">
         <itemPath>src/AlertProcessor.cpp</itemPath>
         <itemPath>src/Conf.cpp</itemPath>
-        <itemPath>src/EAEngine.cpp</itemPath>
         <itemPath>src/Logger.cpp</itemPath>
       </logicalFolder>
       <itemPath>main.cpp</itemPath>
@@ -97,8 +95,6 @@
       </item>
       <item path="include/Conf.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="include/EAEngine.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="include/Logger.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="main.cpp" ex="false" tool="1" flavor2="0">
@@ -106,8 +102,6 @@
       <item path="src/AlertProcessor.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/Conf.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="src/EAEngine.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/Logger.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -126,13 +120,14 @@
         <ccTool>
           <developmentMode>6</developmentMode>
           <stripSymbols>true</stripSymbols>
-          <commandlineTool>g++-4.4</commandlineTool>
+          <standard>8</standard>
+          <commandlineTool>g++</commandlineTool>
           <incDir>
             <pElem>include</pElem>
             <pElem>../dbo/include</pElem>
             <pElem>/var/lib/jenkins/jobs/ea-dbo-${target}/workspace/include</pElem>
           </incDir>
-          <commandLine>-DNDEBUG -std=c++0x</commandLine>
+          <commandLine>-DNDEBUG</commandLine>
         </ccTool>
         <fortranCompilerTool>
           <developmentMode>5</developmentMode>
@@ -171,8 +166,6 @@
       </item>
       <item path="include/Conf.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="include/EAEngine.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="include/Logger.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="main.cpp" ex="false" tool="1" flavor2="0">
@@ -180,8 +173,6 @@
       <item path="src/AlertProcessor.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/Conf.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="src/EAEngine.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/Logger.cpp" ex="false" tool="1" flavor2="0">
       </item>

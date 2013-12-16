@@ -497,7 +497,10 @@ void AlertProcessor::informationValueLoop(const long long alertID)
 
                 ivaID = ivaPtr.id();
                 if (ivaPtr)
+                {
+                    ivaPtr.modify()->state = 1;
                     ivaValue = ivaPtr->value.toUTF8();
+                }
                 transaction.commit();
             }
             catch (Wt::Dbo::Exception e)
@@ -529,7 +532,10 @@ void AlertProcessor::informationValueLoop(const long long alertID)
                         .limit(1);
                 ivaID = ivaPtr.id();
                 if (ivaPtr)
+                {
+                    ivaPtr.modify()->state = 1;
                     ivaValue = ivaPtr->value.toUTF8();
+                }
 
                 transaction.commit();
             }
@@ -613,7 +619,10 @@ void AlertProcessor::informationValueLoop(const long long alertID)
 
             ivaID = ivaPtr.id();
             if (ivaPtr)
+            {
+                ivaPtr.modify()->state = 1;
                 ivaValue = ivaPtr->value.toUTF8();
+            }
 
             transaction.commit();
         }
