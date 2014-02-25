@@ -30,8 +30,8 @@ class Logger : public Wt::WLogger {
         std::string getPath() const;
 
     private:
-        boost::mutex mutex;
-        std::string _path;
+        boost::mutex m_mutex;
+        std::string m_path;
         
         enum EType
         {

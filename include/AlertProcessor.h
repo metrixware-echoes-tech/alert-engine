@@ -14,12 +14,12 @@
 #ifndef ALERTPROCESSOR_H
 #define	ALERTPROCESSOR_H
 
-#include <signal.h>
 #include <wait.h>
 
+#include <csignal>
 #include <ext/stdio_filebuf.h>
-#include <iostream>
 #include <fstream>
+#include <iostream>
 
 #include <boost/thread/thread.hpp>
 
@@ -30,8 +30,6 @@
 
 #include "Conf.h"
 
-typedef Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::InformationValue> > tbInformationValue;
-
 class AlertProcessor {
     public:
         AlertProcessor();
@@ -40,10 +38,16 @@ class AlertProcessor {
 
         /**
          * Launch a SEC instance and create a thread to retrieve Information Value for each alert resgistered in the database
+         * @param sig Pointer of Signal number
          * @return error or success
          */
-        int verifyAlerts();
-        
+        int verifyAlerts(int *signum);
+
+        /**
+         * Stop All Alerts
+         */
+        void stopAllAlerts();
+
     private:
         struct SecondStructure {
             bool check;
@@ -53,7 +57,10 @@ class AlertProcessor {
             boost::thread *ivaThread;
         };
         
-        std::map<long long, SecondStructure> _alertsMap;
+        std::map<long long, SecondStructure> m_alertsMap;
+
+        Echoes::Dbo::Session m_session;
+        Wt::Dbo::ptr<Echoes::Dbo::Engine> m_enginePtr;
 
 #define READ 0
 #define WRITE 1
@@ -62,7 +69,7 @@ class AlertProcessor {
         /**
          * Write SEC config file and launch it
          */
-        void startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alertPtr, Wt::Dbo::ptr<Echoes::Dbo::EngOrg> engOrgPtr);
+        void startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo::ptr<Echoes::Dbo::EngOrg> enoPtr);
         /**
          * Stop SEC and remove its config file
          * @param IDentifier of the alert
