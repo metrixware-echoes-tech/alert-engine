@@ -57,10 +57,10 @@ class AlertProcessor {
             boost::thread *ivaThread;
         };
         
-        std::map<long long, SecondStructure> _alertsMap;
+        std::map<long long, SecondStructure> m_alertsMap;
 
-        Echoes::Dbo::Session _session;
-        Wt::Dbo::ptr<Echoes::Dbo::Engine> _enginePtr;
+        Echoes::Dbo::Session m_session;
+        Wt::Dbo::ptr<Echoes::Dbo::Engine> m_enginePtr;
 
 #define READ 0
 #define WRITE 1

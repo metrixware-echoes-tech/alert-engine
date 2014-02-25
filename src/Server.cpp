@@ -15,15 +15,15 @@
 
 using namespace std;
 
-int Server::_signum = 0;
-boost::thread_group Server::_threads;
+int Server::m_signum = 0;
+boost::thread_group Server::m_threads;
 
 Server::Server(const string& name, const string& version) :
-_optionsOK(false),
-_name(name),
-_version(version)
+m_optionsOK(false),
+m_name(name),
+m_version(version)
 {
-    _signum = 0;
+    m_signum = 0;
     signalsHandler();
 }
 
@@ -35,7 +35,7 @@ void Server::setServerConfiguration(int argc, char **argv)
 {
     if (conf.readProgramOptions(argc, argv))
     {
-        _optionsOK = true;
+        m_optionsOK = true;
     }
 }
 
@@ -43,9 +43,9 @@ bool Server::start()
 {
     bool res = false;
 
-    if (_optionsOK)
+    if (m_optionsOK)
     {
-        logger.entry("info") << "[origin enterpriseId=\"40311\" software=\"" << _name << "\" swVersion=\"" << _version << "\"] (re)start";
+        logger.entry("info") << "[origin enterpriseId=\"40311\" software=\"" << m_name << "\" swVersion=\"" << m_version << "\"] (re)start";
 
         /* Daemonization */
 #ifdef NDEBUG
@@ -67,7 +67,7 @@ bool Server::start()
             {
                 if (conf.isCleaner())
                 {
-                    _threads.create_thread(boost::bind(&Server::removeOldValues, this));
+                    m_threads.create_thread(boost::bind(&Server::removeOldValues, this));
                 }
                 else
                 {	
@@ -75,7 +75,7 @@ bool Server::start()
                 }
                 if (conf.isAlerter())
                 {
-                    _threads.create_thread(boost::bind(&Server::checkNewAlerts, this));
+                    m_threads.create_thread(boost::bind(&Server::checkNewAlerts, this));
                 }
                 else
                 {
@@ -83,7 +83,7 @@ bool Server::start()
                 }
                 if (conf.isCalculator())
                 {
-                    _threads.create_thread(boost::bind(&Server::calculate, this));
+                    m_threads.create_thread(boost::bind(&Server::calculate, this));
                 }
                 else
                 {
@@ -104,14 +104,14 @@ bool Server::start()
 int Server::waitForShutdown()
 {
     // wait the end of the created thread
-    _threads.join_all();
+    m_threads.join_all();
 
-    return _signum;
+    return m_signum;
 }
 
 void Server::stop()
 {
-    logger.entry("info") << "[origin enterpriseId=\"40311\" software=\"" << _name << "\" swVersion=\"" << _version << "\"] stop";
+    logger.entry("info") << "[origin enterpriseId=\"40311\" software=\"" << m_name << "\" swVersion=\"" << m_version << "\"] stop";
 }
 
 void Server::restart(int argc, char **argv, char **envp)
@@ -147,8 +147,8 @@ void Server::signalsHandler()
 
 void Server::signalHandling(int signum)
 {    
-    _signum = signum;
-    _threads.interrupt_all();
+    m_signum = signum;
+    m_threads.interrupt_all();
 }
 
 void Server::checkNewAlerts()
@@ -156,7 +156,7 @@ void Server::checkNewAlerts()
     AlertProcessor alertProcessor;
     logger.entry("info") << "[Server] Mode Alerter start";
 
-    alertProcessor.verifyAlerts(&_signum);
+    alertProcessor.verifyAlerts(&m_signum);
 }
 
 void Server::removeOldValues()
@@ -165,7 +165,7 @@ void Server::removeOldValues()
 
     logger.entry("info") << "[Server] Mode Cleaner start";
 
-    while (_signum == 0)
+    while (m_signum == 0)
     {
         logger.entry("info") << "[Server] Cleaning of IVA Table";
         
@@ -196,7 +196,7 @@ void Server::calculate()
 
     logger.entry("info") << "[Server] Mode Calculator start";
 
-    while (_signum == 0)
+    while (m_signum == 0)
     {
         vector<long long> ivaIdList;
 

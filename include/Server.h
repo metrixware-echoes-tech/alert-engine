@@ -67,11 +67,11 @@ class Server
         void removeOldValues();
         void calculate();
 
-        bool _optionsOK;
-        std::string _name;
-        std::string _version;
-        static boost::thread_group _threads;
-        static int _signum;
+        bool m_optionsOK;
+        const std::string m_name;
+        const std::string m_version;
+        static boost::thread_group m_threads;
+        static int m_signum;
 };
 
 #endif	/* SERVER_H */
