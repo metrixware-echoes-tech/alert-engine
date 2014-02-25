@@ -507,7 +507,9 @@ void AlertProcessor::informationValueLoop(const long long alertID)
     Wt::WDateTime searchDateTime = Wt::WDateTime::currentDateTime().addSecs(-period);
 
     long long ivaID = 0;
+    bool isIVAFound = false;
     long long ivaKeyID = 0;
+    bool isIVAKeyFound = false;
     string ivaValue = "";
 
     // first case, we have a pos key value and we need to get the lotNumber and the lineNumber
@@ -515,7 +517,7 @@ void AlertProcessor::informationValueLoop(const long long alertID)
     {
         int lotNumber = 0;
         int lineNumber = 0;
-        while (ivaKeyID < 1 && m_alertsMap[alertID].secPID > 0)
+        while (!isIVAKeyFound && m_alertsMap[alertID].secPID > 0)
         {
             logger.entry("debug") << "[Alert Processor] Retrieve IVA Key after: " << searchDateTime.toString("yyyy-MM-dd hh:mm:ss");
             try
@@ -530,9 +532,10 @@ void AlertProcessor::informationValueLoop(const long long alertID)
                         .orderBy("\"IVA_ID\" DESC")
                         .limit(1);
 
-                ivaKeyID = ivaKeyPtr.id();
                 if (ivaKeyPtr)
                 {
+                    isIVAKeyFound = true;
+                    ivaKeyID = ivaKeyPtr.id();
                     lotNumber = ivaKeyPtr->lotNumber;
                     lineNumber = ivaKeyPtr->lineNumber;
                 }
@@ -543,7 +546,7 @@ void AlertProcessor::informationValueLoop(const long long alertID)
             {
                 logger.entry("error") << "[Alert Processor] " << e.what();
             }
-            if (ivaKeyID < 1)
+            if (!isIVAKeyFound)
             {
                 searchDateTime = searchDateTime.addSecs(period);
                 informationValueSleep(period, searchDateTime);
@@ -565,10 +568,10 @@ void AlertProcessor::informationValueLoop(const long long alertID)
                         .orderBy("\"IVA_ID\" DESC")
                         .limit(1);
 
-                ivaID = ivaPtr.id();
                 if (ivaPtr)
                 {
-                    ivaPtr.modify()->state = 1;
+                    isIVAFound = true;
+                    ivaID = ivaPtr.id();
                     ivaValue = ivaPtr->value.toUTF8();
                 }
                 transaction.commit();
@@ -586,7 +589,7 @@ void AlertProcessor::informationValueLoop(const long long alertID)
     // second case, simple information without poskey
     else
     {
-        while (ivaID < 1 && m_alertsMap[alertID].secPID > 0)
+        while (!isIVAFound && m_alertsMap[alertID].secPID > 0)
         {
             logger.entry("debug") << "[Alert Processor] Retrieve IVA after: " << searchDateTime.toString("yyyy-MM-dd hh:mm:ss");
             try
@@ -599,10 +602,10 @@ void AlertProcessor::informationValueLoop(const long long alertID)
                         .where("\"IVA_CREA_DATE\" >= ?").bind(searchDateTime.toString("yyyy-MM-dd hh:mm:ss").toUTF8())
                         .orderBy("\"IVA_ID\" DESC")
                         .limit(1);
-                ivaID = ivaPtr.id();
                 if (ivaPtr)
                 {
-                    ivaPtr.modify()->state = 1;
+                    isIVAFound = true;
+                    ivaID = ivaPtr.id();
                     ivaValue = ivaPtr->value.toUTF8();
                 }
 
@@ -612,7 +615,7 @@ void AlertProcessor::informationValueLoop(const long long alertID)
             {
                 logger.entry("error") << "[Alert Processor] " << e.what();
             }
-            if (ivaID < 1)
+            if (!isIVAFound)
             {
                 searchDateTime = searchDateTime.addSecs(period);
                 informationValueSleep(period, searchDateTime);
@@ -623,7 +626,7 @@ void AlertProcessor::informationValueLoop(const long long alertID)
     while (m_alertsMap[alertID].secPID > 0)
     {
         // creating the input for SEC
-        if (ivaID > 0)
+        if (isIVAFound)
         {
             string inputSEC = boost::lexical_cast<string>(ivaID);
 
@@ -640,6 +643,8 @@ void AlertProcessor::informationValueLoop(const long long alertID)
 
             logger.entry("debug") << "[Alert Processor] Send IVA to SEC";
             write(m_alertsMap[alertID].secInFP, inputSEC.c_str(), inputSEC.size());
+
+            isIVAFound = false;
         }
 
         searchDateTime = searchDateTime.addSecs(period);
@@ -686,10 +691,10 @@ void AlertProcessor::informationValueLoop(const long long alertID)
                         .limit(1);
             }
 
-            ivaID = ivaPtr.id();
             if (ivaPtr)
             {
-                ivaPtr.modify()->state = 1;
+                isIVAFound = true;
+                ivaID = ivaPtr.id();
                 ivaValue = ivaPtr->value.toUTF8();
             }
 
