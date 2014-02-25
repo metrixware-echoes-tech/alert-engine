@@ -173,7 +173,7 @@ void Server::removeOldValues()
         try
         {
             Wt::Dbo::Transaction transaction(session);
-            string queryString = "DELETE FROM \"T_INFORMATION_VALUE_IVA\""
+            const string queryString = "DELETE FROM \"T_INFORMATION_VALUE_IVA\""
                     " WHERE"
                     " \"IVA_CREA_DATE\" < (NOW() - interval '1 day')";
             session.execute(queryString);
@@ -225,9 +225,8 @@ void Server::calculate()
         for (unsigned short i(0); i < ivaIdList.size(); ++i)
         {
             int ivaLotNum, ivaLineNum;
-//            int infValueNum;
             long long ivaAssetId;
-            long long ivaId; //, plgId, seaId, srcId, untId;
+            long long ivaId;
 
             Wt::WString calculate, realCalculate;
 

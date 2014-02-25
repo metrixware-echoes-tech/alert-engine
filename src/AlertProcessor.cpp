@@ -442,25 +442,25 @@ void AlertProcessor::informationValueLoop(const long long alertID)
         Wt::Dbo::Transaction transaction(sessionThread);
 
         // Getting the dbo ptr on the alert currently processed
-        Wt::Dbo::ptr<Echoes::Dbo::Alert> alertPtr = sessionThread.find<Echoes::Dbo::Alert>()
-                .where(QUOTE(TRIGRAM_ALERT ID)" = ?").bind(boost::lexical_cast<string>(alertID))
+        Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr = sessionThread.find<Echoes::Dbo::Alert>()
+                .where(QUOTE(TRIGRAM_ALERT ID)" = ?").bind(alertID)
                 .where(QUOTE(TRIGRAM_ALERT SEP "DELETE")" IS NULL")
                 .limit(1);
 
-        if (alertPtr)
+        if (alePtr)
         {
-            idaId = alertPtr->alertValue->informationData.id();
-            infId = alertPtr->alertValue->informationData->information.id();
-            filId = alertPtr->alertValue->informationData->filter.id();
-            astId = alertPtr->alertValue->informationData->asset.id();
-            iutId = alertPtr->alertValue->informationData->informationUnit->unitType.id();
-            posKeyValue = alertPtr->alertValue->informationData->filter->posKeyValue;
-//            fieldFilterIndex = alertPtr->alertValue->informationData->filterFieldIndex;
+            idaId = alePtr->alertValue->informationData.id();
+            infId = alePtr->alertValue->informationData->information.id();
+            filId = alePtr->alertValue->informationData->filter.id();
+            astId = alePtr->alertValue->informationData->asset.id();
+            iutId = alePtr->alertValue->informationData->informationUnit->unitType.id();
+            posKeyValue = alePtr->alertValue->informationData->filter->posKeyValue;
+//            fieldFilterIndex = alePtr->alertValue->informationData->filterFieldIndex;
 
             if (posKeyValue > 0)
             {
                 //looking for the ida about the key
-                keyValue = alertPtr->alertValue->keyValue.get().toUTF8();
+                keyValue = alePtr->alertValue->keyValue.get().toUTF8();
                 idakeyPtr = sessionThread
                         .find<Echoes::Dbo::InformationData>()
                         .where(QUOTE(TRIGRAM_INFORMATION_DATA SEP TRIGRAM_FILTER SEP TRIGRAM_FILTER ID) " = ?")
@@ -506,13 +506,15 @@ void AlertProcessor::informationValueLoop(const long long alertID)
 
     Wt::WDateTime searchDateTime = Wt::WDateTime::currentDateTime().addSecs(-period);
 
-    long long ivaID = 0, ivaKeyID = 0;
+    long long ivaID = 0;
+    long long ivaKeyID = 0;
     string ivaValue = "";
 
     // first case, we have a pos key value and we need to get the lotNumber and the lineNumber
     if (posKeyValue > 0)
     {
-        int lotNumber = 0, lineNumber = 0;
+        int lotNumber = 0;
+        int lineNumber = 0;
         while (ivaKeyID < 1 && m_alertsMap[alertID].secPID > 0)
         {
             logger.entry("debug") << "[Alert Processor] Retrieve IVA Key after: " << searchDateTime.toString("yyyy-MM-dd hh:mm:ss");
@@ -580,7 +582,6 @@ void AlertProcessor::informationValueLoop(const long long alertID)
         {
             return;
         }
-
     }
     // second case, simple information without poskey
     else
@@ -713,11 +714,13 @@ void AlertProcessor::secLogLoop(const int fd, const string &logLevel)
 {
     string line = "";
 
-    __gnu_cxx::stdio_filebuf<char> fileBuf(fd, std::ios::in);
+    __gnu_cxx::stdio_filebuf<char> fileBuf(fd, ios::in);
     istream is(&fileBuf);
 
     while (getline(is, line))
+    {
         logger.entry(logLevel) << "[Alert Processor] SEC: " << line;
+    }
 
     return;
 }
