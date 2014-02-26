@@ -47,8 +47,8 @@ bool Server::start()
     {
         logger.entry("info") << "[origin enterpriseId=\"40311\" software=\"" << m_name << "\" swVersion=\"" << m_version << "\"] (re)start";
 
-        /* Daemonization */
 #ifdef NDEBUG
+        // Daemonization
         if (chdir("/") != 0)
         {
             cerr << "failed to reach root \n";
@@ -59,6 +59,17 @@ bool Server::start()
         setsid();
         if (fork() != 0)
             exit(EXIT_SUCCESS);
+
+        // Pid File creation
+        ofstream pidFile(m_pidPath.c_str());
+        if (!pidFile)
+        {
+            logger.entry("error") << "[Server] " << m_pidPath << ": " << strerror(errno);
+        }
+        else
+        {
+            pidFile << getpid() << std::endl;
+        }
 #endif
 
         if (conf.readConfFile())
@@ -111,6 +122,13 @@ int Server::waitForShutdown()
 
 void Server::stop()
 {
+#ifdef NDEBUG
+    // Pid File suppression
+    if (remove(m_pidPath.c_str()) < 0)
+    {
+        logger.entry("error") << "[Server] " << m_pidPath << ": " << strerror(errno);
+    }
+#endif
     logger.entry("info") << "[origin enterpriseId=\"40311\" software=\"" << m_name << "\" swVersion=\"" << m_version << "\"] stop";
 }
 
