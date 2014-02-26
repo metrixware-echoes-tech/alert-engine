@@ -197,9 +197,9 @@ void Server::removeOldValues()
             session.execute(queryString);
             transaction.commit();
         }
-        catch (Wt::Dbo::Exception e)
+        catch (Wt::Dbo::Exception const& e)
         {
-            logger.entry("error") << "[Server] " << e.what();
+            logger.entry("error") << "[Server] Wt::Dbo: " << e.what();
         }
         boost::this_thread::sleep(boost::posix_time::seconds(conf.sleepThreadRemoveOldValues));
     }
@@ -235,9 +235,9 @@ void Server::calculate()
             logger.entry("debug") << "[Server] " << ivaIdList.size() << " IVA retrieved to calculate";
             transaction1.commit();
         }
-        catch (Wt::Dbo::Exception e)
+        catch (Wt::Dbo::Exception const& e)
         {
-            logger.entry("error") << "[Server] IVA selection: " << e.what();
+            logger.entry("error") << "[Server] Wt::Dbo: " << e.what();
         }
 
         for (unsigned short i(0); i < ivaIdList.size(); ++i)
@@ -273,9 +273,9 @@ void Server::calculate()
                 }
                 transactionIvaData.commit();
             }
-            catch (Wt::Dbo::Exception e)
+            catch (Wt::Dbo::Exception const& e)
             {
-                logger.entry("error") << "[Server] IVA data: " << e.what();
+                logger.entry("error") << "[Server] Wt::Dbo: " << e.what();
                 continue;
             }
             
@@ -306,9 +306,9 @@ void Server::calculate()
                         }
                         transactionCalcData.commit();
                     }
-                    catch (Wt::Dbo::Exception e)
+                    catch (Wt::Dbo::Exception const& e)
                     {
-                        logger.entry("error") << "[Server] IVA data: " << e.what();
+                        logger.entry("error") << "[Server] Wt::Dbo: " << e.what();
                         continue;
                     }
                 }
@@ -333,9 +333,9 @@ void Server::calculate()
                         logger.entry("debug") << "[Server] calc done.";
                         transactionCalcul.commit();
                     }
-                    catch (Wt::Dbo::Exception e)
+                    catch (Wt::Dbo::Exception const& e)
                     {
-                        logger.entry("error") << "[Server] IVA data: " << e.what();
+                        logger.entry("error") << "[Server] Wt::Dbo: " << e.what();
                         continue;
                     }   
                 }

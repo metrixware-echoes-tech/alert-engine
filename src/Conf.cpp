@@ -129,7 +129,7 @@ bool Conf::readConfFile()
     }
     catch (boost::property_tree::ini_parser_error e)
     {
-        logger.entry("error") << "[Conf] " << e.what();
+        logger.entry("error") << "[Conf] boost::property_tree: " << e.what();
         logger.entry("fatal") << "[Conf] Can't load config file";
     }
 
@@ -154,9 +154,9 @@ bool Conf::isInDB()
 
         transaction.commit();
     }
-    catch (Wt::Dbo::Exception e)
+    catch (Wt::Dbo::Exception const& e)
     {
-        logger.entry("error") << "[Conf] " << e.what();
+        logger.entry("error") << "[Conf] Wt::Dbo: " << e.what();
     }
 
     return res;

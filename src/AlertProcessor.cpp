@@ -27,9 +27,9 @@ AlertProcessor::AlertProcessor() : m_session(conf.getSessConnectParams())
 
         transaction.commit();
     }
-    catch (Wt::Dbo::Exception e)
+    catch (Wt::Dbo::Exception const& e)
     {
-        logger.entry("error") << "[Alert Processor] " << e.what();
+        logger.entry("error") << "[Alert Processor] Wt::Dbo: " << e.what();
     }
 }
 
@@ -46,9 +46,9 @@ m_session(conf.getSessConnectParams())
 
         transaction.commit();
     }
-    catch (Wt::Dbo::Exception e)
+    catch (Wt::Dbo::Exception const& e)
     {
-        logger.entry("error") << "[Alert Processor] " << e.what();
+        logger.entry("error") << "[Alert Processor] Wt::Dbo: " << e.what();
     }
 }
 
@@ -159,9 +159,9 @@ int AlertProcessor::verifyAlerts(int *signum)
 
                 transaction.commit();
             }
-            catch (Wt::Dbo::Exception e)
+            catch (Wt::Dbo::Exception const& e)
             {
-                logger.entry("error") << "[Alert Processor] " << e.what();
+                logger.entry("error") << "[Alert Processor] Wt::Dbo: " << e.what();
             }
 
             vector<long long> alertToErase;
@@ -390,9 +390,9 @@ void AlertProcessor::stopAlert(const long long alertID)
 
         transaction.commit();
     }
-    catch (Wt::Dbo::Exception e)
+    catch (Wt::Dbo::Exception const& e)
     {
-        logger.entry("error") << "[Alert Processor] " << e.what();
+        logger.entry("error") << "[Alert Processor] Wt::Dbo: " << e.what();
     }
 }
 
@@ -495,9 +495,9 @@ void AlertProcessor::informationValueLoop(const long long alertID)
 
         transaction.commit();
     }
-    catch (Wt::Dbo::Exception e)
+    catch (Wt::Dbo::Exception const& e)
     {
-        logger.entry("error") << "[Alert Processor] " << e.what();
+        logger.entry("error") << "[Alert Processor] Wt::Dbo: " << e.what();
         return;
     }
 
@@ -542,9 +542,9 @@ void AlertProcessor::informationValueLoop(const long long alertID)
 
                 transaction.commit();
             }
-            catch (Wt::Dbo::Exception e)
+            catch (Wt::Dbo::Exception const& e)
             {
-                logger.entry("error") << "[Alert Processor] " << e.what();
+                logger.entry("error") << "[Alert Processor] Wt::Dbo: " << e.what();
             }
             if (!isIVAKeyFound)
             {
@@ -576,9 +576,9 @@ void AlertProcessor::informationValueLoop(const long long alertID)
                 }
                 transaction.commit();
             }
-            catch (Wt::Dbo::Exception e)
+            catch (Wt::Dbo::Exception const& e)
             {
-                logger.entry("error") << "[Alert Processor] " << e.what();
+                logger.entry("error") << "[Alert Processor] Wt::Dbo: " << e.what();
             }
         }
         else
@@ -611,9 +611,9 @@ void AlertProcessor::informationValueLoop(const long long alertID)
 
                 transaction.commit();
             }
-            catch (Wt::Dbo::Exception e)
+            catch (Wt::Dbo::Exception const& e)
             {
-                logger.entry("error") << "[Alert Processor] " << e.what();
+                logger.entry("error") << "[Alert Processor] Wt::Dbo: " << e.what();
             }
             if (!isIVAFound)
             {
@@ -700,9 +700,9 @@ void AlertProcessor::informationValueLoop(const long long alertID)
 
             transaction.commit();
         }
-        catch (Wt::Dbo::Exception e)
+        catch (Wt::Dbo::Exception const& e)
         {
-            logger.entry("error") << "[Alert Processor] " << e.what();
+            logger.entry("error") << "[Alert Processor] Wt::Dbo: " << e.what();
         }
     }
 
