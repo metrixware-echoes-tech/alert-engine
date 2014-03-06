@@ -19,6 +19,14 @@
 
 #include <Wt/WLogger>
 
+#ifdef NDEBUG
+    #define log(x) logger.entry(x)
+#else
+    #define log(x) logger.entry(x) << Wt::WLogger::sep \
+                       << (unsigned int)pthread_self() << Wt::WLogger::sep \
+                       << "[" << __FILE__ << ":" << __LINE__ << "]" << Wt::WLogger::sep
+#endif
+
 class Logger : public Wt::WLogger {
     public:
         Logger();

@@ -39,7 +39,7 @@ int main(int argc, char **argv)
         {
             signum = server.waitForShutdown();
 
-            logger.entry("info") << "[Main] Shutdown (signal = " << signum << ")";
+            log("info") << "Shutdown (signal = " << signum << ")";
 
             server.stop();
 

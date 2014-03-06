@@ -32,8 +32,7 @@
 
 class AlertProcessor {
     public:
-        AlertProcessor();
-        AlertProcessor(const AlertProcessor& orig);
+        AlertProcessor(Echoes::Dbo::Session &session);
         virtual ~AlertProcessor();
 
         /**
@@ -59,7 +58,7 @@ class AlertProcessor {
         
         std::map<long long, SecondStructure> m_alertsMap;
 
-        Echoes::Dbo::Session m_session;
+        Echoes::Dbo::Session& m_session;
         Wt::Dbo::ptr<Echoes::Dbo::Engine> m_enginePtr;
 
 #define READ 0

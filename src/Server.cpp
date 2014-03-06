@@ -21,7 +21,9 @@ boost::thread_group Server::m_threads;
 Server::Server(const string& name, const string& version) :
 m_optionsOK(false),
 m_name(name),
-m_version(version)
+m_version(version),
+m_pidPath("/var/run/ea-engine.pid"),
+m_session()
 {
     m_signum = 0;
     signalsHandler();
@@ -45,7 +47,7 @@ bool Server::start()
 
     if (m_optionsOK)
     {
-        logger.entry("info") << "[origin enterpriseId=\"40311\" software=\"" << m_name << "\" swVersion=\"" << m_version << "\"] (re)start";
+        log("info") << "[origin enterpriseId=\"40311\" software=\"" << m_name << "\" swVersion=\"" << m_version << "\"] (re)start";
 
 #ifdef NDEBUG
         // Daemonization
@@ -64,7 +66,7 @@ bool Server::start()
         ofstream pidFile(m_pidPath.c_str());
         if (!pidFile)
         {
-            logger.entry("error") << "[Server] " << m_pidPath << ": " << strerror(errno);
+            log("error") << m_pidPath << ": " << strerror(errno);
         }
         else
         {
@@ -74,7 +76,9 @@ bool Server::start()
 
         if (conf.readConfFile())
         {
-            if (conf.isInDB())
+            m_session.initConnection(conf.getSessConnectParams());
+            
+            if (conf.isInDB(m_session))
             {
                 if (conf.isCleaner())
                 {
@@ -82,7 +86,7 @@ bool Server::start()
                 }
                 else
                 {	
-                    logger.entry("info") << "[Server] Mode Cleaner disable";
+                    log("info") << "Mode Cleaner disable";
                 }
                 if (conf.isAlerter())
                 {
@@ -90,7 +94,7 @@ bool Server::start()
                 }
                 else
                 {
-                    logger.entry("info") << "[Server] Mode Alerter disable";
+                    log("info") << "Mode Alerter disable";
                 }
                 if (conf.isCalculator())
                 {
@@ -98,14 +102,14 @@ bool Server::start()
                 }
                 else
                 {
-                    logger.entry("info") << "[Server] Mode Calculator disable";
+                    log("info") << "Mode Calculator disable";
                 }
 
                 res = true;
             }
             else
             {
-                logger.entry("error") << "[Server] This Engine ID is not in the database.";
+                log("error") << "This Engine ID is not in the database.";
             }
         }
     }
@@ -126,10 +130,10 @@ void Server::stop()
     // Pid File suppression
     if (remove(m_pidPath.c_str()) < 0)
     {
-        logger.entry("error") << "[Server] " << m_pidPath << ": " << strerror(errno);
+        log("error") << m_pidPath << ": " << strerror(errno);
     }
 #endif
-    logger.entry("info") << "[origin enterpriseId=\"40311\" software=\"" << m_name << "\" swVersion=\"" << m_version << "\"] stop";
+    log("info") << "[origin enterpriseId=\"40311\" software=\"" << m_name << "\" swVersion=\"" << m_version << "\"] stop";
 }
 
 void Server::restart(int argc, char **argv, char **envp)
@@ -171,48 +175,45 @@ void Server::signalHandling(int signum)
 
 void Server::checkNewAlerts()
 {
-    AlertProcessor alertProcessor;
-    logger.entry("info") << "[Server] Mode Alerter start";
+    AlertProcessor alertProcessor(m_session);
+    log("info") << "Mode Alerter start";
 
     alertProcessor.verifyAlerts(&m_signum);
 }
 
 void Server::removeOldValues()
 {
-    Echoes::Dbo::Session session(conf.getSessConnectParams());
-
-    logger.entry("info") << "[Server] Mode Cleaner start";
+    log("info") << "Mode Cleaner start";
 
     while (m_signum == 0)
     {
-        logger.entry("info") << "[Server] Cleaning of IVA Table";
+        log("info") << "Cleaning of IVA Table";
         
         //remove values older than 1 day from information_value (duplicated in T_INFORMATION_HISTORICAL_VALUE_IHV)
         try
         {
-            Wt::Dbo::Transaction transaction(session);
+            Wt::Dbo::Transaction transaction(m_session, true);
             const string queryString = "DELETE FROM \"T_INFORMATION_VALUE_IVA\""
                     " WHERE"
                     " \"IVA_CREA_DATE\" < (NOW() - interval '1 day')";
-            session.execute(queryString);
+            m_session.execute(queryString);
             transaction.commit();
         }
         catch (Wt::Dbo::Exception const& e)
         {
-            logger.entry("error") << "[Server] Wt::Dbo: " << e.what();
+            log("error") << "Wt::Dbo: " << e.what();
         }
         boost::this_thread::sleep(boost::posix_time::seconds(conf.sleepThreadRemoveOldValues));
     }
 
-    logger.entry("info") << "[Server] Mode Cleaner stop";
+    log("info") << "Mode Cleaner stop";
 }
 
 void Server::calculate()
 {
     const int ivaListSize = 50;
-    Echoes::Dbo::Session session(conf.getSessConnectParams());
 
-    logger.entry("info") << "[Server] Mode Calculator start";
+    log("info") << "Mode Calculator start";
 
     while (m_signum == 0)
     {
@@ -220,24 +221,24 @@ void Server::calculate()
 
         try
         {
-            Wt::Dbo::Transaction transaction1(session);
+            Wt::Dbo::Transaction transaction(m_session, true);
             // we get iva values where state = ToBeCalculate
             string queryString = "SELECT iva FROM \"T_INFORMATION_VALUE_IVA\"  iva"
                     " WHERE \"IVA_STATE\" = 9 FOR UPDATE LIMIT ?";
-            Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::InformationValue>> ivaList = session.query<Wt::Dbo::ptr<Echoes::Dbo::InformationValue>>(queryString).bind(ivaListSize);
+            Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::InformationValue>> ivaList = m_session.query<Wt::Dbo::ptr<Echoes::Dbo::InformationValue>>(queryString).bind(ivaListSize);
 
             for (Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::InformationValue> >::const_iterator it = ivaList.begin(); it != ivaList.end(); ++it)
             {
-                session.execute("UPDATE \"T_INFORMATION_VALUE_IVA\" SET \"IVA_STATE\" = ? WHERE \"IVA_ID\" = ?").bind(1).bind(it->id());
+                m_session.execute("UPDATE \"T_INFORMATION_VALUE_IVA\" SET \"IVA_STATE\" = ? WHERE \"IVA_ID\" = ?").bind(1).bind(it->id());
                 ivaIdList.push_back(it->id());
             }
 
-            logger.entry("debug") << "[Server] " << ivaIdList.size() << " IVA retrieved to calculate";
-            transaction1.commit();
+            log("debug") << ivaIdList.size() << " IVA retrieved to calculate";
+            transaction.commit();
         }
         catch (Wt::Dbo::Exception const& e)
         {
-            logger.entry("error") << "[Server] Wt::Dbo: " << e.what();
+            log("error") << "Wt::Dbo: " << e.what();
         }
 
         for (unsigned short i(0); i < ivaIdList.size(); ++i)
@@ -252,8 +253,8 @@ void Server::calculate()
             Wt::Dbo::ptr<Echoes::Dbo::InformationValue> ivaPtr;
             try
             {
-                Wt::Dbo::Transaction transactionIvaData(session);
-                ivaPtr = session.find<Echoes::Dbo::InformationValue>()
+                Wt::Dbo::Transaction transaction(m_session, true);
+                ivaPtr = m_session.find<Echoes::Dbo::InformationValue>()
                         .where("\"IVA_ID\" = ?").bind(ivaIdList[i])
                         .limit(1);
 
@@ -271,27 +272,27 @@ void Server::calculate()
                         calculate = ivaPtr->informationData->information->calculate.get();
                     }
                 }
-                transactionIvaData.commit();
+                transaction.commit();
             }
             catch (Wt::Dbo::Exception const& e)
             {
-                logger.entry("error") << "[Server] Wt::Dbo: " << e.what();
+                log("error") << "Wt::Dbo: " << e.what();
                 continue;
             }
             
             if(calculate != "")
             {
                 //FIXME
-                logger.entry("debug") << "[Server] calculate value: " << calculate;
+                log("debug") << "calculate value: " << calculate;
 
                 if (calculate == "searchValueToCalculate")
                 {
                     //we get the calculation data
                     try
                     {
-                        Wt::Dbo::Transaction transactionCalcData(session);
-                        
-                        Wt::Dbo::ptr<Echoes::Dbo::InformationData> ptrInfData = session.find<Echoes::Dbo::InformationData>()
+                        Wt::Dbo::Transaction transaction(m_session, true);
+
+                        Wt::Dbo::ptr<Echoes::Dbo::InformationData> ptrInfData = m_session.find<Echoes::Dbo::InformationData>()
                                 .where("\"IDA_FIL_FIL_ID\" = ?").bind(ivaPtr->informationData->filter.id())
                                 .where("\"IDA_AST_AST_ID\" = ?").bind(ivaPtr->informationData->asset.id())
                                 .where("\"IDA_FILTER_FIELD_INDEX\" = ?").bind(-1)
@@ -304,11 +305,11 @@ void Server::calculate()
                                 realCalculate = ptrInfData->information->calculate.get();
                             }
                         }
-                        transactionCalcData.commit();
+                        transaction.commit();
                     }
                     catch (Wt::Dbo::Exception const& e)
                     {
-                        logger.entry("error") << "[Server] Wt::Dbo: " << e.what();
+                        log("error") << "Wt::Dbo: " << e.what();
                         continue;
                     }
                 }
@@ -322,37 +323,37 @@ void Server::calculate()
                     //calcul
                     try
                     {
-                        Wt::Dbo::Transaction transactionCalcul(session);
-                        logger.entry("debug") << "[Server] Launch calc query: " << realCalculate;
-                        session.execute("SELECT " + realCalculate.toUTF8() + "(?, ?, ?, ?, ?, ?, ?)")
+                        Wt::Dbo::Transaction transaction(m_session, true);
+                        log("debug") << "Launch calc query: " << realCalculate;
+                        m_session.execute("SELECT " + realCalculate.toUTF8() + "(?, ?, ?, ?, ?, ?, ?)")
                         .bind(ivaPtr->informationData.id()).bind(ivaLotNum)
                         .bind(9) // state
                         .bind(ivaLineNum).bind(ivaAssetId)
                         .bind(10) // limit
                         .bind(ivaId);
-                        logger.entry("debug") << "[Server] calc done.";
-                        transactionCalcul.commit();
+                        log("debug") << "calc done.";
+                        transaction.commit();
                     }
                     catch (Wt::Dbo::Exception const& e)
                     {
-                        logger.entry("error") << "[Server] Wt::Dbo: " << e.what();
+                        log("error") << "Wt::Dbo: " << e.what();
                         continue;
                     }   
                 }
                 else
                 {
-                    logger.entry("error") << "[Server] no real calculate";
+                    log("error") << "no real calculate";
                 }
             }
             else
             {
-                logger.entry("debug") << "[Server] no calculate";
+                log("debug") << "no calculate";
             }
         }
 
         boost::this_thread::sleep(boost::posix_time::seconds(conf.sleepThreadCalculate));
     }
 
-    logger.entry("info") << "[Server] Mode Calculator stop";
+    log("info") << "Mode Calculator stop";
 }
 

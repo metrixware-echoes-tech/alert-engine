@@ -31,7 +31,7 @@ Logger::~Logger()
 Wt::WLogEntry Logger::entry(const string& type)
 {
     m_mutex.lock();
-    Wt::WLogEntry log = Wt::WLogger::entry(type) << timestamp << sep << type << sep << (unsigned int)pthread_self() << sep;
+    Wt::WLogEntry log = Wt::WLogger::entry(type) << timestamp << sep << type << sep;
     m_mutex.unlock();
 
     return log;
@@ -64,7 +64,7 @@ void Logger::setType(unsigned short type)
             break;            
     }
 
-    logger.entry("debug") << "[Logger] log criticity = " << type;
+    log("debug") << "[Logger] log criticity = " << type;
 
     return;
 }

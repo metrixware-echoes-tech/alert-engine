@@ -70,7 +70,9 @@ class Server
         bool m_optionsOK;
         const std::string m_name;
         const std::string m_version;
-        const std::string m_pidPath = "/var/run/ea-engine.pid";
+        const std::string m_pidPath;
+        Echoes::Dbo::Session m_session;
+
         static boost::thread_group m_threads;
         static int m_signum;
 };

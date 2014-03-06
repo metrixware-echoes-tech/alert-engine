@@ -83,7 +83,7 @@ bool Conf::readProgramOptions(int argc, char **argv)
         if (vm.count("conffile"))
         {
             setPath(vm["conffile"].as<string>());
-            logger.entry("debug") << "[Conf] conf file = " << m_path;
+            log("debug") << "[Conf] conf file = " << m_path;
         }
 
         res = true;
@@ -123,27 +123,26 @@ bool Conf::readConfFile()
         setAPIHost(pt.get<string>("api.host"));
         setAPIPort(pt.get<unsigned>("api.port"));
 
-        logger.entry("info") << "[Conf] Conf file loaded";
+        log("info") << "Conf file loaded";
 
         res = true;
     }
-    catch (boost::property_tree::ini_parser_error e)
+    catch (boost::property_tree::ini_parser_error const& e)
     {
-        logger.entry("error") << "[Conf] boost::property_tree: " << e.what();
-        logger.entry("fatal") << "[Conf] Can't load config file";
+        log("error") << "boost::property_tree: " << e.what();
+        log("fatal") << "Can't load config file";
     }
 
     return res;
 }
 
-bool Conf::isInDB()
+bool Conf::isInDB(Echoes::Dbo::Session &session)
 {
     bool res = false;
 
-    Echoes::Dbo::Session session(m_sessConnectParams);
     try
     {
-        Wt::Dbo::Transaction transaction(session);
+        Wt::Dbo::Transaction transaction(session, true);
         Wt::Dbo::ptr<Echoes::Dbo::Engine> engPtr = session.find<Echoes::Dbo::Engine>()
                 .where(QUOTE(TRIGRAM_ENGINE ID)" = ?").bind(m_id)
                 .limit(1);
@@ -156,7 +155,7 @@ bool Conf::isInDB()
     }
     catch (Wt::Dbo::Exception const& e)
     {
-        logger.entry("error") << "[Conf] Wt::Dbo: " << e.what();
+        log("error") << "Wt::Dbo: " << e.what();
     }
 
     return res;

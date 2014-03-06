@@ -60,7 +60,7 @@ class Conf {
          * Check if Engine ID is in database
          * @return True or False
          */
-        bool isInDB();
+        bool isInDB(Echoes::Dbo::Session &session);
         bool isAlerter() const;
         bool isCleaner() const;
         bool isCalculator() const;
