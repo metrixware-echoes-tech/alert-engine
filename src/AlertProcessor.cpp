@@ -234,90 +234,103 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
     ofstream secConfFile(m_alertsMap[alePtr.id()].secConfFilename.c_str());
     if (secConfFile)
     {
-        secConfFile << "type=Single\n"
-                "ptype=PerlFunc\n"
-                "pattern= \\\n"
-                "sub { \\\n"
-                "  use strict; \\\n"
-                "  if ($_[0] cmp '') \\\n"
-                "  { \\\n"
-                "    (my $id, my $value) = split(':', $_[0]); \\\n";
+        const long long iutId = alePtr->alertValue->informationData->informationUnit->unitType.id();
 
-        if (alePtr->alertValue->informationData->informationUnit->unitType.id() != Echoes::Dbo::EInformationUnitType::NUMBER)
+        if (iutId == Echoes::Dbo::EInformationUnitType::CUSTOM)
         {
-            secConfFile << "    use MIME::Base64; \\\n"
-                    "    $value = decode_base64($value); \\\n";
+            secConfFile << alePtr->alertValue->value;
         }
-
-        switch (alePtr->alertValue->informationData->informationUnit->unitType.id())
+        else
         {
-        case Echoes::Dbo::EInformationUnitType::NUMBER:
-            log("debug") << "We are entering in the switch of the case number";
+            secConfFile << "type=Single\n"
+                    "ptype=PerlFunc\n"
+                    "pattern= \\\n"
+                    "sub { \\\n"
+                    "  use strict; \\\n"
+                    "  if ($_[0] cmp '') \\\n"
+                    "  { \\\n"
+                    "    (my $id, my $value) = split(':', $_[0]); \\\n";
 
-            secConfFile << "    if ($value =~ /^([+-]?)(?=\\d|\\.\\d)\\d*(\\.\\d*)?([Ee]([+-]?\\d+))?$/) \\\n"
-                    "    { \\\n"
-                    "      if ($value ";
-
-            switch (alePtr->alertValue->alertCriteria.id())
+            if (iutId != Echoes::Dbo::EInformationUnitType::NUMBER)
             {
-            case Echoes::Dbo::EAlertCriteria::LT:
-                log("debug") << "We are entering in the switch of the lt comparison";
-                secConfFile << "<";
-                break;
-            case Echoes::Dbo::EAlertCriteria::LE:
-                log("debug") << "We are entering in the switch of the le comparison";
-                secConfFile << "<=";
-                break;
-            case Echoes::Dbo::EAlertCriteria::EQ:
-                log("debug") << "We are entering in the switch of the eq comparison";
-                secConfFile << "==";
-                break;
-            case Echoes::Dbo::EAlertCriteria::NE:
-                log("debug") << "We are entering in the switch of the ne comparison";
-                secConfFile << "!=";
-                break;
-            case Echoes::Dbo::EAlertCriteria::GE:
-                log("debug") << "We are entering in the switch of the ge comparison";
-                secConfFile << ">=";
-                break;
-            case Echoes::Dbo::EAlertCriteria::GT:
-                log("debug") << "We are entering in the switch of the gt comparison";
-                secConfFile << ">";
-                break;
-            default:
-                log("error") << "Switch operator selection failed";
-                break;
+                secConfFile << "    use MIME::Base64; \\\n"
+                        "    $value = decode_base64($value); \\\n";
             }
-            secConfFile << " " << alePtr->alertValue->value << ") \\\n";
-            break;
-        case Echoes::Dbo::EInformationUnitType::TEXT:
-            secConfFile << "    if ($value =~ /^" << alePtr->alertValue->value << "$/) \\\n";
-            break;
-        default:
-            log("error") << "Switch Information unit type check failed";
-            break;
+            switch (iutId)
+            {
+                case Echoes::Dbo::EInformationUnitType::NUMBER:
+                    log("debug") << "We are entering in the switch of the case number";
+
+                    secConfFile << "    if ($value =~ /^([+-]?)(?=\\d|\\.\\d)\\d*(\\.\\d*)?([Ee]([+-]?\\d+))?$/) \\\n"
+                            "    { \\\n"
+                            "      if ($value ";
+
+                    switch (alePtr->alertValue->alertCriteria.id())
+                    {
+                    case Echoes::Dbo::EAlertCriteria::LT:
+                        log("debug") << "We are entering in the switch of the lt comparison";
+                        secConfFile << "<";
+                        break;
+                    case Echoes::Dbo::EAlertCriteria::LE:
+                        log("debug") << "We are entering in the switch of the le comparison";
+                        secConfFile << "<=";
+                        break;
+                    case Echoes::Dbo::EAlertCriteria::EQ:
+                        log("debug") << "We are entering in the switch of the eq comparison";
+                        secConfFile << "==";
+                        break;
+                    case Echoes::Dbo::EAlertCriteria::NE:
+                        log("debug") << "We are entering in the switch of the ne comparison";
+                        secConfFile << "!=";
+                        break;
+                    case Echoes::Dbo::EAlertCriteria::GE:
+                        log("debug") << "We are entering in the switch of the ge comparison";
+                        secConfFile << ">=";
+                        break;
+                    case Echoes::Dbo::EAlertCriteria::GT:
+                        log("debug") << "We are entering in the switch of the gt comparison";
+                        secConfFile << ">";
+                        break;
+                    default:
+                        log("error") << "Switch operator selection failed";
+                        break;
+                    }
+                    secConfFile << " " << alePtr->alertValue->value << ") \\\n";
+                    break;
+                case Echoes::Dbo::EInformationUnitType::BOOL:
+                case Echoes::Dbo::EInformationUnitType::TEXT:
+                    secConfFile << "    if ($value =~ /^" << alePtr->alertValue->value << "$/) \\\n";
+                    break;
+                default:
+                    log("error") << "Switch Information unit type check failed";
+                    break;
+            }
+
+            if (iutId == Echoes::Dbo::EInformationUnitType::NUMBER)
+            {
+                secConfFile << "  ";
+            }
+
+            secConfFile << "    { \\\n"
+                    "        my $res = '{\\\\\\\\\\\\\"information_value_ids\\\\\\\\\\\\\": ['.$id.']}'; \\\n"
+                    "        return ($res, $value, (length($res) - 6)) \\\n";
+
+            if (iutId == Echoes::Dbo::EInformationUnitType::NUMBER)
+            {
+                secConfFile << "      }; \\\n";
+            }
+
+            secConfFile << "    }; \\\n"
+                    "  }; \\\n"
+                    "}\n"
+                    "desc=POST /alerts/" << alePtr.id() << "/trackings?eno_token=" << enoPtr->token << " HTTP/1.1\\n"
+                    "Host: " << conf.getAPIHost() << "\\n"
+                    "Content-Type: application/json; charset=utf-8\\n"
+                    "Content-length: $3\\n"
+                    "Connection: close\\n\\n"
+                    "$1\\n\\n\n"
+                    "action=shellcmd (/usr/bin/perl -e \"alarm(2); exec(\\\"/usr/bin/printf \\'%s\\' | /usr/bin/openssl s_client -quiet -connect " << conf.getAPIHost() << ":" << conf.getAPIPort() << "\\\")\")\n";            
         }
-
-        if (alePtr->alertValue->informationData->informationUnit->unitType.id() == Echoes::Dbo::EInformationUnitType::NUMBER)
-            secConfFile << "  ";
-
-        secConfFile << "    { \\\n"
-                "        my $res = '{\\\\\\\\\\\\\"information_value_ids\\\\\\\\\\\\\": ['.$id.']}'; \\\n"
-                "        return ($res, $value, (length($res) - 6)) \\\n";
-
-        if (alePtr->alertValue->informationData->informationUnit->unitType.id() == Echoes::Dbo::EInformationUnitType::NUMBER)
-            secConfFile << "      }; \\\n";
-
-        secConfFile << "    }; \\\n"
-                "  }; \\\n"
-                "}\n"
-                "desc=POST /alerts/" << alePtr.id() << "/trackings?eno_token=" << enoPtr->token << " HTTP/1.1\\n"
-                "Host: " << conf.getAPIHost() << "\\n"
-                "Content-Type: application/json; charset=utf-8\\n"
-                "Content-length: $3\\n"
-                "Connection: close\\n\\n"
-                "$1\\n\\n\n"
-                "action=shellcmd (/usr/bin/perl -e \"alarm(2); exec(\\\"/usr/bin/printf \\'%s\\' | /usr/bin/openssl s_client -quiet -connect " << conf.getAPIHost() << ":" << conf.getAPIPort() << "\\\")\")\n";
 
         secConfFile.close();
     }
