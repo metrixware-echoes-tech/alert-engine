@@ -30,7 +30,7 @@ Conf::Conf(const Conf& orig)
     setDBName(orig.getDBName());
     setDBUser(orig.getDBUser());
     setDBPassword(orig.getDBPassword());
-    setSessConnectParams(_dbHost, _dbPort, _dbName, _dbUser, _dbPassword);
+    setSessConnectParams(m_dbHost, m_dbPort, m_dbName, m_dbUser, m_dbPassword);
     setCriticity(orig.getCriticity());
     setAPIHost(orig.getAPIHost());
     setAPIPort(orig.getAPIPort());
@@ -67,7 +67,7 @@ bool Conf::readProgramOptions(int argc, char **argv)
 #ifdef NDEBUG
         if (vm.count("logfile"))
         {
-            logger.setFile(vm["logfile"].as<std::string>());
+            logger.setFile(vm["logfile"].as<string>());
         }
         else
         {
@@ -83,7 +83,7 @@ bool Conf::readProgramOptions(int argc, char **argv)
         if (vm.count("conffile"))
         {
             setPath(vm["conffile"].as<string>());
-            logger.entry("debug") << "[Conf] conf file = " << _path;
+            log("debug") << "[Conf] conf file = " << m_path;
         }
 
         res = true;
@@ -104,11 +104,11 @@ bool Conf::readConfFile()
     // (cannot open file, parse error), an exception is thrown.
     try
     {
-        boost::property_tree::read_ini(_path, pt);
+        boost::property_tree::read_ini(m_path, pt);
         setId(pt.get<long long>("engine.id"));
-        alerter = pt.get<bool>("engine.alerter");
-        cleaner = pt.get<bool>("engine.cleaner");
-        calculator = pt.get<bool>("engine.calculator");
+        m_alerter = pt.get<bool>("engine.alerter");
+        m_cleaner = pt.get<bool>("engine.cleaner");
+        m_calculator = pt.get<bool>("engine.calculator");
         sleepThreadCheckAlert = pt.get<int>("engine.sleep-alert-reading");
         sleepThreadRemoveOldValues = pt.get<int>("engine.sleep-remove-old-values");
         sleepThreadCalculate = pt.get<int>("engine.sleep-calculate");
@@ -118,43 +118,44 @@ bool Conf::readConfFile()
         setDBName(pt.get<string>("database.dbname"));
         setDBUser(pt.get<string>("database.username"));
         setDBPassword(pt.get<string>("database.password"));
-        setSessConnectParams(_dbHost, _dbPort, _dbName, _dbUser, _dbPassword);
+        setSessConnectParams(m_dbHost, m_dbPort, m_dbName, m_dbUser, m_dbPassword);
 
-        setAPIHost(pt.get<std::string>("api.host"));
+        setAPIHost(pt.get<string>("api.host"));
         setAPIPort(pt.get<unsigned>("api.port"));
 
-        logger.entry("info") << "[Conf] Conf file loaded";
+        log("info") << "Conf file loaded";
 
         res = true;
     }
-    catch (boost::property_tree::ini_parser_error e)
+    catch (boost::property_tree::ini_parser_error const& e)
     {
-        logger.entry("error") << "[Conf] " << e.what();
-        logger.entry("fatal") << "[Conf] Can't load config file";
+        log("error") << "boost::property_tree: " << e.what();
+        log("fatal") << "Can't load config file";
     }
 
     return res;
 }
 
-bool Conf::isInDB()
+bool Conf::isInDB(Echoes::Dbo::Session &session)
 {
     bool res = false;
 
-    Session session(_sessConnectParams);
     try
     {
-        Wt::Dbo::Transaction transaction(session);
-        Wt::Dbo::ptr<Engine> enginePtr = session.find<Engine>().where("\"ENG_ID\" = ?").bind(_id).limit(1);
-        if (enginePtr)
+        Wt::Dbo::Transaction transaction(session, true);
+        Wt::Dbo::ptr<Echoes::Dbo::Engine> engPtr = session.find<Echoes::Dbo::Engine>()
+                .where(QUOTE(TRIGRAM_ENGINE ID)" = ?").bind(m_id)
+                .limit(1);
+        if (engPtr)
         {
             res = true;
         }
 
         transaction.commit();
     }
-    catch (Wt::Dbo::Exception e)
+    catch (Wt::Dbo::Exception const& e)
     {
-        logger.entry("error") << "[Conf] " << e.what();
+        log("error") << "Wt::Dbo: " << e.what();
     }
 
     return res;
@@ -162,98 +163,98 @@ bool Conf::isInDB()
 
 bool Conf::isAlerter() const
 {
-    return this->alerter;
+    return this->m_alerter;
 }
 bool Conf::isCleaner() const
 {
-    return this->cleaner;
+    return this->m_cleaner;
 }
 bool Conf::isCalculator() const
 {
-    return this->calculator;
+    return this->m_calculator;
 }
 
-void Conf::setPath(std::string path)
+void Conf::setPath(string path)
 {
-    _path = path;
+    m_path = path;
 
     return;
 }
 
 string Conf::getPath() const
 {
-    return _path;
+    return m_path;
 }
 
 void Conf::setId(long long id)
 {
-    _id = id;
+    m_id = id;
     return;
 }
 
 long long Conf::getId() const
 {
-    return _id;
+    return m_id;
 }
 
 string Conf::getDBHost() const
 {
-    return _dbHost;
+    return m_dbHost;
 }
 
 void Conf::setDBPort(unsigned dbPort)
 {
-    _dbPort = dbPort;
+    m_dbPort = dbPort;
 
     return;
 }
 
 void Conf::setDBHost(string dbHost)
 {
-    _dbHost = dbHost;
+    m_dbHost = dbHost;
 
     return;
 }
 
 unsigned Conf::getDBPort() const
 {
-    return _dbPort;
+    return m_dbPort;
 }
 
 void Conf::setDBName(string dbName)
 {
-    _dbName = dbName;
+    m_dbName = dbName;
 
     return;
 }
 
 string Conf::getDBName() const
 {
-    return _dbName;
+    return m_dbName;
 }
 
 void Conf::setDBUser(string dbUser)
 {
-    _dbUser = dbUser;
+    m_dbUser = dbUser;
 
     return;
 }
 
 string Conf::getDBUser() const
 {
-    return _dbUser;
+    return m_dbUser;
 }
 
 void Conf::setDBPassword(string dbPassword)
 {
-    _dbPassword = dbPassword;
+    m_dbPassword = dbPassword;
 
     return;
 }
 
 string Conf::getDBPassword() const
 {
-    return _dbPassword;
+    return m_dbPassword;
 }
 
 void Conf::setSessConnectParams
@@ -265,7 +266,7 @@ void Conf::setSessConnectParams
  string dbPassword
  )
 {   
-    _sessConnectParams = "hostaddr=" + dbHost +
+    m_sessConnectParams = "hostaddr=" + dbHost +
                          " port=" + boost::lexical_cast<string>(dbPort) +
                          " dbname=" + dbName +
                          " user=" + dbUser +
@@ -276,42 +277,42 @@ void Conf::setSessConnectParams
 
 string Conf::getSessConnectParams() const
 {
-    return _sessConnectParams;
+    return m_sessConnectParams;
 }
 
 string Conf::getAPIHost() const
 {
-    return _apiHost;
+    return m_apiHost;
 }
 
 void Conf::setAPIPort(unsigned apiPort)
 {
-    _apiPort = apiPort;
+    m_apiPort = apiPort;
 
     return;
 }
 
 void Conf::setAPIHost(string apiHost)
 {
-    _apiHost = apiHost;
+    m_apiHost = apiHost;
 
     return;
 }
 
 unsigned Conf::getAPIPort() const
 {
-    return _apiPort;
+    return m_apiPort;
 }
 
 
 void Conf::setCriticity(unsigned short criticity)
 {
-    _criticity = criticity;
+    m_criticity = criticity;
     return;
 }
 
 unsigned short Conf::getCriticity() const
 {
-    return _criticity;
+    return m_criticity;
 }
 

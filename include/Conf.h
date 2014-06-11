@@ -60,17 +60,30 @@ class Conf {
          * Check if Engine ID is in database
          * @return True or False
          */
-        bool isInDB();
+        bool isInDB(Echoes::Dbo::Session &session);
         bool isAlerter() const;
         bool isCleaner() const;
         bool isCalculator() const;
 
     protected:
-        std::string _dbHost, _dbName, _dbUser, _dbPassword, _sessConnectParams, _path, _apiHost;
-        unsigned _dbPort, _apiPort;
-        unsigned short _criticity;
-        long long _id;
-        bool alerter, cleaner, calculator;
+        std::string m_path;
+        unsigned short m_criticity;
+
+        long long m_id;
+
+        std::string m_dbHost;
+        unsigned m_dbPort;
+        std::string m_dbName;
+        std::string m_dbUser;
+        std::string m_dbPassword;
+        std::string m_sessConnectParams;
+
+        std::string m_apiHost;
+        unsigned m_apiPort;
+
+        bool m_alerter;
+        bool m_cleaner;
+        bool m_calculator;
 
         void setPath(std::string path);
         void setId(long long id);

@@ -11,6 +11,7 @@
       <itemPath>include/AlertProcessor.h</itemPath>
       <itemPath>include/Conf.h</itemPath>
       <itemPath>include/Logger.h</itemPath>
+      <itemPath>include/Server.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
                    displayName="Resource Files"
@@ -23,6 +24,7 @@
         <itemPath>src/AlertProcessor.cpp</itemPath>
         <itemPath>src/Conf.cpp</itemPath>
         <itemPath>src/Logger.cpp</itemPath>
+        <itemPath>src/Server.cpp</itemPath>
       </logicalFolder>
       <itemPath>main.cpp</itemPath>
     </logicalFolder>
@@ -81,7 +83,6 @@
             <linkerLibLibItem>wtdbo</linkerLibLibItem>
             <linkerLibLibItem>dbo</linkerLibLibItem>
             <linkerLibLibItem>boost_program_options</linkerLibLibItem>
-            <linkerLibLibItem>boost_unit_test_framework</linkerLibLibItem>
             <linkerLibLibItem>boost_signals</linkerLibLibItem>
             <linkerLibLibItem>stdc++</linkerLibLibItem>
           </linkerLibItems>
@@ -97,6 +98,8 @@
       </item>
       <item path="include/Logger.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="include/Server.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="main.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/AlertProcessor.cpp" ex="false" tool="1" flavor2="0">
@@ -104,6 +107,8 @@
       <item path="src/Conf.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/Logger.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/Server.cpp" ex="false" tool="1" flavor2="0">
       </item>
     </conf>
     <conf name="Release" type="1">
@@ -120,13 +125,14 @@
         <ccTool>
           <developmentMode>6</developmentMode>
           <stripSymbols>true</stripSymbols>
-          <commandlineTool>g++-4.4</commandlineTool>
+          <standard>8</standard>
+          <commandlineTool>g++</commandlineTool>
           <incDir>
             <pElem>include</pElem>
             <pElem>../dbo/include</pElem>
             <pElem>/var/lib/jenkins/jobs/ea-dbo-${target}/workspace/include</pElem>
           </incDir>
-          <commandLine>-DNDEBUG -std=c++0x</commandLine>
+          <commandLine>-DNDEBUG</commandLine>
         </ccTool>
         <fortranCompilerTool>
           <developmentMode>5</developmentMode>
@@ -141,7 +147,6 @@
             <pElem>../dbo/dist/Release_SharedObject/GNU-Linux-x86</pElem>
           </linkerAddLib>
           <stripSymbols>true</stripSymbols>
-          <commandlineTool>g++-4.4</commandlineTool>
           <linkerLibItems>
             <linkerLibLibItem>boost_system</linkerLibLibItem>
             <linkerLibLibItem>pthread</linkerLibLibItem>
@@ -152,7 +157,6 @@
             <linkerLibLibItem>wtdbo</linkerLibLibItem>
             <linkerLibLibItem>dbo</linkerLibLibItem>
             <linkerLibLibItem>boost_program_options</linkerLibLibItem>
-            <linkerLibLibItem>boost_unit_test_framework</linkerLibLibItem>
             <linkerLibLibItem>boost_signals</linkerLibLibItem>
           </linkerLibItems>
         </linkerTool>
@@ -167,6 +171,8 @@
       </item>
       <item path="include/Logger.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="include/Server.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="main.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/AlertProcessor.cpp" ex="false" tool="1" flavor2="0">
@@ -174,6 +180,8 @@
       <item path="src/Conf.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/Logger.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/Server.cpp" ex="false" tool="1" flavor2="0">
       </item>
     </conf>
   </confs>
