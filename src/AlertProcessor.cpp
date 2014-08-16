@@ -62,10 +62,10 @@ int AlertProcessor::verifyAlerts(int *signum)
                     {
                         Wt::Dbo::ptr<Echoes::Dbo::EngOrg> engOrgPtr = m_session.find<Echoes::Dbo::EngOrg>()
                                 .where(QUOTE(TRIGRAM_ENGINE ID SEP TRIGRAM_ENGINE ID)" = ?").bind(m_enginePtr.id())
-                                .where(QUOTE(TRIGRAM_ORGANIZATION ID SEP TRIGRAM_ORGANIZATION ID)" = ?").bind(it->get()->alertValue->informationData->asset->organization.id())
+                                .where(QUOTE(TRIGRAM_ORGANIZATION ID SEP TRIGRAM_ORGANIZATION ID)" = ?").bind(it->get()->alertSequence->alertValue->informationData->asset->organization.id())
                                 .where(QUOTE(TRIGRAM_ENG_ORG SEP "DELETE")" IS NULL")
                                 .limit(1);
-
+                        
                         if (engOrgPtr)
                         {
                             m_alertsMap[it->id()] = {
@@ -107,10 +107,10 @@ int AlertProcessor::verifyAlerts(int *signum)
                     {
                         Wt::Dbo::ptr<Echoes::Dbo::EngOrg> enoPtr = m_session.find<Echoes::Dbo::EngOrg>()
                                 .where(QUOTE(TRIGRAM_ENGINE ID SEP TRIGRAM_ENGINE ID)" = ?").bind(m_enginePtr.id())
-                                .where(QUOTE(TRIGRAM_ORGANIZATION ID SEP TRIGRAM_ORGANIZATION ID)" = ?").bind(it->get()->alertValue->informationData->asset->organization.id())
+                                .where(QUOTE(TRIGRAM_ORGANIZATION ID SEP TRIGRAM_ORGANIZATION ID)" = ?").bind(it->get()->alertSequence->alertValue->informationData->asset->organization.id())
                                 .where(QUOTE(TRIGRAM_ENG_ORG SEP "DELETE")" IS NULL")
                                 .limit(1);
-
+                        
                         if (enoPtr)
                         {
                             it->modify()->engine = m_enginePtr;
@@ -234,11 +234,12 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
     ofstream secConfFile(m_alertsMap[alePtr.id()].secConfFilename.c_str());
     if (secConfFile)
     {
-        const long long iutId = alePtr->alertValue->informationData->informationUnit->unitType.id();
+        Wt::Dbo::ptr<Echoes::Dbo::AlertSequence> asePtr = alePtr->alertSequence;
+        long long iutId = asePtr->alertValue->informationData->informationUnit->unitType.id();
 
         if (iutId == Echoes::Dbo::EInformationUnitType::CUSTOM)
         {
-            secConfFile << alePtr->alertValue->value;
+            secConfFile << asePtr->alertValue->value;
         }
         else
         {
@@ -249,76 +250,112 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
                     "  use strict; \\\n"
                     "  if ($_[0] cmp '') \\\n"
                     "  { \\\n"
-                    "    (my $id, my $value) = split(':', $_[0]); \\\n";
-
-            if (iutId != Echoes::Dbo::EInformationUnitType::NUMBER)
-            {
-                secConfFile << "    use MIME::Base64; \\\n"
-                        "    $value = decode_base64($value); \\\n";
-            }
-            switch (iutId)
-            {
-                case Echoes::Dbo::EInformationUnitType::NUMBER:
-                    log("debug") << "We are entering in the switch of the case number";
-
-                    secConfFile << "    if ($value =~ /^([+-]?)(?=\\d|\\.\\d)\\d*(\\.\\d*)?([Ee]([+-]?\\d+))?$/) \\\n"
-                            "    { \\\n"
-                            "      if ($value ";
-
-                    switch (alePtr->alertValue->alertCriteria.id())
+                    "    my @inputs = split(',', $_[0]); \\\n"
+                    "    my @ids; \\\n"
+                    "    my @values; \\\n"
+                    "    foreach my $i (0 .. $#inputs) \\\n"
+                    "    { \\\n"
+                    "      ($ids[$i], $values[$i]) = split(':', $inputs[$i]); \\\n"
+                    "    } \\\n";
+            
+            bool firstAse = true;
+            bool firstBase64 = true;
+            string test;
+            int cpt = 0;
+            while(asePtr)
+            {    
+                iutId = asePtr->alertValue->informationData->informationUnit->unitType.id();
+                if (iutId != Echoes::Dbo::EInformationUnitType::NUMBER)
+                {
+                    if(firstBase64)
                     {
-                    case Echoes::Dbo::EAlertCriteria::LT:
-                        log("debug") << "We are entering in the switch of the lt comparison";
-                        secConfFile << "<";
+                        secConfFile << "    use MIME::Base64; \\\n";
+                    }
+                    secConfFile << "    $values[" << cpt << "] = decode_base64($values[" << cpt << "]); \\\n";
+                    firstBase64 = false;
+                }
+                else{
+                    secConfFile << "    if ($values[" << cpt << "] !~ /^([+-]?)(?=\\d|\\.\\d)\\d*(\\.\\d*)?([Ee]([+-]?\\d+))?$/) \\\n"
+                            "    { \\\n"
+                            "      exit; \\\n"                          
+                            "    } \\\n";                
+                }
+                
+                if(!firstAse)
+                {
+                    switch (*asePtr.get()->boolOperator)
+                    {
+                        case Echoes::Dbo::EBooleanOperator::AND:
+                            test += " && ";
+                            break;
+                        case Echoes::Dbo::EBooleanOperator::OR:
+                            test += " or ";
+                            break;                            
+                    }
+                }
+                switch (iutId)
+                {
+                    case Echoes::Dbo::EInformationUnitType::NUMBER:
+                        log("debug") << "We are entering in the switch of the case number";
+
+                        test += "$values[" + boost::lexical_cast<string>(cpt) + "] ";
+
+                        switch (asePtr->alertValue->alertCriteria.id())
+                        {
+                        case Echoes::Dbo::EAlertCriteria::LT:
+                            log("debug") << "We are entering in the switch of the lt comparison";
+                            test += "<";
+                            break;
+                        case Echoes::Dbo::EAlertCriteria::LE:
+                            log("debug") << "We are entering in the switch of the le comparison";
+                            test += "<=";
+                            break;
+                        case Echoes::Dbo::EAlertCriteria::EQ:
+                            log("debug") << "We are entering in the switch of the eq comparison";
+                            test += "==";
+                            break;
+                        case Echoes::Dbo::EAlertCriteria::NE:
+                            log("debug") << "We are entering in the switch of the ne comparison";
+                            test += "!=";
+                            break;
+                        case Echoes::Dbo::EAlertCriteria::GE:
+                            log("debug") << "We are entering in the switch of the ge comparison";
+                            test += ">=";
+                            break;
+                        case Echoes::Dbo::EAlertCriteria::GT:
+                            log("debug") << "We are entering in the switch of the gt comparison";
+                            test += ">";
+                            break;
+                        default:
+                            log("error") << "Switch operator selection failed";
+                            break;
+                        }
+                        test += " " + asePtr->alertValue->value.toUTF8();
                         break;
-                    case Echoes::Dbo::EAlertCriteria::LE:
-                        log("debug") << "We are entering in the switch of the le comparison";
-                        secConfFile << "<=";
-                        break;
-                    case Echoes::Dbo::EAlertCriteria::EQ:
-                        log("debug") << "We are entering in the switch of the eq comparison";
-                        secConfFile << "==";
-                        break;
-                    case Echoes::Dbo::EAlertCriteria::NE:
-                        log("debug") << "We are entering in the switch of the ne comparison";
-                        secConfFile << "!=";
-                        break;
-                    case Echoes::Dbo::EAlertCriteria::GE:
-                        log("debug") << "We are entering in the switch of the ge comparison";
-                        secConfFile << ">=";
-                        break;
-                    case Echoes::Dbo::EAlertCriteria::GT:
-                        log("debug") << "We are entering in the switch of the gt comparison";
-                        secConfFile << ">";
+                    case Echoes::Dbo::EInformationUnitType::BOOL:
+                    case Echoes::Dbo::EInformationUnitType::TEXT:
+                        test += "$value =~ /^" + asePtr->alertValue->value.toUTF8() + "$/";
                         break;
                     default:
-                        log("error") << "Switch operator selection failed";
+                        log("error") << "Switch Information unit type check failed";
                         break;
-                    }
-                    secConfFile << " " << alePtr->alertValue->value << ") \\\n";
-                    break;
-                case Echoes::Dbo::EInformationUnitType::BOOL:
-                case Echoes::Dbo::EInformationUnitType::TEXT:
-                    secConfFile << "    if ($value =~ /^" << alePtr->alertValue->value << "$/) \\\n";
-                    break;
-                default:
-                    log("error") << "Switch Information unit type check failed";
-                    break;
+                }
+                firstAse = false;
+                asePtr = asePtr.get()->alertSequence;
+                cpt++;
             }
-
-            if (iutId == Echoes::Dbo::EInformationUnitType::NUMBER)
-            {
-                secConfFile << "  ";
-            }
+            secConfFile << "    if (" << test << ") \\\n";
 
             secConfFile << "    { \\\n"
-                    "        my $res = '{\\\\\\\\\\\\\"information_value_ids\\\\\\\\\\\\\": ['.$id.']}'; \\\n"
-                    "        return ($res, $value, (length($res) - 6)) \\\n";
-
-            if (iutId == Echoes::Dbo::EInformationUnitType::NUMBER)
-            {
-                secConfFile << "      }; \\\n";
-            }
+                    "      foreach my $id (@ids) { \\\n"
+                    "        $listIDs .= $id;  \\\n"
+                    "        if($id != $ids[$#ids]) \\\n"
+                    "        { \\\n"
+                    "          $listIDs .= ','; \\\n"
+                    "        } \\\n"
+                    "      } \\\n"
+                    "      my $res = '{\\\\\\\\\\\\\"information_value_ids\\\\\\\\\\\\\": ['.$listIDs.']}'; \\\n"
+                    "      return ($res, $value, (length($res) - 6)) \\\n";
 
             secConfFile << "    }; \\\n"
                     "  }; \\\n"
@@ -338,7 +375,7 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
     {
         log("error") << "Unable to open/create file: " << m_alertsMap[alePtr.id()].secConfFilename;
     }
-
+    
     m_alertsMap[alePtr.id()].secPID = popen_sec(m_alertsMap[alePtr.id()].secConfFilename, &m_alertsMap[alePtr.id()].secInFP, &m_alertsMap[alePtr.id()].secOutFP, &m_alertsMap[alePtr.id()].secErrFP);
     if (m_alertsMap[alePtr.id()].secPID <= 0)
     {
