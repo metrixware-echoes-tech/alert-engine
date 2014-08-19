@@ -243,20 +243,20 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
         }
         else
         {
-            secConfFile << "type=Single\n"
-                    "ptype=PerlFunc\n"
-                    "pattern= \\\n"
-                    "sub { \\\n"
-                    "  use strict; \\\n"
-                    "  if ($_[0] cmp '') \\\n"
-                    "  { \\\n"
-                    "    my @inputs = split(';', $_[0]); \\\n"
-                    "    my @ids; \\\n"
-                    "    my @values; \\\n"
-                    "    foreach my $i (0 .. $#inputs) \\\n"
-                    "    { \\\n"
-                    "      ($ids[$i], $values[$i]) = split(':', $inputs[$i]); \\\n"
-                    "    } \\\n";
+            secConfFile <<  "type=Single\n"
+                            "ptype=PerlFunc\n"
+                            "pattern= \\\n"
+                            "sub { \\\n"
+                            "  use strict; \\\n"
+                            "  if ($_[0] cmp '') \\\n"
+                            "  { \\\n"
+                            "    my @inputs = split(';', $_[0]); \\\n"
+                            "    my @ids; \\\n"
+                            "    my @values; \\\n"
+                            "    foreach my $i (0 .. $#inputs) \\\n"
+                            "    { \\\n"
+                            "      ($ids[$i], $values[$i]) = split(':', $inputs[$i]); \\\n"
+                            "    } \\\n";
             
             bool firstAse = true;
             bool firstBase64 = true;
@@ -275,10 +275,10 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
                     firstBase64 = false;
                 }
                 else{
-                    secConfFile << "    if ($values[" << cpt << "] !~ /^([+-]?)(?=\\d|\\.\\d)\\d*(\\.\\d*)?([Ee]([+-]?\\d+))?$/) \\\n"
-                            "    { \\\n"
-                            "      exit; \\\n"                          
-                            "    } \\\n";                
+                    secConfFile <<  "    if ($values[" << cpt << "] !~ /^([+-]?)(?=\\d|\\.\\d)\\d*(\\.\\d*)?([Ee]([+-]?\\d+))?$/) \\\n"
+                                    "    { \\\n"
+                                    "      exit; \\\n"                          
+                                    "    } \\\n";                
                 }
                 
                 if(!firstAse)
@@ -334,7 +334,7 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
                         break;
                     case Echoes::Dbo::EInformationUnitType::BOOL:
                     case Echoes::Dbo::EInformationUnitType::TEXT:
-                        test += "$value =~ /^" + asePtr->alertValue->value.toUTF8() + "$/";
+                        test += "$values[" + boost::lexical_cast<string>(cpt) + "] =~ /^" + asePtr->alertValue->value.toUTF8() + "$/";
                         break;
                     default:
                         log("error") << "Switch Information unit type check failed";
@@ -344,30 +344,28 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
                 asePtr = asePtr.get()->alertSequence;
                 cpt++;
             }
-            secConfFile << "    if (" << test << ") \\\n";
-
-            secConfFile << "    { \\\n"
-                    "      foreach my $id (@ids) { \\\n"
-                    "        $listIDs .= $id;  \\\n"
-                    "        if($id != $ids[$#ids]) \\\n"
-                    "        { \\\n"
-                    "          $listIDs .= ','; \\\n"
-                    "        } \\\n"
-                    "      } \\\n"
-                    "      my $res = '{\\\\\\\\\\\\\"information_value_ids\\\\\\\\\\\\\": ['.$listIDs.']}'; \\\n"
-                    "      return ($res, $value, (length($res) - 6)) \\\n";
-
-            secConfFile << "    }; \\\n"
-                    "  }; \\\n"
-                    "}\n";
+            secConfFile <<  "    if (" << test << ") \\\n"
+                            "    { \\\n"
+                            "      my $listIDs;  \\\n"
+                            "      foreach my $id (@ids) { \\\n"
+                            "        if($id != $ids[$#ids]) \\\n"
+                            "        { \\\n"
+                            "          $listIDs .= ','; \\\n"
+                            "        } \\\n"
+                            "      } \\\n"
+                            "      my $res = '{\\\\\\\\\\\\\"information_value_ids\\\\\\\\\\\\\": ['.$listIDs.']}'; \\\n"
+                            "      return ($res, (length($res) - 6)) \\\n"
+                            "    }; \\\n"
+                            "  }; \\\n"
+                            "}\n";
         }
-        secConfFile << "desc=POST /alerts/" << alePtr.id() << "/trackings?eno_token=" << enoPtr->token << " HTTP/1.1\\n"
-                "Host: " << conf.getAPIHost() << "\\n"
-                "Content-Type: application/json; charset=utf-8\\n"
-                "Content-length: $3\\n"
-                "Connection: close\\n\\n"
-                "$1\\n\\n\n"
-                "action=shellcmd (/usr/bin/perl -e \"alarm(2); exec(\\\"/usr/bin/printf \\'%s\\' | /usr/bin/openssl s_client -quiet -connect " << conf.getAPIHost() << ":" << conf.getAPIPort() << "\\\")\")\n";
+        secConfFile <<  "desc=POST /alerts/" << alePtr.id() << "/trackings?eno_token=" << enoPtr->token << " HTTP/1.1\\n"
+                        "Host: " << conf.getAPIHost() << "\\n"
+                        "Content-Type: application/json; charset=utf-8\\n"
+                        "Content-length: $2\\n"
+                        "Connection: close\\n\\n"
+                        "$1\\n\\n\n"
+                        "action=shellcmd (/usr/bin/perl -e \"alarm(2); exec(\\\"/usr/bin/printf \\'%s\\' | /usr/bin/openssl s_client -quiet -connect " << conf.getAPIHost() << ":" << conf.getAPIPort() << "\\\")\")\n";
 
         secConfFile.close();
     }
