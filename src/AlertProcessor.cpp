@@ -452,17 +452,23 @@ void AlertProcessor::informationValueLoop(const long long alertID)
     log("info") << "SEC instance after " << boost::lexical_cast<string>(idx) << "s for alert ID: " << alertID;
 
     boost::thread(boost::bind(&AlertProcessor::secLogLoop, this, m_alertsMap[alertID].secOutFP, "info"));
-    boost::thread(boost::bind(&AlertProcessor::secLogLoop, this, m_alertsMap[alertID].secErrFP, "error"));
+    boost::thread(boost::bind(&AlertProcessor::secLogLoop, this, m_alertsMap[alertID].secErrFP, "error"));    
 
-    long long idaId = 0;
-    long long filId = 0;
-    long long astId = 0;
-    long long infId = 0;
-    long long iutId = 0;
-//    int fieldFilterIndex = 0;
-    int posKeyValue = 0;
-    string keyValue = "";
-    Wt::Dbo::ptr<Echoes::Dbo::InformationData> idakeyPtr;
+    struct IvaStruct {
+        long long idaId = 0;
+        long long filId = 0;
+        long long astId = 0;
+        long long infId = 0;
+        long long iutId = 0;
+        int posKeyValue = 0;
+        string keyValue = "";  
+        Wt::Dbo::ptr<Echoes::Dbo::InformationData> idakeyPtr;  
+        long long ivaId = 0;        
+        bool isIVAFound = false;        
+        long long ivaKeyId = 0;        
+        string ivaValue = "";
+    };
+    vector<IvaStruct> ivaStructs;
 
     // We get the data to be able to find all the IVAs needed
     try
@@ -477,41 +483,47 @@ void AlertProcessor::informationValueLoop(const long long alertID)
                 .limit(1);
 
         if (alePtr)
-        {
-            idaId = alePtr->alertValue->informationData.id();
-            infId = alePtr->alertValue->informationData->information.id();
-            filId = alePtr->alertValue->informationData->filter.id();
-            astId = alePtr->alertValue->informationData->asset.id();
-            iutId = alePtr->alertValue->informationData->informationUnit->unitType.id();
-            posKeyValue = alePtr->alertValue->informationData->filter->posKeyValue;
-//            fieldFilterIndex = alePtr->alertValue->informationData->filterFieldIndex;
+        {            
+            Wt::Dbo::ptr<Echoes::Dbo::AlertSequence> asePtr = alePtr->alertSequence;
+            while(asePtr)
+            {    
+                IvaStruct ivaStruct;
+                ivaStruct.idaId = asePtr->alertValue->informationData.id();
+                ivaStruct.infId = asePtr->alertValue->informationData->information.id();
+                ivaStruct.filId = asePtr->alertValue->informationData->filter.id();
+                ivaStruct.astId = asePtr->alertValue->informationData->asset.id();
+                ivaStruct.iutId = asePtr->alertValue->informationData->informationUnit->unitType.id();
+                ivaStruct.posKeyValue = asePtr->alertValue->informationData->filter->posKeyValue;
 
-            if (posKeyValue > 0)
-            {
-                //looking for the ida about the key
-                keyValue = alePtr->alertValue->keyValue.get().toUTF8();
-                idakeyPtr = m_session
-                        .find<Echoes::Dbo::InformationData>()
-                        .where(QUOTE(TRIGRAM_INFORMATION_DATA SEP TRIGRAM_FILTER SEP TRIGRAM_FILTER ID) " = ?")
-                        .bind(filId)
-                        .where(QUOTE(TRIGRAM_INFORMATION_DATA SEP TRIGRAM_ASSET SEP TRIGRAM_ASSET ID) " = ?")
-                        .bind(astId)
-                        .where(QUOTE(TRIGRAM_INFORMATION_DATA SEP TRIGRAM_INFORMATION SEP TRIGRAM_INFORMATION ID) " = ?")
-                        .bind(infId)
-                        .where(QUOTE(TRIGRAM_INFORMATION_DATA SEP "FILTER_FIELD_INDEX")" = ?")
-                        .bind(posKeyValue)
-                        .limit(1);
+                if (ivaStruct.posKeyValue > 0)
+                {
+                    //looking for the ida about the key
+                    ivaStruct.keyValue = asePtr->alertValue->keyValue.get().toUTF8();
+                    ivaStruct.idakeyPtr = m_session
+                            .find<Echoes::Dbo::InformationData>()
+                            .where(QUOTE(TRIGRAM_INFORMATION_DATA SEP TRIGRAM_FILTER SEP TRIGRAM_FILTER ID) " = ?")
+                            .bind(ivaStruct.filId)
+                            .where(QUOTE(TRIGRAM_INFORMATION_DATA SEP TRIGRAM_ASSET SEP TRIGRAM_ASSET ID) " = ?")
+                            .bind(ivaStruct.astId)
+                            .where(QUOTE(TRIGRAM_INFORMATION_DATA SEP TRIGRAM_INFORMATION SEP TRIGRAM_INFORMATION ID) " = ?")
+                            .bind(ivaStruct.infId)
+                            .where(QUOTE(TRIGRAM_INFORMATION_DATA SEP "FILTER_FIELD_INDEX")" = ?")
+                            .bind(ivaStruct.posKeyValue)
+                            .limit(1);
 
-                if (idakeyPtr)
-                {
-                    log("debug") << "ptr found, ok";
+                    if (ivaStruct.idakeyPtr)
+                    {
+                        log("debug") << "ptr found, ok";
+                    }
+                    else
+                    {
+                        log("warning") << "no Ida in database for this poskey";
+                        transaction.commit();
+                        return;
+                    }
                 }
-                else
-                {
-                    log("warning") << "no Ida in database for this poskey";
-                    transaction.commit();
-                    return;
-                }
+                ivaStructs.push_back(ivaStruct);
+                asePtr = asePtr->alertSequence;
             }
         }
         else
@@ -528,151 +540,147 @@ void AlertProcessor::informationValueLoop(const long long alertID)
         log("error") << "Wt::Dbo: " << e.what();
         return;
     }
-
+    
+    bool areIVAsFound = false;   
+    
     // Arbitrary definition
     const unsigned period = 60;
 
     Wt::WDateTime searchDateTime = Wt::WDateTime::currentDateTime().addSecs(-period);
-
-    long long ivaId = 0;
-    bool isIVAFound = false;
-    long long ivaKeyId = 0;
-    bool isIVAKeyFound = false;
-    string ivaValue = "";
-
-    // first case, we have a pos key value and we need to get the lotNumber and the lineNumber
-    if (posKeyValue > 0)
-    {
-        int lotNumber = 0;
-        int lineNumber = 0;
-        while (!isIVAKeyFound && m_alertsMap[alertID].secPID > 0)
-        {
-            log("debug") << "Retrieve IVA Key after: " << searchDateTime.toString("yyyy-MM-dd hh:mm:ss");
-            try
+    
+    while (!areIVAsFound && m_alertsMap[alertID].secPID > 0)
+    {    
+        areIVAsFound = true;
+        for(vector<IvaStruct>::iterator it = ivaStructs.begin(); it < ivaStructs.end(); it++)
+        {        
+            // first case, we have a pos key value and we need to get the lotNumber and the lineNumber
+            if (it->posKeyValue > 0)
             {
-                Wt::Dbo::Transaction transaction(m_session, true);
-
-                Wt::Dbo::ptr<Echoes::Dbo::InformationValue> ivaKeyPtr = m_session.find<Echoes::Dbo::InformationValue>()
-                        .where("\"IVA_IDA_IDA_ID\" = ?").bind(idakeyPtr.id())
-                        .where("\"IVA_STATE\" = ?").bind(0)
-                        .where("\"IVA_VALUE\" = ?").bind(keyValue)
-                        .where("\"IVA_CREA_DATE\" >= ?").bind(searchDateTime.toString("yyyy-MM-dd hh:mm:ss").toUTF8())
-                        .orderBy("\"IVA_ID\" DESC")
-                        .limit(1);
-
-                if (ivaKeyPtr)
+                bool isIVAKeyFound = false;
+                int lotNumber = 0;
+                int lineNumber = 0;
+                
+                log("debug") << "Retrieve IVA Key after: " << searchDateTime.toString("yyyy-MM-dd hh:mm:ss");
+                try
                 {
-                    isIVAKeyFound = true;
-                    ivaKeyId = ivaKeyPtr.id();
-                    lotNumber = ivaKeyPtr->lotNumber;
-                    lineNumber = ivaKeyPtr->lineNumber;
+                    Wt::Dbo::Transaction transaction(m_session, true);
+
+                    Wt::Dbo::ptr<Echoes::Dbo::InformationValue> ivaKeyPtr = m_session.find<Echoes::Dbo::InformationValue>()
+                            .where("\"IVA_IDA_IDA_ID\" = ?").bind(it->idakeyPtr.id())
+                            .where("\"IVA_STATE\" = ?").bind(0)
+                            .where("\"IVA_VALUE\" = ?").bind(it->keyValue)
+                            .where("\"IVA_CREA_DATE\" >= ?").bind(searchDateTime.toString("yyyy-MM-dd hh:mm:ss").toUTF8())
+                            .orderBy("\"IVA_ID\" DESC")
+                            .limit(1);
+
+                    if (ivaKeyPtr)
+                    {
+                        isIVAKeyFound = true;
+                        it->ivaKeyId = ivaKeyPtr.id();
+                        lotNumber = ivaKeyPtr->lotNumber;
+                        lineNumber = ivaKeyPtr->lineNumber;
+                    }
+
+                    transaction.commit();
                 }
-
-                transaction.commit();
-            }
-            catch (Wt::Dbo::Exception const& e)
-            {
-                log("error") << "Wt::Dbo: " << e.what();
-            }
-            if (!isIVAKeyFound)
-            {
-                searchDateTime = searchDateTime.addSecs(period);
-                informationValueSleep(period, searchDateTime);
-            }
-        }
-
-        if (m_alertsMap[alertID].secPID > 0)
-        {
-            log("debug") << "Retrieve IVA after: " << searchDateTime.toString("yyyy-MM-dd hh:mm:ss");
-            try
-            {
-                Wt::Dbo::Transaction transaction(m_session, true);
-                Wt::Dbo::ptr<Echoes::Dbo::InformationValue> ivaPtr = m_session.find<Echoes::Dbo::InformationValue>()
-                        .where("\"IVA_IDA_IDA_ID\" = ?").bind(idaId)
-                        .where("\"IVA_STATE\" = ?").bind(0)
-                        .where("\"IVA_CREA_DATE\" >= ?").bind(searchDateTime.toString("yyyy-MM-dd hh:mm:ss").toUTF8())
-                        .where("\"IVA_LOT_NUM\" = ?").bind(lotNumber)
-                        .where("\"IVA_LINE_NUM\" = ?").bind(lineNumber)
-                        .orderBy("\"IVA_ID\" DESC")
-                        .limit(1);
-
-                if (ivaPtr)
+                catch (Wt::Dbo::Exception const& e)
                 {
-                    isIVAFound = true;
-                    ivaId = ivaPtr.id();
-                    ivaValue = ivaPtr->value.toUTF8();
+                    log("error") << "Wt::Dbo: " << e.what();
                 }
-                transaction.commit();
-            }
-            catch (Wt::Dbo::Exception const& e)
-            {
-                log("error") << "Wt::Dbo: " << e.what();
-            }
-        }
-        else
-        {
-            return;
-        }
-    }
-    // second case, simple information without poskey
-    else
-    {
-        while (!isIVAFound && m_alertsMap[alertID].secPID > 0)
-        {
-            log("debug") << "Retrieve IVA after: " << searchDateTime.toString("yyyy-MM-dd hh:mm:ss");
-            try
-            {
-                Wt::Dbo::Transaction transaction(m_session, true);
-
-                Wt::Dbo::ptr<Echoes::Dbo::InformationValue> ivaPtr = m_session.find<Echoes::Dbo::InformationValue>()
-                        .where("\"IVA_IDA_IDA_ID\" = ?").bind(idaId)
-                         .where("\"IVA_STATE\" = ?").bind(0)
-                        .where("\"IVA_CREA_DATE\" >= ?").bind(searchDateTime.toString("yyyy-MM-dd hh:mm:ss").toUTF8())
-                        .orderBy("\"IVA_ID\" DESC")
-                        .limit(1);
-                if (ivaPtr)
+                if (isIVAKeyFound)
                 {
-                    isIVAFound = true;
-                    ivaId = ivaPtr.id();
-                    ivaValue = ivaPtr->value.toUTF8();
-                }
+                    log("debug") << "Retrieve IVA after: " << searchDateTime.toString("yyyy-MM-dd hh:mm:ss");
+                    try
+                    {
+                        Wt::Dbo::Transaction transaction(m_session, true);
+                        Wt::Dbo::ptr<Echoes::Dbo::InformationValue> ivaPtr = m_session.find<Echoes::Dbo::InformationValue>()
+                                .where("\"IVA_IDA_IDA_ID\" = ?").bind(it->idaId)
+                                .where("\"IVA_STATE\" = ?").bind(0)
+                                .where("\"IVA_CREA_DATE\" >= ?").bind(searchDateTime.toString("yyyy-MM-dd hh:mm:ss").toUTF8())
+                                .where("\"IVA_LOT_NUM\" = ?").bind(lotNumber)
+                                .where("\"IVA_LINE_NUM\" = ?").bind(lineNumber)
+                                .orderBy("\"IVA_ID\" DESC")
+                                .limit(1);
 
-                transaction.commit();
+                        if (ivaPtr)
+                        {
+                            it->isIVAFound = true;
+                            it->ivaId = ivaPtr.id();
+                            it->ivaValue = ivaPtr->value.toUTF8();
+                        }
+                        transaction.commit();
+                    }
+                    catch (Wt::Dbo::Exception const& e)
+                    {
+                        log("error") << "Wt::Dbo: " << e.what();
+                    }
+                }
             }
-            catch (Wt::Dbo::Exception const& e)
+            // second case, simple information without poskey
+            else
             {
-                log("error") << "Wt::Dbo: " << e.what();
+                log("debug") << "Retrieve IVA after: " << searchDateTime.toString("yyyy-MM-dd hh:mm:ss");
+                try
+                {
+                    Wt::Dbo::Transaction transaction(m_session, true);
+
+                    Wt::Dbo::ptr<Echoes::Dbo::InformationValue> ivaPtr = m_session.find<Echoes::Dbo::InformationValue>()
+                            .where("\"IVA_IDA_IDA_ID\" = ?").bind(it->idaId)
+                             .where("\"IVA_STATE\" = ?").bind(0)
+                            .where("\"IVA_CREA_DATE\" >= ?").bind(searchDateTime.toString("yyyy-MM-dd hh:mm:ss").toUTF8())
+                            .orderBy("\"IVA_ID\" DESC")
+                            .limit(1);
+                    if (ivaPtr)
+                    {
+                        it->isIVAFound = true;
+                        it->ivaId = ivaPtr.id();
+                        it->ivaValue = ivaPtr->value.toUTF8();
+                    }
+
+                    transaction.commit();
+                }
+                catch (Wt::Dbo::Exception const& e)
+                {
+                    log("error") << "Wt::Dbo: " << e.what();
+                }
             }
-            if (!isIVAFound)
-            {
-                searchDateTime = searchDateTime.addSecs(period);
-                informationValueSleep(period, searchDateTime);
-            }
+            areIVAsFound &= it->isIVAFound;
+        }
+        if (!areIVAsFound)
+        {
+            searchDateTime = searchDateTime.addSecs(period);
+            informationValueSleep(period, searchDateTime);
         }
     }
 
     while (m_alertsMap[alertID].secPID > 0)
     {
         // creating the input for SEC
-        if (isIVAFound)
+        if (areIVAsFound)
         {
-            string inputSEC = boost::lexical_cast<string>(ivaId);
-
-            switch (iutId)
-            {
-            case Echoes::Dbo::EInformationUnitType::NUMBER:
-                inputSEC += ":" + ivaValue;
-                break;
-            default:
-                inputSEC += ":" + Wt::Utils::base64Encode(ivaValue);
-                break;
+            string inputSEC;
+            for(vector<IvaStruct>::iterator it = ivaStructs.begin(); it < ivaStructs.end(); it++)
+            { 
+                inputSEC += boost::lexical_cast<string>(it->ivaId) + ":";
+                switch (it->iutId)
+                {
+                case Echoes::Dbo::EInformationUnitType::NUMBER:
+                    inputSEC += it->ivaValue;
+                    break;
+                default:
+                    inputSEC += Wt::Utils::base64Encode(it->ivaValue);
+                    break;
+                }
+                if(it < ivaStructs.end()-1)
+                {
+                    inputSEC += ";";
+                }
+                it->isIVAFound = false;
             }
+            
             inputSEC += "\n";
-
             log("debug") << "Send IVA to SEC";
             write(m_alertsMap[alertID].secInFP, inputSEC.c_str(), inputSEC.size());
-
-            isIVAFound = false;
         }
 
         searchDateTime = searchDateTime.addSecs(period);
@@ -682,48 +690,55 @@ void AlertProcessor::informationValueLoop(const long long alertID)
         {
             Wt::Dbo::Transaction transaction(m_session, true);
 
-            Wt::Dbo::ptr<Echoes::Dbo::InformationValue> ivaPtr;
-            if (posKeyValue > 0)
-            {
-                log("debug") << "Retrieve IVA Key";
-                
-                Wt::Dbo::ptr<Echoes::Dbo::InformationValue> ivaKeyPtr = m_session.find<Echoes::Dbo::InformationValue>()
-                        .where("\"IVA_ID\" > ?").bind(ivaKeyId)
-                        .where("\"IVA_IDA_IDA_ID\" = ?").bind(idakeyPtr.id())
-                        .where("\"IVA_STATE\" = ?").bind(0)
-                        .where("\"IVA_VALUE\" = ?").bind(keyValue)
-                        .orderBy("\"IVA_ID\" DESC")
-                        .limit(1);
+            areIVAsFound = true;
 
-                ivaKeyId = ivaKeyPtr.id();
-                if (ivaKeyPtr)
+            Wt::Dbo::ptr<Echoes::Dbo::InformationValue> ivaPtr;            
+            for(vector<IvaStruct>::iterator it = ivaStructs.begin(); it < ivaStructs.end(); it++)
+            { 
+                if (it->posKeyValue > 0)
+                {
+                    log("debug") << "Retrieve IVA Key";
+
+                    Wt::Dbo::ptr<Echoes::Dbo::InformationValue> ivaKeyPtr = m_session.find<Echoes::Dbo::InformationValue>()
+                            .where("\"IVA_ID\" > ?").bind(it->ivaKeyId)
+                            .where("\"IVA_IDA_IDA_ID\" = ?").bind(it->idakeyPtr.id())
+                            .where("\"IVA_STATE\" = ?").bind(0)
+                            .where("\"IVA_VALUE\" = ?").bind(it->keyValue)
+                            .orderBy("\"IVA_ID\" DESC")
+                            .limit(1);
+
+                    it->ivaKeyId = ivaKeyPtr.id();
+                    if (ivaKeyPtr)
+                    {
+                        log("debug") << "Retrieve IVA";
+                        ivaPtr = m_session.find<Echoes::Dbo::InformationValue>()
+                            .where("\"IVA_IDA_IDA_ID\" = ?").bind(it->idaId)
+                            .where("\"IVA_STATE\" = ?").bind(0)
+                            .where("\"IVA_LOT_NUM\" = ?").bind(ivaKeyPtr->lotNumber)
+                            .where("\"IVA_LINE_NUM\" = ?").bind(ivaKeyPtr->lineNumber)
+                            .orderBy("\"IVA_ID\" DESC")
+                            .limit(1);
+                     }
+                }
+                else
                 {
                     log("debug") << "Retrieve IVA";
                     ivaPtr = m_session.find<Echoes::Dbo::InformationValue>()
-                        .where("\"IVA_IDA_IDA_ID\" = ?").bind(idaId)
-                        .where("\"IVA_STATE\" = ?").bind(0)
-                        .where("\"IVA_LOT_NUM\" = ?").bind(ivaKeyPtr->lotNumber)
-                        .where("\"IVA_LINE_NUM\" = ?").bind(ivaKeyPtr->lineNumber)
-                        .orderBy("\"IVA_ID\" DESC")
-                        .limit(1);
-                 }
-            }
-            else
-            {
-                log("debug") << "Retrieve IVA";
-                ivaPtr = m_session.find<Echoes::Dbo::InformationValue>()
-                        .where("\"IVA_ID\" > ?").bind(ivaId)
-                        .where("\"IVA_IDA_IDA_ID\" = ?").bind(idaId)
-                         .where("\"IVA_STATE\" = ?").bind(0)
-                        .orderBy("\"IVA_ID\" DESC")
-                        .limit(1);
-            }
+                            .where("\"IVA_ID\" > ?").bind(it->ivaId)
+                            .where("\"IVA_IDA_IDA_ID\" = ?").bind(it->idaId)
+                             .where("\"IVA_STATE\" = ?").bind(0)
+                            .orderBy("\"IVA_ID\" DESC")
+                            .limit(1);
+                }
 
-            if (ivaPtr)
-            {
-                isIVAFound = true;
-                ivaId = ivaPtr.id();
-                ivaValue = ivaPtr->value.toUTF8();
+                if (ivaPtr)
+                {
+                    it->isIVAFound = true;
+                    it->ivaId = ivaPtr.id();
+                    it->ivaValue = ivaPtr->value.toUTF8();
+                }
+                
+                areIVAsFound &= it->isIVAFound;
             }
 
             transaction.commit();
