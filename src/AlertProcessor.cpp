@@ -250,7 +250,7 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
                     "  use strict; \\\n"
                     "  if ($_[0] cmp '') \\\n"
                     "  { \\\n"
-                    "    my @inputs = split(',', $_[0]); \\\n"
+                    "    my @inputs = split(';', $_[0]); \\\n"
                     "    my @ids; \\\n"
                     "    my @values; \\\n"
                     "    foreach my $i (0 .. $#inputs) \\\n"
