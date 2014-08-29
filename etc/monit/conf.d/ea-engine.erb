@@ -1,0 +1,3 @@
+check process <%= @service_name %> with pidfile /run/<%= @service_name %>.pid                             
+   start program = "/usr/sbin/service <%= @service_name %> start" with timeout 60 seconds                 
+   stop program  = "/usr/sbin/service <%= @service_name %> stop"                                          
