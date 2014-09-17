@@ -55,42 +55,44 @@ int AlertProcessor::verifyAlerts(int *signum)
                         .where(QUOTE(TRIGRAM_ALERT SEP "DELETE") " IS NULL");
 
                 log("debug") << "We have " << alePtrCol.size() << " Alert(s) for this Engine in the database";
-
+                
                 for (Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::Alert>>::const_iterator it = alePtrCol.begin(); it != alePtrCol.end(); ++it)
                 {
-                    if (m_alertsMap.find(it->id()) == m_alertsMap.end())
+                    if (it->get()->alertSequence.id() > 0)
                     {
-                        Wt::Dbo::ptr<Echoes::Dbo::EngOrg> engOrgPtr = m_session.find<Echoes::Dbo::EngOrg>()
-                                .where(QUOTE(TRIGRAM_ENGINE ID SEP TRIGRAM_ENGINE ID)" = ?").bind(m_enginePtr.id())
-                                .where(QUOTE(TRIGRAM_ORGANIZATION ID SEP TRIGRAM_ORGANIZATION ID)" = ?").bind(it->get()->alertSequence->alertValue->informationData->asset->organization.id())
-                                .where(QUOTE(TRIGRAM_ENG_ORG SEP "DELETE")" IS NULL")
-                                .limit(1);
-                        
-                        if (engOrgPtr)
+                        if (m_alertsMap.find(it->id()) == m_alertsMap.end())
                         {
-                            m_alertsMap[it->id()] = {
-                                true,
+                            Wt::Dbo::ptr<Echoes::Dbo::EngOrg> engOrgPtr = m_session.find<Echoes::Dbo::EngOrg>()
+                                    .where(QUOTE(TRIGRAM_ENGINE ID SEP TRIGRAM_ENGINE ID)" = ?").bind(m_enginePtr.id())
+                                    .where(QUOTE(TRIGRAM_ORGANIZATION ID SEP TRIGRAM_ORGANIZATION ID)" = ?").bind(it->get()->alertSequence->alertValue->informationData->asset->organization.id())
+                                    .where(QUOTE(TRIGRAM_ENG_ORG SEP "DELETE")" IS NULL")
+                                    .limit(1);
+                            log("info") << "Call responded";
+                            if (engOrgPtr) {
+                                m_alertsMap[it->id()] = {
+                                    true,
 #ifdef NDEBUG
-                                "/opt/echoes-alert/engine/etc/sec-" + boost::lexical_cast<string>(it->id()) + ".conf",
+                                    "/opt/echoes-alert/engine/etc/sec-" + boost::lexical_cast<string>(it->id()) + ".conf",
 #else
-                                "conf/sec-" + boost::lexical_cast<string>(it->id()) + ".conf",
+                                    "conf/sec-" + boost::lexical_cast<string>(it->id()) + ".conf",
 #endif
-                                -1,
-                                0,
-                                0,
-                                0,
-                                new boost::thread(boost::bind(&AlertProcessor::informationValueLoop, this, it->id()))
-                            };
-                            startAlert(*it, engOrgPtr);
+                                    -1,
+                                    0,
+                                    0,
+                                    0,
+                                    new boost::thread(boost::bind(&AlertProcessor::informationValueLoop, this, it->id()))
+                                };
+                                startAlert(*it, engOrgPtr);
+                            }
+                            else
+                            {
+                                log("debug") << "No Token for Alert: " << it->id();
+                            }
                         }
                         else
                         {
-                            log("debug") << "No Token for Alert: " << it->id();
+                            m_alertsMap[it->id()].check = true;
                         }
-                    }
-                    else
-                    {
-                        m_alertsMap[it->id()].check = true;
                     }
                 }
 
@@ -105,35 +107,38 @@ int AlertProcessor::verifyAlerts(int *signum)
 
                     for (Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::Alert>>::const_iterator it = newAlePtrCol.begin(); it != newAlePtrCol.end(); ++it)
                     {
-                        Wt::Dbo::ptr<Echoes::Dbo::EngOrg> enoPtr = m_session.find<Echoes::Dbo::EngOrg>()
-                                .where(QUOTE(TRIGRAM_ENGINE ID SEP TRIGRAM_ENGINE ID)" = ?").bind(m_enginePtr.id())
-                                .where(QUOTE(TRIGRAM_ORGANIZATION ID SEP TRIGRAM_ORGANIZATION ID)" = ?").bind(it->get()->alertSequence->alertValue->informationData->asset->organization.id())
-                                .where(QUOTE(TRIGRAM_ENG_ORG SEP "DELETE")" IS NULL")
-                                .limit(1);
-                        
-                        if (enoPtr)
+                        if (it->get()->alertSequence.id() > 0)
                         {
-                            it->modify()->engine = m_enginePtr;
-                            it->flush();
+                            Wt::Dbo::ptr<Echoes::Dbo::EngOrg> enoPtr = m_session.find<Echoes::Dbo::EngOrg>()
+                                    .where(QUOTE(TRIGRAM_ENGINE ID SEP TRIGRAM_ENGINE ID)" = ?").bind(m_enginePtr.id())
+                                    .where(QUOTE(TRIGRAM_ORGANIZATION ID SEP TRIGRAM_ORGANIZATION ID)" = ?").bind(it->get()->alertSequence->alertValue->informationData->asset->organization.id())
+                                    .where(QUOTE(TRIGRAM_ENG_ORG SEP "DELETE")" IS NULL")
+                                    .limit(1);
 
-                            m_alertsMap[it->id()] = {
-                                true,
+                            if (enoPtr)
+                            {
+                                it->modify()->engine = m_enginePtr;
+                                it->flush();
+
+                                m_alertsMap[it->id()] = {
+                                    true,
 #ifdef NDEBUG
-                                "/opt/echoes-alert/engine/etc/sec-" + boost::lexical_cast<string>(it->id()) + ".conf",
+                                    "/opt/echoes-alert/engine/etc/sec-" + boost::lexical_cast<string>(it->id()) + ".conf",
 #else
-                                "conf/sec-" + boost::lexical_cast<string>(it->id()) + ".conf",
+                                    "conf/sec-" + boost::lexical_cast<string>(it->id()) + ".conf",
 #endif
-                                -1,
-                                0,
-                                0,
-                                0,
-                                new boost::thread(boost::bind(&AlertProcessor::informationValueLoop, this, it->id()))
-                            };
-                            startAlert(*it, enoPtr);
-                        }
-                        else
-                        {
-                            log("debug") << "No Token for Alert: " << it->id();
+                                    -1,
+                                    0,
+                                    0,
+                                    0,
+                                    new boost::thread(boost::bind(&AlertProcessor::informationValueLoop, this, it->id()))
+                                };
+                                startAlert(*it, enoPtr);
+                            }
+                            else
+                            {
+                                log("debug") << "No Token for Alert: " << it->id();
+                            }
                         }
                     }
                 }
@@ -344,10 +349,12 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
                 asePtr = asePtr.get()->alertSequence;
                 cpt++;
             }
+            
             secConfFile <<  "    if (" << test << ") \\\n"
                             "    { \\\n"
                             "      my $listIDs;  \\\n"
                             "      foreach my $id (@ids) { \\\n"
+                            "        $listIDs .= $id; \\\n"
                             "        if($id != $ids[$#ids]) \\\n"
                             "        { \\\n"
                             "          $listIDs .= ','; \\\n"
@@ -365,7 +372,8 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
                         "Content-length: $2\\n"
                         "Connection: close\\n\\n"
                         "$1\\n\\n\n"
-                        "action=shellcmd (/usr/bin/perl -e \"alarm(2); exec(\\\"/usr/bin/printf \\'%s\\' | /usr/bin/openssl s_client -quiet -connect " << conf.getAPIHost() << ":" << conf.getAPIPort() << "\\\")\")\n";
+                        "action=shellcmd (/usr/bin/perl -e \"alarm(2); exec(\\\"/usr/bin/printf \\'%s\\' | /usr/bin/openssl s_client -quiet -connect " << conf.getAPIHost() << ":" << conf.getAPIPort()
+                        << " -CApath /etc/ssl/echoes-tech.com/\\\")\")\n";
 
         secConfFile.close();
     }
