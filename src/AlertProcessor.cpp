@@ -330,7 +330,7 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
                 "Content-length: $3\\n"
                 "Connection: close\\n\\n"
                 "$1\\n\\n\n"
-                "action=shellcmd (/usr/bin/perl -e \"alarm(2); exec(\\\"/usr/bin/printf \\'%s\\' | /usr/bin/openssl s_client -quiet -connect " << conf.getAPIHost() << ":" << conf.getAPIPort() << "\\\")\")\n";
+                "action=shellcmd (/usr/bin/perl -e \"alarm(2); exec(\\\"/usr/bin/printf \\'%s\\' | /usr/bin/openssl s_client -quiet -crlf -connect " << conf.getAPIHost() << ":" << conf.getAPIPort() << "\\\")\")\n";
 
         secConfFile.close();
     }
