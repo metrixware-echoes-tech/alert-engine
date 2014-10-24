@@ -48,9 +48,10 @@ class AlertProcessor {
         void stopAllAlerts();
 
     private:
-        struct SecondStructure {
+        struct SecondStructure
+        {
             bool check;
-            std::string secConfFilename;
+            std::map<long long, std::string> secConfFilename;
             pid_t secPID;
             int secInFP, secOutFP, secErrFP;
             boost::thread *ivaThread;

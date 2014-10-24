@@ -48,12 +48,15 @@ int AlertProcessor::verifyAlerts(int *signum)
         {
             try
             {
+                cout << "[ transaction about to begin ]" << endl;
                 Wt::Dbo::Transaction transaction(m_session, true);
 
+                cout << "[ alePtr? ]" << endl;
                 Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::Alert>> alePtrCol = m_session.find<Echoes::Dbo::Alert>()
                         .where(QUOTE(TRIGRAM_ALERT SEP TRIGRAM_ENGINE SEP TRIGRAM_ENGINE ID)" = ?").bind(m_enginePtr.id())
                         .where(QUOTE(TRIGRAM_ALERT SEP "DELETE") " IS NULL");
 
+                cout << "[ alePtr! ]" << endl;
                 log("debug") << "We have " << alePtrCol.size() << " Alert(s) for this Engine in the database";
 
                 for (Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::Alert>>::const_iterator it = alePtrCol.begin(); it != alePtrCol.end(); ++it)
@@ -68,12 +71,19 @@ int AlertProcessor::verifyAlerts(int *signum)
 
                         if (engOrgPtr)
                         {
+                            std::map<long long, std::string> mediaNames;
+                            for (Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::AlertMediaSpecialization> >::const_iterator itMS = it->get()->alertMediaSpecializations.begin() ; itMS != it->get()->alertMediaSpecializations.end() ; ++itMS)
+                            {
+                                std::string newMediaName = "-media" + itMS->get()->id;
+                                mediaNames.insert(std::make_pair(itMS->get()->id, newMediaName));
+                            }
+                            
                             m_alertsMap[it->id()] = {
                                 true,
 #ifdef NDEBUG
                                 "/opt/echoes-alert/engine/etc/sec-" + boost::lexical_cast<string>(it->id()) + ".conf",
 #else
-                                "conf/sec-" + boost::lexical_cast<string>(it->id()) + ".conf",
+                                mediaNames,
 #endif
                                 -1,
                                 0,
@@ -113,6 +123,13 @@ int AlertProcessor::verifyAlerts(int *signum)
 
                         if (enoPtr)
                         {
+                            std::map<long long, std::string> mediaNames;
+                            for (Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::AlertMediaSpecialization> >::const_iterator itMS = it->get()->alertMediaSpecializations.begin() ; itMS != it->get()->alertMediaSpecializations.end() ; ++itMS)
+                            {
+                                std::string newMediaName = "-media" + itMS->get()->id;
+                                mediaNames.insert(std::make_pair(itMS->get()->id, newMediaName));
+                            }
+                            
                             it->modify()->engine = m_enginePtr;
                             it->flush();
 
@@ -121,7 +138,7 @@ int AlertProcessor::verifyAlerts(int *signum)
 #ifdef NDEBUG
                                 "/opt/echoes-alert/engine/etc/sec-" + boost::lexical_cast<string>(it->id()) + ".conf",
 #else
-                                "conf/sec-" + boost::lexical_cast<string>(it->id()) + ".conf",
+                                mediaNames,
 #endif
                                 -1,
                                 0,
@@ -231,33 +248,36 @@ pid_t AlertProcessor::popen_sec(const string &confFilename, int *infp, int *outf
 
 void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo::ptr<Echoes::Dbo::EngOrg> enoPtr)
 {
-    ofstream secConfFile(m_alertsMap[alePtr.id()].secConfFilename.c_str());
-    if (secConfFile)
+    for (Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::AlertMediaSpecialization> >::const_iterator itMS = alePtr->alertMediaSpecializations.begin(); itMS != alePtr->alertMediaSpecializations.end(); ++itMS)
     {
-        const long long iutId = alePtr->alertValue->informationData->informationUnit->unitType.id();
-
-        if (iutId == Echoes::Dbo::EInformationUnitType::CUSTOM)
+        std::string currentFile = m_alertsMap[alePtr.id()].secConfFilename.at(itMS->get()->id);
+        ofstream secConfFile(m_alertsMap[alePtr.id()].secConfFilename.at(itMS->get()->id).c_str());
+        if (secConfFile)
         {
-            secConfFile << alePtr->alertValue->value;
-        }
-        else
-        {
-            secConfFile << "type=Single\n"
-                    "ptype=PerlFunc\n"
-                    "pattern= \\\n"
-                    "sub { \\\n"
-                    "  use strict; \\\n"
-                    "  if ($_[0] cmp '') \\\n"
-                    "  { \\\n"
-                    "    (my $id, my $value) = split(':', $_[0]); \\\n";
+            const long long iutId = alePtr->alertValue->informationData->informationUnit->unitType.id();
 
-            if (iutId != Echoes::Dbo::EInformationUnitType::NUMBER)
+            if (iutId == Echoes::Dbo::EInformationUnitType::CUSTOM)
             {
-                secConfFile << "    use MIME::Base64; \\\n"
-                        "    $value = decode_base64($value); \\\n";
+                secConfFile << alePtr->alertValue->value;
             }
-            switch (iutId)
+            else
             {
+                secConfFile << "type=Single\n"
+                        "ptype=PerlFunc\n"
+                        "pattern= \\\n"
+                        "sub { \\\n"
+                        "  use strict; \\\n"
+                        "  if ($_[0] cmp '') \\\n"
+                        "  { \\\n"
+                        "    (my $id, my $value) = split(':', $_[0]); \\\n";
+
+                if (iutId != Echoes::Dbo::EInformationUnitType::NUMBER)
+                {
+                    secConfFile << "    use MIME::Base64; \\\n"
+                            "    $value = decode_base64($value); \\\n";
+                }
+                switch (iutId)
+                {
                 case Echoes::Dbo::EInformationUnitType::NUMBER:
                     log("debug") << "We are entering in the switch of the case number";
 
@@ -304,45 +324,71 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
                 default:
                     log("error") << "Switch Information unit type check failed";
                     break;
-            }
+                }
 
-            if (iutId == Echoes::Dbo::EInformationUnitType::NUMBER)
+                if (iutId == Echoes::Dbo::EInformationUnitType::NUMBER)
+                {
+                    secConfFile << "  ";
+                }
+
+                secConfFile << "    { \\\n"
+                        "        my $res = '{\\\\\\\\\\\\\"information_value_ids\\\\\\\\\\\\\": ['.$id.']}'; \\\n"
+                        "        return ($res, $value, (length($res) - 6)) \\\n";
+
+                if (iutId == Echoes::Dbo::EInformationUnitType::NUMBER)
+                {
+                    secConfFile << "      }; \\\n";
+                }
+
+                secConfFile << "    }; \\\n"
+                        "  }; \\\n"
+                        "}\n";
+            }
+            std::string contexts = "";
+            for (unsigned int i = 0; i < itMS->get()->timeSlots.size(); ++i)
             {
-                secConfFile << "  ";
+                if (i != 0)
+                {
+                    contexts += " || ";
+                }
+                contexts += "TIMESLOT" + boost::lexical_cast<string> (i);
             }
+            secConfFile << "context=(" + contexts + ")";
+            secConfFile << "desc=POST /alerts/" << alePtr.id() << "/trackings?eno_token=" << enoPtr->token << "&alert_media_specialization_id=" << itMS->get()->id <<  "HTTP/1.1\\n"
+                    "Host: " << conf.getAPIHost() << "\\n"
+                    "Content-Type: application/json; charset=utf-8\\n"
+                    "Content-length: $3\\n"
+                    "Connection: close\\n\\n"
+                    "$1\\n\\n\n"
+                    "action=shellcmd (/usr/bin/perl -e \"alarm(2); exec(\\\"/usr/bin/printf \\'%s\\' | /usr/bin/openssl s_client -quiet -crlf -connect " << conf.getAPIHost() << ":" << conf.getAPIPort() << "\\\")\")\n";
 
-            secConfFile << "    { \\\n"
-                    "        my $res = '{\\\\\\\\\\\\\"information_value_ids\\\\\\\\\\\\\": ['.$id.']}'; \\\n"
-                    "        return ($res, $value, (length($res) - 6)) \\\n";
-
-            if (iutId == Echoes::Dbo::EInformationUnitType::NUMBER)
+            int i = 0;
+            for (Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::AlertTimeSlot> >::const_iterator itTS = itMS->get()->timeSlots.begin(); itTS != itMS->get()->timeSlots.end(); ++itTS)
             {
-                secConfFile << "      }; \\\n";
-            }
 
-            secConfFile << "    }; \\\n"
-                    "  }; \\\n"
-                    "}\n";
+                secConfFile << "\n\ntype=Calendar";
+                secConfFile << "\ntime=* "
+                        + itTS->get()->start
+                        + std::string(" * ")
+                        + itTS->get()->months
+                        + " "
+                        + itTS->get()->days;
+                secConfFile << "\ndesc=TIMESLOT" + boost::lexical_cast<string> (i);
+                secConfFile << "\naction=create %s " + boost::lexical_cast<string> (itTS->get()->duration * 3600);
+                ++i;
+            }
+            secConfFile.close();
         }
-        secConfFile << "desc=POST /alerts/" << alePtr.id() << "/trackings?eno_token=" << enoPtr->token << " HTTP/1.1\\n"
-                "Host: " << conf.getAPIHost() << "\\n"
-                "Content-Type: application/json; charset=utf-8\\n"
-                "Content-length: $3\\n"
-                "Connection: close\\n\\n"
-                "$1\\n\\n\n"
-                "action=shellcmd (/usr/bin/perl -e \"alarm(2); exec(\\\"/usr/bin/printf \\'%s\\' | /usr/bin/openssl s_client -quiet -crlf -connect " << conf.getAPIHost() << ":" << conf.getAPIPort() << "\\\")\")\n";
+        else
+        {
+            log("error") << "Unable to open/create file: " << currentFile;
+        }
 
-        secConfFile.close();
-    }
-    else
-    {
-        log("error") << "Unable to open/create file: " << m_alertsMap[alePtr.id()].secConfFilename;
-    }
-
-    m_alertsMap[alePtr.id()].secPID = popen_sec(m_alertsMap[alePtr.id()].secConfFilename, &m_alertsMap[alePtr.id()].secInFP, &m_alertsMap[alePtr.id()].secOutFP, &m_alertsMap[alePtr.id()].secErrFP);
-    if (m_alertsMap[alePtr.id()].secPID <= 0)
-    {
-        log("error") << "Unable to exec SEC: " << m_alertsMap[alePtr.id()].secConfFilename;
+        m_alertsMap[alePtr.id()].secPID = popen_sec(currentFile, &m_alertsMap[alePtr.id()].secInFP, &m_alertsMap[alePtr.id()].secOutFP, &m_alertsMap[alePtr.id()].secErrFP);
+        if (m_alertsMap[alePtr.id()].secPID <= 0)
+        {
+            log("error") << "Unable to exec SEC: " << currentFile;
+        }
     }
 }
 
@@ -365,9 +411,12 @@ void AlertProcessor::stopAlert(const long long alertID)
     waitpid(m_alertsMap[alertID].secPID, NULL, 0);
     m_alertsMap[alertID].secPID = -1;
 
-    if (remove(m_alertsMap[alertID].secConfFilename.c_str()) < 0)
+    for (std::map<long long, std::string>::const_iterator itFile = m_alertsMap[alertID].secConfFilename.begin() ; itFile != m_alertsMap[alertID].secConfFilename.end(); ++itFile)
     {
-        log("info") << m_alertsMap[alertID].secConfFilename << ": " << strerror(errno);
+        if (remove(itFile->second.c_str()) < 0)
+        {
+            log("info") << itFile->second << ": " << strerror(errno);
+        }
     }
 
     try
