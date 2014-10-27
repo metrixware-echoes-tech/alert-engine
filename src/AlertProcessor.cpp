@@ -260,18 +260,16 @@ pid_t AlertProcessor::popen_sec(const string &confFilename, int *infp, int *outf
 
 void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo::ptr<Echoes::Dbo::EngOrg> enoPtr)
 {
-    cout << "[ start Alert ]" << endl;
     for (Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::AlertMediaSpecialization> >::const_iterator itMS = alePtr->alertMediaSpecializations.begin(); itMS != alePtr->alertMediaSpecializations.end(); ++itMS)
     {
-        cout << "mediaSpec id: " << itMS->id() << endl;
-        cout << "media mail: " << itMS->get()->media->value << endl;
         std::string currentFile = m_alertsMap[alePtr.id()].secConfFilename.at(itMS->id());
         ofstream secConfFile(m_alertsMap[alePtr.id()].secConfFilename.at(itMS->id()).c_str());
-        cout << "fileName: " << m_alertsMap[alePtr.id()].secConfFilename.at(itMS->id()).c_str() << endl;
+
         if (secConfFile)
         {
             Wt::Dbo::ptr<Echoes::Dbo::AlertSequence> asePtr = alePtr->alertSequence;
             long long iutId = asePtr->alertValue->informationData->informationUnit->unitType.id();
+
             if (iutId == Echoes::Dbo::EInformationUnitType::CUSTOM)
             {
                 secConfFile << asePtr->alertValue->value;
@@ -300,7 +298,6 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
                 while (asePtr)
                 {
                     iutId = asePtr->alertValue->informationData->informationUnit->unitType.id();
-
                     if (iutId != Echoes::Dbo::EInformationUnitType::NUMBER)
                     {
                         if (firstBase64)
@@ -334,7 +331,9 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
                     {
                     case Echoes::Dbo::EInformationUnitType::NUMBER:
                         log("debug") << "We are entering in the switch of the case number";
+
                         test += "$values[" + boost::lexical_cast<string>(cpt) + "] ";
+
                         switch (asePtr->alertValue->alertCriteria.id())
                         {
                         case Echoes::Dbo::EAlertCriteria::LT:
@@ -407,6 +406,7 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
                 contexts += "TIMESLOT" + boost::lexical_cast<string> (i);
             }
             secConfFile << "context=" + contexts + "\n";
+
             secConfFile << "desc=POST /alerts/" << alePtr.id() << "/trackings?eno_token=" << enoPtr->token << "&alert_media_specialization_id=" << boost::lexical_cast<string>(itMS->id()) << " HTTP/1.1\\n"
                     "Host: " << conf.getAPIHost() << "\\n"
                     "Content-Type: application/json; charset=utf-8\\n"
@@ -414,22 +414,22 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
                     "Connection: close\\n\\n"
                     "$1\\n\\n\n"
                     "action=shellcmd (/usr/bin/perl -e \"alarm(2); exec(\\\"/usr/bin/printf \\'%s\\' > /home/vpl/timeslot.tmp | /usr/bin/openssl s_client -quiet -crlf -connect " << conf.getAPIHost() << ":" << conf.getAPIPort() << "\\\")\")\n";
-            
+
             int i = 0;
             for (Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::AlertTimeSlot> >::const_iterator itTS = itMS->get()->timeSlots.begin(); itTS != itMS->get()->timeSlots.end(); ++itTS)
             {
                 secConfFile << "\ntype=Calendar";
                 secConfFile << "\ntime=* "
-//                        + boost::lexical_cast<string>(itTS->get()->start)
-                          + std::string("* * * *");
-//                        + itTS->get()->months
-//                        + " "
-//                        + itTS->get()->days
+                        //                        + boost::lexical_cast<string>(itTS->get()->start)
+                        + std::string("* * * *");
+                //                        + itTS->get()->months
+                //                        + " "
+                //                        + itTS->get()->days
                 secConfFile << "\ndesc=TIMESLOT" + boost::lexical_cast<string> (i);
                 secConfFile << "\naction=create %s " + boost::lexical_cast<string> (itTS->get()->duration * 3600);
                 ++i;
             }
-            
+
             secConfFile.close();
         }
         else
