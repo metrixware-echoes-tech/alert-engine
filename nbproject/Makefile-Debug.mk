@@ -68,28 +68,28 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/engine: ${OBJECTFILES}
 
 ${OBJECTDIR}/main.o: main.cpp 
 	${MKDIR} -p ${OBJECTDIR}
-	${RM} $@.d
-	$(COMPILE.cc) -g -Wall -Iinclude -I../dbo/include -std=c++11 -pedantic -MMD -MP -MF $@.d -o ${OBJECTDIR}/main.o main.cpp
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -Wall -Iinclude -I../dbo/include -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/main.o main.cpp
 
 ${OBJECTDIR}/src/AlertProcessor.o: src/AlertProcessor.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.cc) -g -Wall -Iinclude -I../dbo/include -std=c++11 -pedantic -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/AlertProcessor.o src/AlertProcessor.cpp
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -Wall -Iinclude -I../dbo/include -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/AlertProcessor.o src/AlertProcessor.cpp
 
 ${OBJECTDIR}/src/Conf.o: src/Conf.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.cc) -g -Wall -Iinclude -I../dbo/include -std=c++11 -pedantic -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/Conf.o src/Conf.cpp
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -Wall -Iinclude -I../dbo/include -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/Conf.o src/Conf.cpp
 
 ${OBJECTDIR}/src/Logger.o: src/Logger.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.cc) -g -Wall -Iinclude -I../dbo/include -std=c++11 -pedantic -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/Logger.o src/Logger.cpp
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -Wall -Iinclude -I../dbo/include -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/Logger.o src/Logger.cpp
 
 ${OBJECTDIR}/src/Server.o: src/Server.cpp 
 	${MKDIR} -p ${OBJECTDIR}/src
-	${RM} $@.d
-	$(COMPILE.cc) -g -Wall -Iinclude -I../dbo/include -std=c++11 -pedantic -MMD -MP -MF $@.d -o ${OBJECTDIR}/src/Server.o src/Server.cpp
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -Wall -Iinclude -I../dbo/include -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/Server.o src/Server.cpp
 
 # Subprojects
 .build-subprojects:
