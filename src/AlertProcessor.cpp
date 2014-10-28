@@ -11,6 +11,9 @@
  * 
  */
 
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
+
 #include "AlertProcessor.h"
 
 using namespace std;
@@ -48,7 +51,6 @@ int AlertProcessor::verifyAlerts(int *signum)
         {
             try
             {
-                cout << "[ transaction about to begin ]" << endl;
                 Wt::Dbo::Transaction transaction(m_session, true);
 
                 Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::Alert>> alePtrCol = m_session.find<Echoes::Dbo::Alert>()
@@ -56,6 +58,7 @@ int AlertProcessor::verifyAlerts(int *signum)
                         .where(QUOTE(TRIGRAM_ALERT SEP "DELETE") " IS NULL");
 
                 log("debug") << "We have " << alePtrCol.size() << " Alert(s) for this Engine in the database";
+                
                 
                 for (Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::Alert>>::const_iterator it = alePtrCol.begin(); it != alePtrCol.end(); ++it)
                 {
@@ -70,30 +73,26 @@ int AlertProcessor::verifyAlerts(int *signum)
                                     .limit(1);
                             log("info") << "Call responded";
                             if (engOrgPtr)
-                            {
-
-                                std::map<long long, std::string> confFileNames;
-                                
+                            {                                
                                 for (Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::AlertMediaSpecialization> >::const_iterator itMS = it->get()->alertMediaSpecializations.begin(); itMS != it->get()->alertMediaSpecializations.end(); ++itMS)
                                 {
-                                    cout << "media spec id: " << boost::lexical_cast<string>(itMS->id());
                                     std::string newConfName("/opt/echoes-alert/engine/conf/sec-alert" + boost::lexical_cast<string>(it->id()));
                                     newConfName += "-media";
                                     newConfName += boost::lexical_cast<string>(itMS->id());
                                     newConfName += ".conf";
-                                    confFileNames.insert(std::make_pair(itMS->id(), newConfName));
-                                    cout << "newConfName: " << newConfName << endl;
-                                }
 
-                                m_alertsMap[it->id()] = {
-                                    true,
-                                    confFileNames,
-                                    -1,
-                                    0,
-                                    0,
-                                    0,
-                                    new boost::thread(boost::bind(&AlertProcessor::informationValueLoop, this, it->id()))
-                                };
+                                    m_alertsMap[it->id()][itMS->id()] = {
+                                            true,
+                                            false,
+                                            newConfName,
+                                            -1,
+                                            0,
+                                            0,
+                                            0,
+                                            new boost::thread(boost::bind(&AlertProcessor::informationValueLoop, this, it->id(), itMS->id()))
+                                    };
+                                }
+                                                               
                                 startAlert(*it, engOrgPtr);
                             }
                             else
@@ -103,7 +102,10 @@ int AlertProcessor::verifyAlerts(int *signum)
                         }
                         else
                         {
-                            m_alertsMap[it->id()].check = true;
+                            for (std::map<long long, struct AlertSpecs>::const_iterator itMS = m_alertsMap[it->id()].begin() ; itMS != m_alertsMap[it->id()].end() ; ++itMS)
+                            {
+                                m_alertsMap[it->id()][itMS->first].check = true;
+                            }
                         }
                     }
                 }
@@ -131,32 +133,32 @@ int AlertProcessor::verifyAlerts(int *signum)
                             {
                                 it->modify()->engine = m_enginePtr;
                                 it->flush();
-
-                                std::map<long long, std::string> confFileNames;
                                 
                                 for (Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::AlertMediaSpecialization> >::const_iterator itMS = it->get()->alertMediaSpecializations.begin(); itMS != it->get()->alertMediaSpecializations.end(); ++itMS)
                                 {
-                                    cout << "media spec id: " << boost::lexical_cast<string>(itMS->id());
                                     std::string newConfName("/opt/echoes-alert/engine/conf/sec-alert" + boost::lexical_cast<string>(it->id()));
                                     newConfName += "-media";
                                     newConfName += boost::lexical_cast<string>(itMS->id());
                                     newConfName += ".conf";
-                                    confFileNames.insert(std::make_pair(itMS->id(), newConfName));
-                                    cout << "newConfName: " << newConfName << endl;
+
+                                    
+                                    m_alertsMap[it->id()][itMS->id()] = {
+                                            true,
+                                            false,
+                                            newConfName,
+                                            -1,
+                                            0,
+                                            0,
+                                            0,
+                                            new boost::thread(boost::bind(&AlertProcessor::informationValueLoop, this, it->id(), itMS->id()))
+                                    };
                                 }
                                 
-                                    it->modify()->engine = m_enginePtr;
-                                    it->flush();
+                                
+                                it->modify()->engine = m_enginePtr;
+                                it->flush();
 
-                                    m_alertsMap[it->id()] = {
-                                        true,
-                                        confFileNames,
-                                        -1,
-                                        0,
-                                        0,
-                                        0,
-                                        new boost::thread(boost::bind(&AlertProcessor::informationValueLoop, this, it->id()))
-                                    };
+                                
                                 startAlert(*it, enoPtr);
                             }
                             else
@@ -173,26 +175,38 @@ int AlertProcessor::verifyAlerts(int *signum)
             {
                 log("error") << "Wt::Dbo: " << e.what();
             }
-
-            vector<long long> alertToErase;
-            for (map<long long, SecondStructure>::const_iterator it = m_alertsMap.begin(); it != m_alertsMap.end(); ++it)
+//
+//            for (map<long long, std::map<long long, struct AlertSpecs>>::const_iterator itA = m_alertsMap.begin(); itA != m_alertsMap.end(); ++itA)
+//            {
+//                for (std::map<long long, struct AlertSpecs>::const_iterator itMS = m_alertsMap[itA->first].begin(); itMS != m_alertsMap[itA->first].end(); ++itMS)
+//                {
+//                    cout << "alert: " << itA->first << " - mediaSpec: " << itMS->first << endl;
+//                    cout << "ConfFile: " << itMS->second.secConfFilename << endl;
+//                }
+//            }
+            vector<std::pair<long long, long long>> alertToErase;
+            for (map<long long, std::map<long long, struct AlertSpecs>>::const_iterator itA = m_alertsMap.begin(); itA != m_alertsMap.end(); ++itA)
             {
-                if (it->second.check)
+                for (std::map<long long, struct AlertSpecs>::const_iterator itMS = m_alertsMap[itA->first].begin() ; itMS != m_alertsMap[itA->first].end() ; ++itMS)
                 {
-                    m_alertsMap[it->first].check = false;
-                }
-                else
-                {
-                    stopAlert(it->first);
-                    it->second.ivaThread->interrupt();
-                    delete it->second.ivaThread;
-                    alertToErase.push_back(it->first);
+                    if (itMS->second.check)
+                    {
+                        m_alertsMap[itA->first][itMS->first].check = false;
+                    }
+                    else
+                    {
+                        stopAlert(itA->first, itMS->first);
+                        itMS->second.ivaThread->interrupt();
+                        delete itMS->second.ivaThread;
+                        alertToErase.push_back(std::make_pair(itA->first, itMS->first));
+                        
+                    }
                 }
             }
 
-            for (unsigned i(0); i < alertToErase.size(); ++i)
+            for (vector<std::pair<long long, long long>>::iterator itER = alertToErase.begin() ; itER != alertToErase.end() ; ++itER)
             {
-                m_alertsMap.erase(alertToErase[i]);
+                m_alertsMap[itER->first].erase(itER->second);
             }
 
             boost::this_thread::sleep(boost::posix_time::seconds(conf.sleepThreadCheckAlert));
@@ -202,7 +216,7 @@ int AlertProcessor::verifyAlerts(int *signum)
     return res;
 }
 
-pid_t AlertProcessor::popen_sec(const string &confFilename, int *infp, int *outfp, int *errfp)
+pid_t AlertProcessor::popen_sec(const long long alertID, const long long mediaSpecID, int *infp, int *outfp, int *errfp)
 {
     int p_stdin[2] = {0}, p_stdout[2] = {0}, p_stderr[2] = {0};
     pid_t pid = 0;
@@ -223,7 +237,8 @@ pid_t AlertProcessor::popen_sec(const string &confFilename, int *infp, int *outf
         execl(
               "/usr/bin/sec",
               "sec",
-              ("-conf=" + confFilename).c_str(),
+              (m_alertsMap[alertID][mediaSpecID].start ? "--intevents" : ""),
+              ("-conf=" + m_alertsMap[alertID][mediaSpecID].secConfFilename).c_str(),
               "-input=-",
 #ifdef NDEBUG
                 ("-log=" + logger.getPath()).c_str(),
@@ -258,24 +273,117 @@ pid_t AlertProcessor::popen_sec(const string &confFilename, int *infp, int *outf
     return pid;
 }
 
+std::string AlertProcessor::setTimeSlotContext(int numTimeSlot, int start, int duration, std::vector<std::string> days, std::vector<std::string> months)
+{
+    std::string output("");
+
+    int currentDay = 0;
+    int maxHour = (start + duration) % 24;
+    if (!maxHour)
+    {
+        maxHour = 24;
+    }
+    
+    bool isDay = false;
+    bool isMonth = false;
+    
+    Wt::WTime currentTime = Wt::WTime::currentServerTime();
+    Wt::WDate currentDate = Wt::WDate::currentDate();
+
+    if (start + duration < 24)
+    {
+        currentDay = currentDate.day() % 7;
+    }
+    else
+    {
+        currentDay = (currentDate.day() + 1) % 7;
+    }
+        
+    for (auto itD = days.begin() ; itD != days.end() ; ++itD)
+    {
+        if (itD->compare(boost::lexical_cast<string> (currentDay)))
+        {
+            isDay = true;
+        }
+    }
+
+    for (auto itM = months.begin() ; itM != months.end() ; ++itM)
+    {
+        if (itM->compare(boost::lexical_cast<string> (currentDate.month())))
+        {
+            isMonth = true;
+        }
+    }
+    
+    if (isDay && isMonth)
+    {
+
+        if (currentTime.hour() < maxHour)
+        {
+            output += "type=Single";
+            output += "\nptype=RegExp";
+            output += "\npattern=^(?:SEC_STARTUP|SEC_RESTART)$";
+            output += "\ndesc=TIMESLOT" + boost::lexical_cast<string> (numTimeSlot);
+            output += "\naction=create %s " + boost::lexical_cast<string> ((maxHour - currentTime.hour()) * 3600);
+            output += "\n\n";
+        }
+    }
+    
+    return (output);
+}
+
 void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo::ptr<Echoes::Dbo::EngOrg> enoPtr)
 {
     for (Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::AlertMediaSpecialization> >::const_iterator itMS = alePtr->alertMediaSpecializations.begin(); itMS != alePtr->alertMediaSpecializations.end(); ++itMS)
     {
-        std::string currentFile = m_alertsMap[alePtr.id()].secConfFilename.at(itMS->id());
-        ofstream secConfFile(m_alertsMap[alePtr.id()].secConfFilename.at(itMS->id()).c_str());
+        std::string currentFile = m_alertsMap[alePtr.id()][itMS->id()].secConfFilename;
+        ofstream secConfFile(m_alertsMap[alePtr.id()][itMS->id()].secConfFilename.c_str());
 
         if (secConfFile)
         {
             Wt::Dbo::ptr<Echoes::Dbo::AlertSequence> asePtr = alePtr->alertSequence;
             long long iutId = asePtr->alertValue->informationData->informationUnit->unitType.id();
 
+            
+            int i = 0;
+            for (Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::AlertTimeSlot> >::const_iterator itTS = itMS->get()->timeSlots.begin(); itTS != itMS->get()->timeSlots.end(); ++itTS)
+            {
+                std::vector<std::string> months;
+                std::vector<std::string> days;
+                std::string s_months(itTS->get()->months.toUTF8());
+                std::string s_days(itTS->get()->days.toUTF8());
+                boost::split(months, s_months, boost::is_any_of(","), boost::token_compress_on);
+                boost::split(days, s_days, boost::is_any_of(","), boost::token_compress_on);
+
+                std::string timeSlotContext("");
+                timeSlotContext = setTimeSlotContext(i, itTS->get()->start, itTS->get()->duration, days, months);
+                if (!timeSlotContext.empty())
+                {
+                    m_alertsMap[alePtr.id()][itMS->id()].start = true;
+                }
+                
+                secConfFile << timeSlotContext;
+                
+                secConfFile << "type=Calendar";
+                secConfFile << "\ntime=* "
+                        + boost::lexical_cast<string>(itTS->get()->start)
+                        + std::string(" * ")
+                        + itTS->get()->months
+                        + " "
+                        + itTS->get()->days;
+                secConfFile << "\ndesc=TIMESLOT" + boost::lexical_cast<string> (i);
+                secConfFile << "\naction=create %s " + boost::lexical_cast<string> (itTS->get()->duration * 3600);
+
+                secConfFile << "\n\n";
+                ++i;
+            }
+            
             if (iutId == Echoes::Dbo::EInformationUnitType::CUSTOM)
             {
                 secConfFile << asePtr->alertValue->value;
             }
             else
-            {
+            {                
                 secConfFile << "type=Single\n"
                         "ptype=PerlFunc\n"
                         "pattern= \\\n"
@@ -380,65 +488,54 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
                 }
 
                 secConfFile << "    if (" << test << ") \\\n"
-                        "    { \\\n"
-                        "      my $listIDs;  \\\n"
-                        "      foreach my $id (@ids) { \\\n"
-                        "        $listIDs .= $id; \\\n"
-                        "        if($id != $ids[$#ids]) \\\n"
                         "        { \\\n"
-                        "          $listIDs .= ','; \\\n"
+                        "            my $listIDs;  \\\n"
+                        "            foreach my $id (@ids) { \\\n"
+                        "            $listIDs .= $id; \\\n"
+                        "            if($id != $ids[$#ids]) \\\n"
+                        "            { \\\n"
+                        "                $listIDs .= ','; \\\n"
+                        "            } \\\n"
                         "        } \\\n"
-                        "      } \\\n"
-                        "      my $res = '{\\\\\\\\\\\\\"information_value_ids\\\\\\\\\\\\\": ['.$listIDs.']}'; \\\n"
-                        "      return ($res, (length($res) - 6)) \\\n"
+                        "        my $res = '{\\\\\\\\\\\\\"information_value_ids\\\\\\\\\\\\\": ['.$listIDs.']}'; \\\n"
+                        "        return ($res, (length($res) - 6)) \\\n"
+                        "        }; \\\n"
                         "    }; \\\n"
-                        "  }; \\\n"
                         "}\n";
             }
 
             std::string contexts = "";
-            for (unsigned int i = 0; i < itMS->get()->timeSlots.size(); ++i)
+            for (unsigned int count = 0; count < itMS->get()->timeSlots.size(); ++count)
             {
-                if (i != 0)
+                if (count != 0)
                 {
                     contexts += " || ";
                 }
-                contexts += "TIMESLOT" + boost::lexical_cast<string> (i);
+                contexts += "TIMESLOT" + boost::lexical_cast<string> (count);
             }
-            secConfFile << "context=" + contexts + "\n";
-
-            secConfFile << "desc=POST /alerts/" << alePtr.id() << "/trackings?eno_token=" << enoPtr->token << "&alert_media_specialization_id=" << boost::lexical_cast<string>(itMS->id()) << " HTTP/1.1\\n"
+            if (itMS->get()->timeSlots.size())
+            {
+                secConfFile << "context=" + contexts + "\n";
+            }
+            
+            secConfFile << "desc=POST /alerts/" << alePtr.id() << "/trackings?eno_token=" << enoPtr->token << "&alert_media_specialization_id=" << itMS->id() << " HTTP/1.1\\n"
                     "Host: " << conf.getAPIHost() << "\\n"
                     "Content-Type: application/json; charset=utf-8\\n"
-                    "Content-length: $3\\n"
+                    "Content-length: $2\\n"
                     "Connection: close\\n\\n"
                     "$1\\n\\n\n"
-                    "action=shellcmd (/usr/bin/perl -e \"alarm(2); exec(\\\"/usr/bin/printf \\'%s\\' > /home/vpl/timeslot.tmp | /usr/bin/openssl s_client -quiet -crlf -connect " << conf.getAPIHost() << ":" << conf.getAPIPort() << "\\\")\")\n";
-
-            int i = 0;
-            for (Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::AlertTimeSlot> >::const_iterator itTS = itMS->get()->timeSlots.begin(); itTS != itMS->get()->timeSlots.end(); ++itTS)
-            {
-                secConfFile << "\ntype=Calendar";
-                secConfFile << "\ntime=* "
-                        //                        + boost::lexical_cast<string>(itTS->get()->start)
-                        + std::string("* * * *");
-                //                        + itTS->get()->months
-                //                        + " "
-                //                        + itTS->get()->days
-                secConfFile << "\ndesc=TIMESLOT" + boost::lexical_cast<string> (i);
-                secConfFile << "\naction=create %s " + boost::lexical_cast<string> (itTS->get()->duration * 3600);
-                ++i;
-            }
-
+                    "action=shellcmd (/usr/bin/perl -e \"alarm(2); exec(\\\"/usr/bin/printf \\'%s\\' | /usr/bin/openssl s_client -quiet -crlf -connect " << conf.getAPIHost() << ":" << conf.getAPIPort() << "\\\")\")\n";
+            
             secConfFile.close();
         }
         else
         {
             log("error") << "Unable to open/create file: " << currentFile;
         }
-
-        m_alertsMap[alePtr.id()].secPID = popen_sec(currentFile, &m_alertsMap[alePtr.id()].secInFP, &m_alertsMap[alePtr.id()].secOutFP, &m_alertsMap[alePtr.id()].secErrFP);
-        if (m_alertsMap[alePtr.id()].secPID <= 0)
+        
+        
+        m_alertsMap[alePtr.id()][itMS->id()].secPID = popen_sec(alePtr.id(), itMS->id(), &m_alertsMap[alePtr.id()][itMS->id()].secInFP, &m_alertsMap[alePtr.id()][itMS->id()].secOutFP, &m_alertsMap[alePtr.id()][itMS->id()].secErrFP);
+        if (m_alertsMap[alePtr.id()][itMS->id()].secPID <= 0)
         {
             log("error") << "Unable to exec SEC: " << currentFile;
         }
@@ -447,52 +544,55 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
 
 void AlertProcessor::stopAllAlerts()
 {
-    for (map<long long, SecondStructure>::const_iterator it = m_alertsMap.begin(); it != m_alertsMap.end(); ++it)
+    for (map<long long, std::map<long long, struct AlertSpecs>>::const_iterator itA = m_alertsMap.begin(); itA != m_alertsMap.end(); ++itA)
     {
-        stopAlert(it->first);
-        it->second.ivaThread->interrupt();
-        delete it->second.ivaThread;
+        for (std::map<long long, struct AlertSpecs>::const_iterator itMS = itA->second.begin() ; itMS != itA->second.end() ; ++itMS)
+        {
+            stopAlert(itA->first, itMS->first);
+            itMS->second.ivaThread->interrupt();
+            delete itMS->second.ivaThread;
+        }
     }
 }   
 
-void AlertProcessor::stopAlert(const long long alertID)
+void AlertProcessor::stopAlert(const long long alertID, const long long mediaSpecID)
 {
-    kill(m_alertsMap[alertID].secPID, SIGTERM);
-    close(m_alertsMap[alertID].secInFP);
-    close(m_alertsMap[alertID].secOutFP);
-    close(m_alertsMap[alertID].secErrFP);
-    waitpid(m_alertsMap[alertID].secPID, NULL, 0);
-    m_alertsMap[alertID].secPID = -1;
+    kill(m_alertsMap[alertID][mediaSpecID].secPID, SIGTERM);
+    close(m_alertsMap[alertID][mediaSpecID].secInFP);
+    close(m_alertsMap[alertID][mediaSpecID].secOutFP);
+    close(m_alertsMap[alertID][mediaSpecID].secErrFP);
+    waitpid(m_alertsMap[alertID][mediaSpecID].secPID, NULL, 0);
+    m_alertsMap[alertID][mediaSpecID].secPID = -1;
 
-    for (std::map<long long, std::string>::const_iterator itFile = m_alertsMap[alertID].secConfFilename.begin() ; itFile != m_alertsMap[alertID].secConfFilename.end(); ++itFile)
+    if (remove(m_alertsMap[alertID][mediaSpecID].secConfFilename.c_str()) < 0)
     {
-        if (remove(itFile->second.c_str()) < 0)
+        log("info") << m_alertsMap[alertID][mediaSpecID].secConfFilename << ": " << strerror(errno);
+    }
+
+    if (m_alertsMap[alertID].size() == 0)
+    {
+        try
         {
-            log("info") << itFile->second << ": " << strerror(errno);
+            Wt::Dbo::Transaction transaction(m_session, true);
+
+            Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr = m_session.find<Echoes::Dbo::Alert>()
+                    .where(QUOTE(TRIGRAM_ALERT ID)" = ?").bind(alertID)
+                    .where(QUOTE(TRIGRAM_ALERT SEP "DELETE")" IS NULL")
+                    .limit(1);
+
+            alePtr.modify()->engine = Wt::Dbo::ptr<Echoes::Dbo::Engine>();
+            alePtr.flush();
+
+            transaction.commit();
         }
-    }
-
-    try
-    {
-        Wt::Dbo::Transaction transaction(m_session, true);
-
-        Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr = m_session.find<Echoes::Dbo::Alert>()
-                .where(QUOTE(TRIGRAM_ALERT ID)" = ?").bind(alertID)
-                .where(QUOTE(TRIGRAM_ALERT SEP "DELETE")" IS NULL")
-                .limit(1);
-
-        alePtr.modify()->engine = Wt::Dbo::ptr<Echoes::Dbo::Engine>();
-        alePtr.flush();
-
-        transaction.commit();
-    }
-    catch (Wt::Dbo::Exception const& e)
-    {
-        log("error") << "Wt::Dbo: " << e.what();
+        catch (Wt::Dbo::Exception const& e)
+        {
+            log("error") << "Wt::Dbo: " << e.what();
+        }
     }
 }
 
-void AlertProcessor::informationValueLoop(const long long alertID)
+void AlertProcessor::informationValueLoop(const long long alertID, const long long mediaSpecID)
 {
     if (alertID < 1)
     {
@@ -502,12 +602,15 @@ void AlertProcessor::informationValueLoop(const long long alertID)
 
     unsigned idx = 0;
     // Waiting for SEC instance creation
-    while (m_alertsMap[alertID].secPID <= 0)
+
+    while (m_alertsMap[alertID][mediaSpecID].secPID <= 0)
     {
         boost::this_thread::sleep(boost::posix_time::seconds(1));
         idx++;
         if (idx % 10 == 0)
+        {
             log("warning") << "No SEC instance after " << boost::lexical_cast<string>(idx) << "s for alert ID: " << alertID;
+        }
         if (idx == 30)
         {
             log("error") << "Stop IVA Collect for alert ID: " << alertID;
@@ -516,21 +619,22 @@ void AlertProcessor::informationValueLoop(const long long alertID)
     }
     log("info") << "SEC instance after " << boost::lexical_cast<string>(idx) << "s for alert ID: " << alertID;
 
-    boost::thread(boost::bind(&AlertProcessor::secLogLoop, this, m_alertsMap[alertID].secOutFP, "info"));
-    boost::thread(boost::bind(&AlertProcessor::secLogLoop, this, m_alertsMap[alertID].secErrFP, "error"));    
+    boost::thread(boost::bind(&AlertProcessor::secLogLoop, this, m_alertsMap[alertID][mediaSpecID].secOutFP, "info"));
+    boost::thread(boost::bind(&AlertProcessor::secLogLoop, this, m_alertsMap[alertID][mediaSpecID].secErrFP, "error"));
 
-    struct IvaStruct {
+    struct IvaStruct
+    {
         long long idaId = 0;
         long long filId = 0;
         long long astId = 0;
         long long infId = 0;
         long long iutId = 0;
         int posKeyValue = 0;
-        string keyValue = "";  
-        Wt::Dbo::ptr<Echoes::Dbo::InformationData> idakeyPtr;  
-        long long ivaId = 0;        
-        bool isIVAFound = false;        
-        long long ivaKeyId = 0;        
+        string keyValue = "";
+        Wt::Dbo::ptr<Echoes::Dbo::InformationData> idakeyPtr;
+        long long ivaId = 0;
+        bool isIVAFound = false;
+        long long ivaKeyId = 0;
         string ivaValue = "";
     };
     vector<IvaStruct> ivaStructs;
@@ -548,10 +652,10 @@ void AlertProcessor::informationValueLoop(const long long alertID)
                 .limit(1);
 
         if (alePtr)
-        {            
+        {
             Wt::Dbo::ptr<Echoes::Dbo::AlertSequence> asePtr = alePtr->alertSequence;
-            while(asePtr)
-            {    
+            while (asePtr)
+            {
                 IvaStruct ivaStruct;
                 ivaStruct.idaId = asePtr->alertValue->informationData.id();
                 ivaStruct.infId = asePtr->alertValue->informationData->information.id();
@@ -605,26 +709,27 @@ void AlertProcessor::informationValueLoop(const long long alertID)
         log("error") << "Wt::Dbo: " << e.what();
         return;
     }
-    
-    bool areIVAsFound = false;   
-    
+
+    bool areIVAsFound = false;
+
+
     // Arbitrary definition
     const unsigned period = 60;
 
     Wt::WDateTime searchDateTime = Wt::WDateTime::currentDateTime().addSecs(-period);
-    
-    while (!areIVAsFound && m_alertsMap[alertID].secPID > 0)
-    {    
+
+    while (!areIVAsFound && m_alertsMap[alertID][mediaSpecID].secPID > 0)
+    {
         areIVAsFound = true;
-        for(vector<IvaStruct>::iterator it = ivaStructs.begin(); it < ivaStructs.end(); it++)
-        {        
+        for (vector<IvaStruct>::iterator it = ivaStructs.begin(); it < ivaStructs.end(); it++)
+        {
             // first case, we have a pos key value and we need to get the lotNumber and the lineNumber
             if (it->posKeyValue > 0)
             {
                 bool isIVAKeyFound = false;
                 int lotNumber = 0;
                 int lineNumber = 0;
-                
+
                 log("debug") << "Retrieve IVA Key after: " << searchDateTime.toString("yyyy-MM-dd hh:mm:ss");
                 try
                 {
@@ -681,7 +786,7 @@ void AlertProcessor::informationValueLoop(const long long alertID)
                     }
                 }
             }
-            // second case, simple information without poskey
+                // second case, simple information without poskey
             else
             {
                 log("debug") << "Retrieve IVA after: " << searchDateTime.toString("yyyy-MM-dd hh:mm:ss");
@@ -691,7 +796,7 @@ void AlertProcessor::informationValueLoop(const long long alertID)
 
                     Wt::Dbo::ptr<Echoes::Dbo::InformationValue> ivaPtr = m_session.find<Echoes::Dbo::InformationValue>()
                             .where("\"IVA_IDA_IDA_ID\" = ?").bind(it->idaId)
-                             .where("\"IVA_STATE\" = ?").bind(0)
+                            .where("\"IVA_STATE\" = ?").bind(0)
                             .where("\"IVA_CREA_DATE\" >= ?").bind(searchDateTime.toString("yyyy-MM-dd hh:mm:ss").toUTF8())
                             .orderBy("\"IVA_ID\" DESC")
                             .limit(1);
@@ -718,14 +823,14 @@ void AlertProcessor::informationValueLoop(const long long alertID)
         }
     }
 
-    while (m_alertsMap[alertID].secPID > 0)
+    while (m_alertsMap[alertID][mediaSpecID].secPID > 0)
     {
         // creating the input for SEC
         if (areIVAsFound)
         {
             string inputSEC;
-            for(vector<IvaStruct>::iterator it = ivaStructs.begin(); it < ivaStructs.end(); it++)
-            { 
+            for (vector<IvaStruct>::iterator it = ivaStructs.begin(); it < ivaStructs.end(); it++)
+            {
                 inputSEC += boost::lexical_cast<string>(it->ivaId) + ":";
                 switch (it->iutId)
                 {
@@ -736,16 +841,16 @@ void AlertProcessor::informationValueLoop(const long long alertID)
                     inputSEC += Wt::Utils::base64Encode(it->ivaValue);
                     break;
                 }
-                if(it < ivaStructs.end()-1)
+                if (it < ivaStructs.end() - 1)
                 {
                     inputSEC += ";";
                 }
                 it->isIVAFound = false;
             }
-            
+
             inputSEC += "\n";
             log("debug") << "Send IVA to SEC";
-            write(m_alertsMap[alertID].secInFP, inputSEC.c_str(), inputSEC.size());
+            write(m_alertsMap[alertID][mediaSpecID].secInFP, inputSEC.c_str(), inputSEC.size());
         }
 
         searchDateTime = searchDateTime.addSecs(period);
@@ -757,9 +862,9 @@ void AlertProcessor::informationValueLoop(const long long alertID)
 
             areIVAsFound = true;
 
-            Wt::Dbo::ptr<Echoes::Dbo::InformationValue> ivaPtr;            
-            for(vector<IvaStruct>::iterator it = ivaStructs.begin(); it < ivaStructs.end(); it++)
-            { 
+            Wt::Dbo::ptr<Echoes::Dbo::InformationValue> ivaPtr;
+            for (vector<IvaStruct>::iterator it = ivaStructs.begin(); it < ivaStructs.end(); it++)
+            {
                 if (it->posKeyValue > 0)
                 {
                     log("debug") << "Retrieve IVA Key";
@@ -777,13 +882,13 @@ void AlertProcessor::informationValueLoop(const long long alertID)
                     {
                         log("debug") << "Retrieve IVA";
                         ivaPtr = m_session.find<Echoes::Dbo::InformationValue>()
-                            .where("\"IVA_IDA_IDA_ID\" = ?").bind(it->idaId)
-                            .where("\"IVA_STATE\" = ?").bind(0)
-                            .where("\"IVA_LOT_NUM\" = ?").bind(ivaKeyPtr->lotNumber)
-                            .where("\"IVA_LINE_NUM\" = ?").bind(ivaKeyPtr->lineNumber)
-                            .orderBy("\"IVA_ID\" DESC")
-                            .limit(1);
-                     }
+                                .where("\"IVA_IDA_IDA_ID\" = ?").bind(it->idaId)
+                                .where("\"IVA_STATE\" = ?").bind(0)
+                                .where("\"IVA_LOT_NUM\" = ?").bind(ivaKeyPtr->lotNumber)
+                                .where("\"IVA_LINE_NUM\" = ?").bind(ivaKeyPtr->lineNumber)
+                                .orderBy("\"IVA_ID\" DESC")
+                                .limit(1);
+                    }
                 }
                 else
                 {
@@ -791,7 +896,7 @@ void AlertProcessor::informationValueLoop(const long long alertID)
                     ivaPtr = m_session.find<Echoes::Dbo::InformationValue>()
                             .where("\"IVA_ID\" > ?").bind(it->ivaId)
                             .where("\"IVA_IDA_IDA_ID\" = ?").bind(it->idaId)
-                             .where("\"IVA_STATE\" = ?").bind(0)
+                            .where("\"IVA_STATE\" = ?").bind(0)
                             .orderBy("\"IVA_ID\" DESC")
                             .limit(1);
                 }
@@ -802,7 +907,7 @@ void AlertProcessor::informationValueLoop(const long long alertID)
                     it->ivaId = ivaPtr.id();
                     it->ivaValue = ivaPtr->value.toUTF8();
                 }
-                
+
                 areIVAsFound &= it->isIVAFound;
             }
 
@@ -813,7 +918,6 @@ void AlertProcessor::informationValueLoop(const long long alertID)
             log("error") << "Wt::Dbo: " << e.what();
         }
     }
-
     return;
 }
 

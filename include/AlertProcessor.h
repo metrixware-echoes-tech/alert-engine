@@ -48,23 +48,30 @@ class AlertProcessor {
         void stopAllAlerts();
 
     private:
-        struct SecondStructure
+        struct AlertSpecs
         {
             bool check;
-            std::map<long long, std::string> secConfFilename;
+            bool start;
+            std::string secConfFilename;
             pid_t secPID;
             int secInFP, secOutFP, secErrFP;
             boost::thread *ivaThread;
         };
         
-        std::map<long long, SecondStructure> m_alertsMap;
+        /* < alert id - < mediaSpec id - struct AlertSpecs >> */
+        std::map<long long, std::map<long long, struct AlertSpecs>> m_alertsMap;
 
         Echoes::Dbo::Session& m_session;
         Wt::Dbo::ptr<Echoes::Dbo::Engine> m_enginePtr;
 
 #define READ 0
 #define WRITE 1
-        pid_t popen_sec(const std::string &confFilename, int *infp, int *outfp, int *errfp);
+        /**
+         * Stop SEC and remove its config file
+         * @param IDentifier of the alert
+         * @param IDentifier of the media specialization
+         */
+        pid_t popen_sec(const long long alertID, const long long mediaSpecID, int *infp, int *outfp, int *errfp);
         
         /**
          * Write SEC config file and launch it
@@ -73,14 +80,16 @@ class AlertProcessor {
         /**
          * Stop SEC and remove its config file
          * @param IDentifier of the alert
+         * @param IDentifier of the media specialization
          */
-        void stopAlert(const long long alertID);
+        void stopAlert(const long long alertID, const long long mediaSpecID);
 
         /**
          * Retrieve InformationValue from table for one alert
          * @param IDentifier of the alert
+         * @param IDentifier of the media specialization
          */
-        void informationValueLoop(const long long alertID);
+        void informationValueLoop(const long long alertID, const long long mediaSpecID);
 
         /**
          * Method to know when continue the collect
@@ -95,6 +104,17 @@ class AlertProcessor {
          * @param logLevel Log Level
          */
         void secLogLoop(const int fd, const std::string &logLevel);
+
+        /**
+         * if needed set time slot context
+         * @param number of timeslot
+         * @param start of timeslot
+         * @param duration of timeslot
+         * @param days of timeslot
+         * @param months of timeslot
+         */
+        std::string setTimeSlotContext(int numTimeSlot, int start, int duration, std::vector<std::string> days, std::vector<std::string> months);
+
 };
 
 #endif	/* ALERTPROCESSOR_H */
