@@ -276,29 +276,38 @@ pid_t AlertProcessor::popen_sec(const long long alertID, const long long mediaSp
 std::string AlertProcessor::setTimeSlotContext(int numTimeSlot, int start, int duration, std::vector<std::string> days, std::vector<std::string> months)
 {
     std::string output("");
-
-    int currentDay = 0;
-    int maxHour = (start + duration) % 24;
-    if (!maxHour)
-    {
-        maxHour = 24;
-    }
     
     bool isDay = false;
     bool isMonth = false;
-    
+
     Wt::WTime currentTime = Wt::WTime::currentServerTime();
     Wt::WDate currentDate = Wt::WDate::currentDate();
 
-    if (start + duration < 24)
+    int currentDay = 0;
+    int finish = start + duration;
+    int maxHour = (finish > 24 ? 24 : finish);
+    
+    if (start <= currentTime.hour())
     {
-        currentDay = currentDate.day() % 7;
+        if (currentTime.hour() < maxHour)
+        {
+            currentDay = currentDate.day() % 7;
+        }
     }
-    else
+    else if (0 <= currentTime.hour())
     {
-        currentDay = (currentDate.day() + 1) % 7;
+        if (currentTime.hour() < finish)
+        {
+            finish = finish % 24;
+            currentDay = (currentDate.day() % 7) - 1;
+            if (currentDay == -1)
+            {
+                currentDay = 6;
+            }
+        }
     }
-        
+    
+    
     for (auto itD = days.begin() ; itD != days.end() ; ++itD)
     {
         if (itD->compare(boost::lexical_cast<string> (currentDay)))
@@ -317,16 +326,12 @@ std::string AlertProcessor::setTimeSlotContext(int numTimeSlot, int start, int d
     
     if (isDay && isMonth)
     {
-
-        if (currentTime.hour() < maxHour)
-        {
-            output += "type=Single";
-            output += "\nptype=RegExp";
-            output += "\npattern=^(?:SEC_STARTUP|SEC_RESTART)$";
-            output += "\ndesc=TIMESLOT" + boost::lexical_cast<string> (numTimeSlot);
-            output += "\naction=create %s " + boost::lexical_cast<string> ((maxHour - currentTime.hour()) * 3600);
-            output += "\n\n";
-        }
+        output += "type=Single";
+        output += "\nptype=RegExp";
+        output += "\npattern=^(?:SEC_STARTUP|SEC_RESTART)$";
+        output += "\ndesc=TIMESLOT" + boost::lexical_cast<string> (numTimeSlot);
+        output += "\naction=create %s " + boost::lexical_cast<string> ((finish - currentTime.hour()) * 3600 - currentTime.minute() * 60);
+        output += "\n\n";
     }
     
     return (output);
