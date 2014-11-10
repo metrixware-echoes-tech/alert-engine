@@ -341,95 +341,95 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
             Wt::Dbo::ptr<Echoes::Dbo::AlertSequence> asePtr = alePtr->alertSequence;
             long long iutId = asePtr->alertValue->informationData->informationUnit->unitType.id();
 
-            Wt::WString inputRule;
-            Wt::WString inputAction("");
-
-            std::vector<Wt::WString> createContexts;
-            std::vector<Wt::WString> deleteContexts;
-            Wt::WString masterRule;
-
-            inputRule = "type=Single\n"
-                    "ptype=PerlFunc\n"
-                    "pattern= \\\n"
-                    "sub { \\\n"
-                    "   use strict; \\\n"
-                    "   if ($_[0] cmp '') \\\n"
-                    "   { \\\n"
-                    "       my @inputs = split(';', $_[0]); \\\n"
-                    "       my @ids; \\\n"
-                    "       my @values; \\\n"
-                    "       my @listRes; \\\n"
-                    "       foreach my $i (0 .. $#inputs) \\\n"
-                    "       { \\\n"
-                    "           ($ids[$i], $values[$i]) = split(':', $inputs[$i]); \\\n"
-                    "       } \\\n"
-                    "       if ($#inputs > 0) \\\n"
-                    "       {\\\n";
-
-            inputAction += "action=";
-
-            masterRule = "type=Single\n"
-                    "ptype=RegExp\n"
-                    "pattern=^MASTER RULE:([^-]*)-(.*)$\n"
-                    "context=(";
-            
-
-            int i = 0;
-            for (Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::AlertTimeSlot> >::const_iterator itTS = itMS->get()->timeSlots.begin(); itTS != itMS->get()->timeSlots.end(); ++itTS)
-            {
-                std::vector<std::string> months;
-                std::vector<std::string> days;
-                std::string s_months(itTS->get()->months.toUTF8());
-                std::string s_days(itTS->get()->days.toUTF8());
-                boost::split(months, s_months, boost::is_any_of(","), boost::token_compress_on);
-                boost::split(days, s_days, boost::is_any_of(","), boost::token_compress_on);
-
-                std::string timeSlotContext("");
-                timeSlotContext = setTimeSlotContext(i, itTS->get()->start, itTS->get()->duration, days, months);
-                if (!timeSlotContext.empty())
-                {
-                    m_alertsMap[alePtr.id()][itMS->id()].start = true;
-                }
-                
-                secConfFile << timeSlotContext;
-                
-                secConfFile << "type=Calendar";
-                secConfFile << "\ntime=* "
-                        + boost::lexical_cast<string>(itTS->get()->start)
-                        + std::string(" * ")
-                        + itTS->get()->months
-                        + " "
-                        + itTS->get()->days;
-                secConfFile << "\ndesc=TIMESLOT" + boost::lexical_cast<string> (i);
-                secConfFile << "\naction=create %s " + boost::lexical_cast<string> (itTS->get()->duration * 3600);
-
-                secConfFile << "\n\n";
-                ++i;
-            }
-            
-            std::string contexts = "(";
-            for (unsigned int count = 0; count < itMS->get()->timeSlots.size(); ++count)
-            {
-                if (count != 0)
-                {
-                    contexts += " || ";
-                }
-                contexts += "TIMESLOT" + boost::lexical_cast<string> (count);
-            }
-            contexts += ") && (";
-            
-            if (itMS->get()->timeSlots.size())
-            {
-                masterRule += contexts;
-            }
-            
-            int cpt = 0;
             if (iutId == Echoes::Dbo::EInformationUnitType::CUSTOM)
             {
                 secConfFile << asePtr->alertValue->value;
             }
             else
             {
+                Wt::WString inputRule;
+                Wt::WString inputAction("");
+
+                std::vector<Wt::WString> createContexts;
+                std::vector<Wt::WString> deleteContexts;
+                Wt::WString masterRule;
+
+                inputRule = "type=Single\n"
+                        "ptype=PerlFunc\n"
+                        "pattern= \\\n"
+                        "sub { \\\n"
+                        "   use strict; \\\n"
+                        "   if ($_[0] cmp '') \\\n"
+                        "   { \\\n"
+                        "       my @inputs = split(';', $_[0]); \\\n"
+                        "       my @ids; \\\n"
+                        "       my @values; \\\n"
+                        "       my @listRes; \\\n"
+                        "       foreach my $i (0 .. $#inputs) \\\n"
+                        "       { \\\n"
+                        "           ($ids[$i], $values[$i]) = split(':', $inputs[$i]); \\\n"
+                        "       } \\\n"
+                        "       if ($ids[0] =~ /^[0-9]+$/) \\\n"
+                        "       {\\\n";
+
+                inputAction += "action=";
+
+                masterRule = "type=Single\n"
+                        "ptype=RegExp\n"
+                        "pattern=^MASTER RULE:([^-]*)-(.*)$\n"
+                        "context=(";
+
+
+                int i = 0;
+                for (Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::AlertTimeSlot> >::const_iterator itTS = itMS->get()->timeSlots.begin(); itTS != itMS->get()->timeSlots.end(); ++itTS)
+                {
+                    std::vector<std::string> months;
+                    std::vector<std::string> days;
+                    std::string s_months(itTS->get()->months.toUTF8());
+                    std::string s_days(itTS->get()->days.toUTF8());
+                    boost::split(months, s_months, boost::is_any_of(","), boost::token_compress_on);
+                    boost::split(days, s_days, boost::is_any_of(","), boost::token_compress_on);
+
+                    std::string timeSlotContext("");
+                    timeSlotContext = setTimeSlotContext(i, itTS->get()->start, itTS->get()->duration, days, months);
+                    if (!timeSlotContext.empty())
+                    {
+                        m_alertsMap[alePtr.id()][itMS->id()].start = true;
+                    }
+
+                    secConfFile << timeSlotContext;
+
+                    secConfFile << "type=Calendar";
+                    secConfFile << "\ntime=* "
+                            + boost::lexical_cast<string>(itTS->get()->start)
+                            + std::string(" * ")
+                            + itTS->get()->months
+                            + " "
+                            + itTS->get()->days;
+                    secConfFile << "\ndesc=TIMESLOT" + boost::lexical_cast<string> (i);
+                    secConfFile << "\naction=create %s " + boost::lexical_cast<string> (itTS->get()->duration * 3600);
+
+                    secConfFile << "\n\n";
+                    ++i;
+                }
+
+                std::string contexts = "(";
+                for (unsigned int count = 0; count < itMS->get()->timeSlots.size(); ++count)
+                {
+                    if (count != 0)
+                    {
+                        contexts += " || ";
+                    }
+                    contexts += "TIMESLOT" + boost::lexical_cast<string> (count);
+                }
+                contexts += ") && (";
+
+                if (itMS->get()->timeSlots.size())
+                {
+                    masterRule += contexts;
+                }
+
+                int cpt = 0;
                 bool firstAse = true;
                 bool firstBase64 = true;
                 while (asePtr)
@@ -438,34 +438,34 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
                     Wt::WString flapping;
                     flapping = (asePtr->alertValue->flapping == 0 ? "; " : boost::lexical_cast<string>(asePtr->alertValue->flapping * 60) + " (");
                     Wt::WString createContext("type=Single\n"
-                            "ptype=RegExp\n"
-                            "pattern=^RULE"
-                            + boost::lexical_cast<string>(cpt)
-                            + ":true$\n"
-                            "context=!RULE"
-                            + boost::lexical_cast<string>(cpt)
-                            + "\ndesc=RULE"
-                            + boost::lexical_cast<string>(cpt)
-                            + "\naction=create %s "
-                            + flapping + 
-                            + "create END"
-                            + boost::lexical_cast<string>(cpt)
-                            + (asePtr->alertValue->flapping == 0  ? "" : ";)")
-                            + "\n");
+                                              "ptype=RegExp\n"
+                                              "pattern=^RULE"
+                                              + boost::lexical_cast<string>(cpt)
+                                              + ":true$\n"
+                                              "context=!RULE"
+                                              + boost::lexical_cast<string>(cpt)
+                                              + "\ndesc=RULE"
+                                              + boost::lexical_cast<string>(cpt)
+                                              + "\naction=create %s "
+                                              + flapping +
+                                              +"create END"
+                                              + boost::lexical_cast<string>(cpt)
+                                              + (asePtr->alertValue->flapping == 0 ? "" : ";)")
+                                              + "\n");
                     createContexts.push_back(createContext);
-                    
+
                     Wt::WString deleteContext("type=Single\n"
-                            "ptype=RegExp\n"
-                            "pattern=^RULE"
-                            + boost::lexical_cast<string>(cpt)
-                            + ":false$\n"
-                            "desc=RULE"
-                            + boost::lexical_cast<string>(cpt)
-                            + "\naction=delete %s ; delete END"
-                            + boost::lexical_cast<string>(cpt)
-                            + "\n");
+                                              "ptype=RegExp\n"
+                                              "pattern=^RULE"
+                                              + boost::lexical_cast<string>(cpt)
+                                              + ":false$\n"
+                                              "desc=RULE"
+                                              + boost::lexical_cast<string>(cpt)
+                                              + "\naction=delete %s ; delete END"
+                                              + boost::lexical_cast<string>(cpt)
+                                              + "\n");
                     deleteContexts.push_back(deleteContext);
-                    
+
                     iutId = asePtr->alertValue->informationData->informationUnit->unitType.id();
                     if (iutId != Echoes::Dbo::EInformationUnitType::NUMBER)
                     {
@@ -503,115 +503,115 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
                         }
                     }
                     masterRule += "END" + boost::lexical_cast<string>(cpt);
-                    
+
                     switch (iutId)
                     {
-                        case Echoes::Dbo::EInformationUnitType::NUMBER:
+                    case Echoes::Dbo::EInformationUnitType::NUMBER:
                         log("debug") << "We are entering in the switch of the case number";
 
                         test += "$values[" + boost::lexical_cast<string>(cpt) + "] ";
 
                         switch (asePtr->alertValue->alertCriteria.id())
                         {
-                            case Echoes::Dbo::EAlertCriteria::LT:
-                                log("debug") << "We are entering in the switch of the lt comparison";
-                                test += "<";
-                                break;
-                            case Echoes::Dbo::EAlertCriteria::LE:
-                                log("debug") << "We are entering in the switch of the le comparison";
-                                test += "<=";
-                                break;
-                            case Echoes::Dbo::EAlertCriteria::EQ:
-                                log("debug") << "We are entering in the switch of the eq comparison";
-                                test += "==";
-                                break;
-                            case Echoes::Dbo::EAlertCriteria::NE:
-                                log("debug") << "We are entering in the switch of the ne comparison";
-                                test += "!=";
-                                break;
-                            case Echoes::Dbo::EAlertCriteria::GE:
-                                log("debug") << "We are entering in the switch of the ge comparison";
-                                test += ">=";
-                                break;
-                            case Echoes::Dbo::EAlertCriteria::GT:
-                                log("debug") << "We are entering in the switch of the gt comparison";
-                                test += ">";
-                                break;
-                            default:
-                                log("error") << "Switch operator selection failed";
-                                break;
-                        }
-                            test += " " + asePtr->alertValue->value.toUTF8();
+                        case Echoes::Dbo::EAlertCriteria::LT:
+                            log("debug") << "We are entering in the switch of the lt comparison";
+                            test += "<";
                             break;
-                        case Echoes::Dbo::EInformationUnitType::BOOL:
-                        case Echoes::Dbo::EInformationUnitType::TEXT:
-                            test += "$values[" + boost::lexical_cast<string>(cpt) + "] =~ /^" + asePtr->alertValue->value.toUTF8() + "$/";
+                        case Echoes::Dbo::EAlertCriteria::LE:
+                            log("debug") << "We are entering in the switch of the le comparison";
+                            test += "<=";
+                            break;
+                        case Echoes::Dbo::EAlertCriteria::EQ:
+                            log("debug") << "We are entering in the switch of the eq comparison";
+                            test += "==";
+                            break;
+                        case Echoes::Dbo::EAlertCriteria::NE:
+                            log("debug") << "We are entering in the switch of the ne comparison";
+                            test += "!=";
+                            break;
+                        case Echoes::Dbo::EAlertCriteria::GE:
+                            log("debug") << "We are entering in the switch of the ge comparison";
+                            test += ">=";
+                            break;
+                        case Echoes::Dbo::EAlertCriteria::GT:
+                            log("debug") << "We are entering in the switch of the gt comparison";
+                            test += ">";
                             break;
                         default:
-                            log("error") << "Switch Information unit type check failed";
+                            log("error") << "Switch operator selection failed";
                             break;
+                        }
+                        test += " " + asePtr->alertValue->value.toUTF8();
+                        break;
+                    case Echoes::Dbo::EInformationUnitType::BOOL:
+                    case Echoes::Dbo::EInformationUnitType::TEXT:
+                        test += "$values[" + boost::lexical_cast<string>(cpt) + "] =~ /^" + asePtr->alertValue->value.toUTF8() + "$/";
+                        break;
+                    default:
+                        log("error") << "Switch Information unit type check failed";
+                        break;
                     }
                     inputRule += "        $listRes[" + boost::lexical_cast<string>(cpt) + "] = 'RULE" + boost::lexical_cast<string>(cpt) + ":';\\\n";
                     inputRule += "        if (" + test + ") \\\n"
-                                 "        { \\\n"
-                                 "           $listRes[" + boost::lexical_cast<string>(cpt) + "] .= 'true'; \\\n"
-                                 "        } \\\n"
-                                 "        else \\\n"
-                                 "        { \\\n"
-                                 "            $listRes[" + boost::lexical_cast<string>(cpt) + "] .= 'false'; \\\n"
-                                 "        } \\\n";
+                            "        { \\\n"
+                            "           $listRes[" + boost::lexical_cast<string>(cpt) + "] .= 'true'; \\\n"
+                            "        } \\\n"
+                            "        else \\\n"
+                            "        { \\\n"
+                            "            $listRes[" + boost::lexical_cast<string>(cpt) + "] .= 'false'; \\\n"
+                            "        } \\\n";
 
                     inputAction += "event $" + boost::lexical_cast<string>(cpt + 1) + " ; ";
-                    
+
                     firstAse = false;
                     asePtr = asePtr.get()->alertSequence;
                     cpt++;
                 }
-                
+
                 inputAction += "event 1 $" + boost::lexical_cast<string>(cpt + 1) + " ;";
                 inputRule += "          my $listIDs;  \\\n"
-                            "           foreach my $i (0 .. $#ids) \\\n"
-                            "           { \\\n"
-                            "               $listIDs .= $ids[$i]; \\\n"
-                            "               if($i != $#ids) \\\n"
-                            "               { \\\n"
-                            "                   $listIDs .= ','; \\\n"
-                            "               } \\\n"
-                            "           } \\\n"
-                            "           my $res = '{\\\\\\\\\\\\\"information_value_ids\\\\\\\\\\\\\": ['.$listIDs.']}'; \\\n"
-                            "           $listRes[" + boost::lexical_cast<string>(cpt) + "] = 'MASTER RULE:'.$listIDs.'-'.(length($res) - 6); \\\n"
-                            "           return (@listRes) \\\n"
-                            "       }; \\\n"
-                            "   };\\\n"
-                            "}\n";
-            }
-            
-            if (itMS->get()->timeSlots.size())
-            {
-                masterRule += ")";
-            }
-            masterRule += ")\ndesc=POST /alerts/" + boost::lexical_cast<string>(alePtr.id()) + "/trackings?eno_token=" + enoPtr->token + "&alert_media_specialization_id=" + boost::lexical_cast<string>(itMS->id()) + " HTTP/1.1\\n"
-                "Host: " + conf.getAPIHost() + "\\n"
-                "Content-Type: application/json; charset=utf-8\\n"
-                "Content-length: $2\\n"
-                "Connection: close\\n\\n"
-                "{\\\\\\\"information_value_ids\\\\\\\": [$1]}\\n\\n\n"
-                "action=shellcmd (/usr/bin/perl -e \"alarm(2); exec(\\\"/usr/bin/printf \\'%s\\' | /usr/bin/openssl s_client -quiet -crlf -connect " + conf.getAPIHost() + ":" + boost::lexical_cast<string>(conf.getAPIPort()) + "\\\")\")\n";
+                        "           foreach my $i (0 .. $#ids) \\\n"
+                        "           { \\\n"
+                        "               $listIDs .= $ids[$i]; \\\n"
+                        "               if($i != $#ids) \\\n"
+                        "               { \\\n"
+                        "                   $listIDs .= ','; \\\n"
+                        "               } \\\n"
+                        "           } \\\n"
+                        "           my $res = '{\\\\\\\\\\\\\"information_value_ids\\\\\\\\\\\\\": ['.$listIDs.']}'; \\\n"
+                        "           $listRes[" + boost::lexical_cast<string>(cpt) + "] = 'MASTER RULE:'.$listIDs.'-'.(length($res) - 6); \\\n"
+                        "           return (@listRes) \\\n"
+                        "       }; \\\n"
+                        "   };\\\n"
+                        "}\n";
 
-            
-            secConfFile << inputRule;
-            secConfFile << "desc=dsds\n";
-            secConfFile << inputAction << "\n";
-            for (unsigned int i = 0; i < createContexts.size() ; ++i)
-            {
-                secConfFile << "\n";
-                secConfFile << createContexts.at(i);
-                secConfFile << "\n";
-                secConfFile << deleteContexts.at(i);
-            }
+                if (itMS->get()->timeSlots.size())
+                {
+                    masterRule += ")";
+                }
+                masterRule += ")\ndesc=POST /alerts/" + boost::lexical_cast<string>(alePtr.id()) + "/trackings?eno_token=" + enoPtr->token + "&alert_media_specialization_id=" + boost::lexical_cast<string>(itMS->id()) + " HTTP/1.1\\n"
+                        "Host: " + conf.getAPIHost() + "\\n"
+                        "Content-Type: application/json; charset=utf-8\\n"
+                        "Content-length: $2\\n"
+                        "Connection: close\\n\\n"
+                        "{\\\\\\\"information_value_ids\\\\\\\": [$1]}\\n\\n\n"
+                        "action=shellcmd (/usr/bin/perl -e \"alarm(2); exec(\\\"/usr/bin/printf \\'%s\\' | /usr/bin/openssl s_client -quiet -crlf -connect " + conf.getAPIHost() + ":" + boost::lexical_cast<string>(conf.getAPIPort()) + "\\\")\")\n";
 
-            secConfFile << "\n";
-            secConfFile << masterRule;
+
+                secConfFile << inputRule;
+                secConfFile << "desc=dsds\n";
+                secConfFile << inputAction << "\n";
+                for (unsigned int i = 0; i < createContexts.size(); ++i)
+                {
+                    secConfFile << "\n";
+                    secConfFile << createContexts.at(i);
+                    secConfFile << "\n";
+                    secConfFile << deleteContexts.at(i);
+                }
+
+                secConfFile << "\n";
+                secConfFile << masterRule;
+            }
             secConfFile.close();
         }
         else
