@@ -624,6 +624,25 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
         {
             log("error") << "Unable to exec SEC: " << currentFile;
         }
+        secConfFile << "desc=POST /alerts/" << alePtr.id() << "/trackings?eno_token=" << enoPtr->token << " HTTP/1.1\\n"
+                "Host: " << conf.getAPIHost() << "\\n"
+                "Content-Type: application/json; charset=utf-8\\n"
+                "Content-length: $2\\n"
+                "Connection: close\\n\\n"
+                "$1\\n\\n\n"
+                "action=shellcmd (/usr/bin/perl -e \"alarm(2); exec(\\\"/usr/bin/printf \\'%s\\' | /usr/bin/openssl s_client -quiet -crlf -connect " << conf.getAPIHost() << ":" << conf.getAPIPort() << "\\\")\")\n";
+
+        secConfFile.close();
+    }
+    else
+    {
+        log("error") << "Unable to open/create file: " << m_alertsMap[alePtr.id()].secConfFilename;
+    }
+    
+    m_alertsMap[alePtr.id()].secPID = popen_sec(m_alertsMap[alePtr.id()].secConfFilename, &m_alertsMap[alePtr.id()].secInFP, &m_alertsMap[alePtr.id()].secOutFP, &m_alertsMap[alePtr.id()].secErrFP);
+    if (m_alertsMap[alePtr.id()].secPID <= 0)
+    {
+        log("error") << "Unable to exec SEC: " << m_alertsMap[alePtr.id()].secConfFilename;
     }
 }
 
