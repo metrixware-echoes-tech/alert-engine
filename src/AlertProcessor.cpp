@@ -419,8 +419,6 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
                             + itTS->get()->months
                             + " "
                             + itTS->get()->days;
-                    std::cout << "months: " << itTS->get()->months << std::endl;
-                    std::cout << "days: " << itTS->get()->days << std::endl;
                     secConfFile << "\ndesc=TIMESLOT" + boost::lexical_cast<string> (i);
                     secConfFile << "\naction=create %s " + boost::lexical_cast<string> (itTS->get()->duration * 3600);
 
