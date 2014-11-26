@@ -76,7 +76,14 @@ int AlertProcessor::verifyAlerts(int *signum)
                             {                                
                                 for (Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::AlertMediaSpecialization> >::const_iterator itMS = it->get()->alertMediaSpecializations.begin(); itMS != it->get()->alertMediaSpecializations.end(); ++itMS)
                                 {
-                                    std::string newConfName("/opt/echoes-alert/engine/conf/sec-alert" + boost::lexical_cast<string>(it->id()));
+                                    std::string newConfName;
+                                    #ifdef NDEBUG
+                                    newConfName += "/opt/echoes-alert/engine/conf/sec-alert";
+                                    #else
+                                    newConfName += "conf/sec-alert";
+                                    #endif
+
+                                    newConfName += boost::lexical_cast<string>(it->id());
                                     newConfName += "-media";
                                     newConfName += boost::lexical_cast<string>(itMS->id());
                                     newConfName += ".conf";
@@ -136,7 +143,14 @@ int AlertProcessor::verifyAlerts(int *signum)
                                 
                                 for (Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::AlertMediaSpecialization> >::const_iterator itMS = it->get()->alertMediaSpecializations.begin(); itMS != it->get()->alertMediaSpecializations.end(); ++itMS)
                                 {
-                                    std::string newConfName("/opt/echoes-alert/engine/conf/sec-alert" + boost::lexical_cast<string>(it->id()));
+                                    std::string newConfName;
+                                    #ifdef NDEBUG
+                                    newConfName += "/opt/echoes-alert/engine/conf/sec-alert";
+                                    #else
+                                    newConfName += "conf/sec-alert";
+                                    #endif
+
+                                    newConfName += boost::lexical_cast<string>(it->id());
                                     newConfName += "-media";
                                     newConfName += boost::lexical_cast<string>(itMS->id());
                                     newConfName += ".conf";
@@ -275,7 +289,7 @@ std::string AlertProcessor::setTimeSlotContext(int numTimeSlot, int start, int d
     Wt::WTime currentTime = Wt::WTime::currentServerTime();
     Wt::WDate currentDate = Wt::WDate::currentDate();
 
-    int currentDay = 0;
+    int currentDay = -2;
     int finish = start + duration;
     int maxHour = (finish > 24 ? 24 : finish);
     
@@ -299,10 +313,9 @@ std::string AlertProcessor::setTimeSlotContext(int numTimeSlot, int start, int d
         }
     }
     
-    
     for (auto itD = days.begin() ; itD != days.end() ; ++itD)
     {
-        if (itD->compare(boost::lexical_cast<string> (currentDay)))
+        if (!itD->compare(boost::lexical_cast<string> (currentDay)))
         {
             isDay = true;
         }
@@ -310,7 +323,7 @@ std::string AlertProcessor::setTimeSlotContext(int numTimeSlot, int start, int d
 
     for (auto itM = months.begin() ; itM != months.end() ; ++itM)
     {
-        if (itM->compare(boost::lexical_cast<string> (currentDate.month())))
+        if (!itM->compare(boost::lexical_cast<string> (currentDate.month())))
         {
             isMonth = true;
         }
@@ -406,6 +419,8 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
                             + itTS->get()->months
                             + " "
                             + itTS->get()->days;
+                    std::cout << "months: " << itTS->get()->months << std::endl;
+                    std::cout << "days: " << itTS->get()->days << std::endl;
                     secConfFile << "\ndesc=TIMESLOT" + boost::lexical_cast<string> (i);
                     secConfFile << "\naction=create %s " + boost::lexical_cast<string> (itTS->get()->duration * 3600);
 
