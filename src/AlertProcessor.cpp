@@ -300,7 +300,7 @@ std::string AlertProcessor::setTimeSlotContext(int numTimeSlot, int start, int d
             currentDay = currentDate.day() % 7;
         }
     }
-    else if (0 <= currentTime.hour())
+    else if (0 <= currentTime.hour() && finish > 24)
     {
         if (currentTime.hour() < finish)
         {
