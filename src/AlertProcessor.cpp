@@ -78,7 +78,7 @@ int AlertProcessor::verifyAlerts(int *signum)
                                 {
                                     std::string newConfName;
                                     #ifdef NDEBUG
-                                    newConfName += "/opt/echoes-alert/engine/conf/sec-alert";
+                                    newConfName += "/opt/echoes-alert/engine/etc/sec-alert";
                                     #else
                                     newConfName += "conf/sec-alert";
                                     #endif
@@ -145,7 +145,7 @@ int AlertProcessor::verifyAlerts(int *signum)
                                 {
                                     std::string newConfName;
                                     #ifdef NDEBUG
-                                    newConfName += "/opt/echoes-alert/engine/conf/sec-alert";
+                                    newConfName += "/opt/echoes-alert/engine/etc/sec-alert";
                                     #else
                                     newConfName += "conf/sec-alert";
                                     #endif
