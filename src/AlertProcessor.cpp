@@ -115,6 +115,10 @@ int AlertProcessor::verifyAlerts(int *signum)
                             }
                         }
                     }
+                    else
+                    {
+                        log("debug") << "Id <= 0: " << it->id();
+                    }
                 }
 
                 if (alePtrCol.size() < (unsigned)m_enginePtr->nbThread)
@@ -181,6 +185,10 @@ int AlertProcessor::verifyAlerts(int *signum)
                             }
                         }
                     }
+                }
+                else
+                {
+                    log("debug") << "Max nb thread reached.";
                 }
 
                 transaction.commit();
