@@ -599,8 +599,8 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
                         "                   $listIDs .= ','; \\\n"
                         "               } \\\n"
                         "           } \\\n"
-                        "           my $res = '{\\\\\\\\\\\\\"information_value_ids\\\\\\\\\\\\\": ['.$listIDs.']}'; \\\n"
-                        "           $listRes[" + boost::lexical_cast<string>(cpt) + "] = 'MASTER RULE:'.$listIDs.'-'.(length($res) - 6); \\\n"
+                        "           my $res = '{\\\\\\\\\\\\\"information_value_ids\\\\\\\\\\\\\": ['.$listIDs.'],\\\\\\\\\\\\\"alert_id\\\\\\\\\\\\\": " + boost::lexical_cast<string>(alePtr.id()) + "}'; \\\n"
+                        "           $listRes[" + boost::lexical_cast<string>(cpt) + "] = 'MASTER RULE:'.$listIDs.'-'.(length($res) - 12); \\\n"
                         "           return (@listRes) \\\n"
                         "       }; \\\n"
                         "   };\\\n"
@@ -610,12 +610,13 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
                 {
                     masterRule += ")";
                 }
+                
                 masterRule += ")\ndesc=POST /messages?eno_token=" + enoPtr->token + "&alert_media_specialization_id=" + boost::lexical_cast<string>(itMS->id()) + " HTTP/1.1\\n"
                         "Host: " + conf.getAPIHost() + "\\n"
                         "Content-Type: application/json; charset=utf-8\\n"
                         "Content-length: $2\\n"
                         "Connection: close\\n\\n"
-                        "{\\\\\\\"information_value_ids\\\\\\\": [$1]\n\\\\\\\"alert_id\\\\\\\":" + boost::lexical_cast<string>(alePtr.id()) + "}\\n\\n\n"
+                        "{\\\\\\\"information_value_ids\\\\\\\": [$1],\\\\\\\"alert_id\\\\\\\":" + boost::lexical_cast<string>(alePtr.id()) + "}\\n\\n\n"
                         "action=shellcmd (/usr/bin/perl -e \"alarm(2); exec(\\\"/usr/bin/printf \\'%s\\' | /usr/bin/openssl s_client -quiet -crlf -connect " + conf.getAPIHost() + ":" + boost::lexical_cast<string>(conf.getAPIPort()) + "\\\")\")\n";
 
 
@@ -957,6 +958,7 @@ void AlertProcessor::informationValueLoop(const long long alertID, const long lo
 
             inputSEC += "\n";
             log("debug") << "Send IVA to SEC";
+            // input, content, content size
             write(m_alertsMap[alertID][mediaSpecID].secInFP, inputSEC.c_str(), inputSEC.size());
         }
 
