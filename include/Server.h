@@ -51,7 +51,9 @@ class Server
          * @param envp NULL-terminated array of "NAME=VALUE" environment variables
          */
         static void restart(int argc, char **argv, char **envp);
-
+        
+        void sendHttpRequestGet(string resource, vector<string> listParameter, boost::function<void (Wt::Json::Value)> functor, Wt::Dbo::ptr<Echoes::Dbo::EngOrg> pEno);
+        void handleHttpResponseGet(boost::system::error_code err, const Wt::Http::Message& response, Wt::Http::Client *client, boost::function<void (Wt::Json::Value)> functor);
     private:
         /**
          * Set up signals handler for every signals
@@ -63,6 +65,8 @@ class Server
          */
         static void signalHandling(int signum);
 
+        void checkProbes();
+        void isProbeAlive(Wt::Json::Value result);
         void checkNewAlerts();
         void removeOldValues();
         void calculate();

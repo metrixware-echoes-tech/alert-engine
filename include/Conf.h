@@ -33,6 +33,7 @@ class Conf {
         int sleepThreadCheckAlert; //the seconds to wait between each loop in our process ( calculate alerts)
         int sleepThreadRemoveOldValues; //the seconds to wait between each old values cleaning
         int sleepThreadCalculate;
+        int sleepThreadCheckProbes;
         
         std::string getPath() const;
         long long getId() const;

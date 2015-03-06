@@ -11,6 +11,15 @@
  * 
  */
 
+#include <Wt/WApplication>
+
+#include <Wt/Json/Parser>
+#include <Wt/Json/Value>
+#include <Wt/Json/Array>
+#include <Wt/Json/Object>
+
+#include <Wt/Http/Client>
+#include <Wt/WIOService>
 #include "Server.h"
 
 using namespace std;
@@ -104,7 +113,8 @@ bool Server::start()
                 {
                     log("info") << "Mode Calculator disable";
                 }
-
+                m_threads.create_thread(boost::bind(&Server::checkProbes, this));
+                
                 res = true;
             }
             else
@@ -172,6 +182,81 @@ void Server::signalHandling(int signum)
     m_signum = signum;
     m_threads.interrupt_all();
 }
+
+void Server::checkProbes()
+{
+    while (m_signum == 0)
+    {
+        log("info") << "Checking probes";
+        
+        try
+        {
+            Wt::Dbo::Transaction transaction(m_session, true);
+            
+            Wt::Dbo::ptr<Echoes::Dbo::Engine> pEng = m_session.find<Echoes::Dbo::Engine>()
+                .where(QUOTE(TRIGRAM_ENGINE ID)" = ?").bind(conf.getId())
+                .limit(1);
+            
+            Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::Probe>> cPrb = m_session.find<Echoes::Dbo::Probe>()
+                .where(QUOTE(TRIGRAM_PROBE SEP "ALERT_IF_DOWN") " IS TRUE")
+                .where(QUOTE(TRIGRAM_PROBE SEP "DELETE") " IS NULL");
+
+            for (auto it = cPrb.begin(); it != cPrb.end(); ++it)
+            {
+                 Wt::Dbo::ptr<Echoes::Dbo::EngOrg> enoPtr = m_session.find<Echoes::Dbo::EngOrg>()
+                                    .where(QUOTE(TRIGRAM_ENGINE ID SEP TRIGRAM_ENGINE ID)" = ?").bind(pEng.id())
+                                    .where(QUOTE(TRIGRAM_ORGANIZATION ID SEP TRIGRAM_ORGANIZATION ID)" = ?").bind(it->get()->asset->organization.id())
+                                    .where(QUOTE(TRIGRAM_ENG_ORG SEP "DELETE")" IS NULL")
+                                    .limit(1);
+
+                if (enoPtr)
+                {
+                    vector<string> parameterList;
+                    
+                    boost::function<void (Wt::Json::Value)> functorIsProbeAlive = boost::bind(&Server::isProbeAlive, this, _1); 
+                    sendHttpRequestGet("probes/"+ boost::lexical_cast<string>(it->id()) +"/alive", parameterList, functorIsProbeAlive, enoPtr);
+                }
+                
+            }
+            transaction.commit();
+        }
+        catch (Wt::Dbo::Exception const& e)
+        {
+            log("error") << "Wt::Dbo: " << e.what();
+        }
+        boost::this_thread::sleep(boost::posix_time::seconds(conf.sleepThreadCheckProbes));
+    }
+}
+
+void Server::isProbeAlive(Wt::Json::Value result)
+{
+    Wt::Json::Object& jsonObject = result;   
+    
+    int id = jsonObject.get("id");
+    bool heartbeat = jsonObject.get("probe_heartbeat");
+    
+    if (!heartbeat)
+    {
+        try
+        {
+            Wt::Dbo::Transaction transaction(m_session, true);
+            Wt::Dbo::ptr<Echoes::Dbo::Probe> pPrb = m_session.find<Echoes::Dbo::Probe>()
+                   .where(QUOTE(TRIGRAM_PROBE ID)" = ?").bind(id)
+                   .limit(1);
+            transaction.commit();
+        }
+        catch (Wt::Dbo::Exception const& e)
+        {
+            log("error") << "Wt::Dbo: " << e.what();
+        }
+        
+        vector<string> parameterList;
+//        boost::function<void (Wt::Json::Value)> functorIsProbeAlive = boost::bind(&Server::probeDown, this, _1); 
+//        sendHttpRequestGet("probes/"+ boost::lexical_cast<string>(it->id()) +"/alive", parameterList, functorIsProbeAlive, enoPtr);
+    }
+    
+}
+
 
 void Server::checkNewAlerts()
 {
@@ -357,3 +442,63 @@ void Server::calculate()
     log("info") << "Mode Calculator stop";
 }
 
+
+void Server::sendHttpRequestGet(string resource, vector<string> listParameter, boost::function<void (Wt::Json::Value)> functor, Wt::Dbo::ptr<Echoes::Dbo::EngOrg> pEno)
+{    
+    cout << "SEND GET" << endl;
+    string apiAddress = "http://" + conf.getAPIHost() + ":" + boost::lexical_cast<string>(conf.getAPIPort()) + "/" + resource
+            + "?eno_token=" + boost::lexical_cast<string>(pEno->token);
+    cout << "PARAMS" << endl;    
+    for(size_t i(0); i<listParameter.size(); i++)
+    {
+        apiAddress += "&" + listParameter[i];
+    }
+    
+    cout << "READY TO CALL : " << apiAddress << endl;
+    log("debug") << "[GET] address to call : " << apiAddress;
+    
+    Wt::WIOService ioService;
+    ioService.start();
+    Wt::Http::Client *client = new Wt::Http::Client(ioService);
+    client->done().connect(boost::bind(&Server::handleHttpResponseGet, this, _1, _2, client, functor));
+    if (!client->get(apiAddress))
+    {
+        log("error") << "Error Client Http";
+    }
+}
+
+void Server::handleHttpResponseGet(boost::system::error_code err,
+    const Wt::Http::Message& response, Wt::Http::Client *client, boost::function<void (Wt::Json::Value)> functor)
+{
+    cout << "CALLBACK" << endl;
+    delete client;
+    
+    if (!err)
+    {
+        if (response.status() == 200)
+        {
+            try
+            {
+                Wt::Json::Value result;
+                Wt::Json::parse(response.body(), result);
+                functor(result);
+            }
+            catch (Wt::Json::ParseError const& e)
+            {
+                log("warning") << "[Server] Problems parsing JSON: " << response.body();
+            }
+            catch (Wt::Json::TypeException const& e)
+            {
+                log("warning") << "[Server] JSON Type Exception: " << response.body();
+            }
+        }
+        else if (response.status() == 404)
+        {
+            functor(Wt::Json::Value::Null);
+        }
+    }
+    else
+    {
+        log("warning") << "[Server] Http::Client get error: " << response.body();
+    }
+}

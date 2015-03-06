@@ -112,6 +112,7 @@ bool Conf::readConfFile()
         sleepThreadCheckAlert = pt.get<int>("engine.sleep-alert-reading");
         sleepThreadRemoveOldValues = pt.get<int>("engine.sleep-remove-old-values");
         sleepThreadCalculate = pt.get<int>("engine.sleep-calculate");
+        sleepThreadCheckProbes = pt.get<int>("engine.sleep-check-probes");
         
         setDBHost(pt.get<string>("database.host"));
         setDBPort(pt.get<unsigned>("database.port"));
