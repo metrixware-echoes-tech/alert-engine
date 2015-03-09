@@ -52,7 +52,7 @@ class Server
          */
         static void restart(int argc, char **argv, char **envp);
         
-        void sendHttpRequestGet(string resource, vector<string> listParameter, boost::function<void (Wt::Json::Value)> functor, Wt::Dbo::ptr<Echoes::Dbo::EngOrg> pEno);
+        void sendHttpRequestGet(string resource, vector<string> listParameter, boost::function<void (Wt::Json::Value)> functor, Wt::WString enoToken);
         void handleHttpResponseGet(boost::system::error_code err, const Wt::Http::Message& response, Wt::Http::Client *client, boost::function<void (Wt::Json::Value)> functor);
     private:
         /**
@@ -79,6 +79,8 @@ class Server
 
         static boost::thread_group m_threads;
         static int m_signum;
+        
+        boost::thread * m_probeCheckingThread;
 };
 
 #endif	/* SERVER_H */
