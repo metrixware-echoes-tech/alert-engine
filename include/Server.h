@@ -53,7 +53,11 @@ class Server
         static void restart(int argc, char **argv, char **envp);
         
         void sendHttpRequestGet(string resource, vector<string> listParameter, boost::function<void (Wt::Json::Value)> functor, Wt::WString enoToken);
-        void handleHttpResponseGet(boost::system::error_code err, const Wt::Http::Message& response, Wt::Http::Client *client, boost::function<void (Wt::Json::Value)> functor);
+        void getResourceCallback(boost::system::error_code err, const Wt::Http::Message& response, Wt::Http::Client *client, boost::function<void (Wt::Json::Value)> functor);
+        
+        void sendHttpRequestPost(string resource, Wt::Http::Message *message, Wt::WString enoToken);
+        void postResourceCallback(boost::system::error_code err, const Wt::Http::Message& response, Wt::Http::Client *client);
+
     private:
         /**
          * Set up signals handler for every signals

@@ -247,12 +247,26 @@ void Server::isProbeAlive(Wt::Json::Value result)
     if (!heartbeat)
     {
         bool sendAlert = false;
+        Wt::WString probeName;
+        long long mediaId;
+        Wt::WString enoToken;
         try
         {
             Wt::Dbo::Transaction transaction(m_session,true);
+            
+            Wt::Dbo::ptr<Echoes::Dbo::Engine> pEng = m_session.find<Echoes::Dbo::Engine>()
+                .where(QUOTE(TRIGRAM_ENGINE ID)" = ?").bind(conf.getId())
+                .limit(1);
+            
             Wt::Dbo::ptr<Echoes::Dbo::Probe> pPrb = m_session.find<Echoes::Dbo::Probe>()
                    .where(QUOTE(TRIGRAM_PROBE ID)" = ?").bind(id)
                    .limit(1);
+            
+            Wt::Dbo::ptr<Echoes::Dbo::EngOrg> enoPtr = m_session.find<Echoes::Dbo::EngOrg>()
+                                   .where(QUOTE(TRIGRAM_ENGINE ID SEP TRIGRAM_ENGINE ID)" = ?").bind(pEng.id())
+                                   .where(QUOTE(TRIGRAM_ORGANIZATION ID SEP TRIGRAM_ORGANIZATION ID)" = ?").bind(pPrb->asset->organization.id())
+                                   .where(QUOTE(TRIGRAM_ENG_ORG SEP "DELETE")" IS NULL")
+                                   .limit(1);
             
             
             Wt::WDateTime lastAlert = pPrb->lastDownAlert;
@@ -265,6 +279,9 @@ void Server::isProbeAlive(Wt::Json::Value result)
             
             if (((lastAlert.secsTo(now)) > timeToWaitBeforeAlerting) || lastAlert.isNull()) 
             {
+                probeName = pPrb->name;
+                mediaId = pPrb->asset->organization->defaultMedia.id();
+                enoToken = enoPtr->token;
                 sendAlert = true;
                 pPrb.modify()->lastDownAlert = Wt::WDateTime::currentDateTime();
             }
@@ -278,9 +295,12 @@ void Server::isProbeAlive(Wt::Json::Value result)
         
         if (sendAlert)
         {
-            vector<string> parameterList;
-//            boost::function<void (Wt::Json::Value)> functorIsProbeAlive = boost::bind(&Server::alertSent, this, _1); 
-//            sendHttpRequestPost("messages/"+ boost::lexical_cast<string>(it->id()) +"/alive", parameterList, functorIsProbeAlive, enoPtr); 
+            Wt::Http::Message *message = new Wt::Http::Message();
+            message->addBodyText("{");
+            message->addBodyText("\n\"message\": \"Probe down : " + probeName.toUTF8() + "\"");
+            message->addBodyText(",\n\"media_id\": " + boost::lexical_cast<string>(mediaId));
+            message->addBodyText("\n}");
+            sendHttpRequestPost("messages", message, enoToken); 
         }
     }
     
@@ -483,20 +503,71 @@ void Server::sendHttpRequestGet(string resource, vector<string> listParameter, b
         apiAddress += "&" + listParameter[i];
     }
     
-    cout << "READY TO CALL : " << apiAddress << endl;
     log("debug") << "[GET] address to call : " << apiAddress;
     
     Wt::WIOService ioService;
     ioService.start();
     Wt::Http::Client *client = new Wt::Http::Client(ioService);
-    client->done().connect(boost::bind(&Server::handleHttpResponseGet, this, _1, _2, client, functor));
+    client->done().connect(boost::bind(&Server::getResourceCallback, this, _1, _2, client, functor));
     if (!client->get(apiAddress))
     {
-        log("error") << "Error Client Http";
+        log("error") << "[Server][GET] Error Client Http";
     }
 }
 
-void Server::handleHttpResponseGet(boost::system::error_code err,
+void Server::sendHttpRequestPost(string resource, Wt::Http::Message *message, Wt::WString enoToken)
+{
+
+    string apiAddress = "http://" + conf.getAPIHost() + ":" + boost::lexical_cast<string>(conf.getAPIPort()) + "/" + resource
+            + "?eno_token=" + enoToken.toUTF8();
+
+    cout << "CALL: " << apiAddress << endl;
+    Wt::WIOService ioService;
+    ioService.start();
+    Wt::Http::Client *client = new Wt::Http::Client(ioService);
+    client->done().connect(boost::bind(&Server::postResourceCallback, this, _1, _2, client));
+
+
+    if (!client->post(apiAddress, *message))
+    {
+        log("error") << "[Server][POST] Error Client Http";
+    }
+}
+
+void Server::postResourceCallback(boost::system::error_code err, const Wt::Http::Message& response, Wt::Http::Client *client)
+{
+    delete client;
+    if (!err)
+    {
+        if (response.status() == 201)
+        {
+            try
+            {
+                Wt::Json::Object result;
+                Wt::Json::parse(response.body(), result);
+            }
+            catch (Wt::Json::ParseError const& e)
+            {
+                log("warning") << "[Server][POST] Problems parsing JSON: " << response.body();
+            }
+            catch (Wt::Json::TypeException const& e)
+            {
+                log("warning") << "[Server][POST] JSON Type Exception: " << response.body();
+            }
+        }
+        else
+        {
+            log("warning") << "[Server][POST] Unexpected answer : " << response.body();
+        }
+    }
+    else
+    {
+        log("warning") << "[Server][POST] error : " << err.message();
+    }
+}
+
+
+void Server::getResourceCallback(boost::system::error_code err,
     const Wt::Http::Message& response, Wt::Http::Client *client, boost::function<void (Wt::Json::Value)> functor)
 {
     cout << "CALLBACK" << endl;
