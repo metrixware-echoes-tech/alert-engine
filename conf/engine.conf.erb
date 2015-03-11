@@ -15,6 +15,7 @@ id = 1
 alerter = true
 cleaner = true
 calculator = true
+probe_checker = true
 #pause time between calculating alerts on new datas in seconds
 sleep-alert-reading = 10
 #pause time between checks to remove old values
@@ -29,5 +30,6 @@ username = <%= database_user %>
 password = <%= database_password %>
 
 [api]
+https = <%= api_https %>
 host = <%= api_host %>
 port = <%= api_port %>

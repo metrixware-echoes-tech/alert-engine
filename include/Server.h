@@ -69,6 +69,8 @@ class Server
          */
         static void signalHandling(int signum);
 
+        std::string getApiAddress();
+        
         void checkProbes();
         void isProbeAlive(Wt::Json::Value result);
         void checkNewAlerts();

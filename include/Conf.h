@@ -46,7 +46,8 @@ class Conf {
         std::string getAPIHost() const;
         unsigned getAPIPort() const;
         unsigned short getCriticity() const;
-
+        bool isAPIHttps() const;
+        
         /**
          * Read the program options
          * @return Success: true or Error: false
@@ -65,6 +66,7 @@ class Conf {
         bool isAlerter() const;
         bool isCleaner() const;
         bool isCalculator() const;
+        bool isProbeChecker() const;
 
     protected:
         std::string m_path;
@@ -79,12 +81,14 @@ class Conf {
         std::string m_dbPassword;
         std::string m_sessConnectParams;
 
+        bool m_apiHttps;
         std::string m_apiHost;
         unsigned m_apiPort;
 
         bool m_alerter;
         bool m_cleaner;
         bool m_calculator;
+        bool m_probeChecker;
 
         void setPath(std::string path);
         void setId(long long id);
@@ -101,6 +105,7 @@ class Conf {
                 std::string dbUser,
                 std::string dbPassword
         );
+        void setAPIHttps(bool apiHost);
         void setAPIHost(std::string apiHost);
         void setAPIPort(unsigned apiPort);
         void setCriticity(unsigned short criticity);

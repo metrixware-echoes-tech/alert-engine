@@ -95,7 +95,7 @@ bool Server::start()
                 }
                 else
                 {	
-                    log("info") << "Mode Cleaner disable";
+                    log("info") << "Mode Cleaner disabled";
                 }
                 if (conf.isAlerter())
                 {
@@ -103,7 +103,7 @@ bool Server::start()
                 }
                 else
                 {
-                    log("info") << "Mode Alerter disable";
+                    log("info") << "Mode Alerter disabled";
                 }
                 if (conf.isCalculator())
                 {
@@ -111,10 +111,16 @@ bool Server::start()
                 }
                 else
                 {
-                    log("info") << "Mode Calculator disable";
+                    log("info") << "Mode Calculator disabled";
                 }
-                m_probeCheckingThread = m_threads.create_thread(boost::bind(&Server::checkProbes, this));
-                
+                if (conf.isCalculator())
+                {
+                    m_threads.create_thread(boost::bind(&Server::checkProbes, this));
+                }
+                else
+                {
+                    log("info") << "Mode Probe Checker disabled";
+                }
                 res = true;
             }
             else
@@ -211,8 +217,6 @@ void Server::checkProbes()
                                    .where(QUOTE(TRIGRAM_ENG_ORG SEP "DELETE")" IS NULL")
                                    .limit(1);
                 
-                cout << "Id sonde : " << prb.id() << endl;
-
                 if (enoPtr)
                 {
                     enoIdTokens[prb.id()] = enoPtr->token;
@@ -272,10 +276,6 @@ void Server::isProbeAlive(Wt::Json::Value result)
             Wt::WDateTime lastAlert = pPrb->lastDownAlert;
             Wt::WDateTime now = Wt::WDateTime::currentDateTime();
             int timeToWaitBeforeAlerting = pPrb->snoozeBeforeNextWarning;
-            
-            cout << "lastAlert : " << lastAlert.toString() << endl;
-            cout << "now : " << now.toString() << endl;
-            cout << "diff time : " << lastAlert.secsTo(now) << endl;
             
             if (((lastAlert.secsTo(now)) > timeToWaitBeforeAlerting) || lastAlert.isNull()) 
             {
@@ -491,13 +491,22 @@ void Server::calculate()
     log("info") << "Mode Calculator stop";
 }
 
+string Server::getApiAddress()
+{
+    string apiAddress;
+    apiAddress = "http";
+    apiAddress += (conf.isAPIHttps() ? "s" : "");
+    apiAddress += "://" + conf.getAPIHost() + ":" + boost::lexical_cast<string>(conf.getAPIPort()) + "/";
+
+    return apiAddress;
+}
 
 void Server::sendHttpRequestGet(string resource, vector<string> listParameter, boost::function<void (Wt::Json::Value)> functor, Wt::WString enoToken)
 {    
-    cout << "SEND GET" << endl;
-    string apiAddress = "http://" + conf.getAPIHost() + ":" + boost::lexical_cast<string>(conf.getAPIPort()) + "/" + resource
-            + "?eno_token=" + enoToken.toUTF8();
-    cout << "PARAMS" << endl;    
+    string apiAddress = getApiAddress();
+    apiAddress += resource;
+    apiAddress += "?eno_token=" + enoToken.toUTF8();
+
     for(size_t i(0); i<listParameter.size(); i++)
     {
         apiAddress += "&" + listParameter[i];
@@ -518,10 +527,9 @@ void Server::sendHttpRequestGet(string resource, vector<string> listParameter, b
 void Server::sendHttpRequestPost(string resource, Wt::Http::Message *message, Wt::WString enoToken)
 {
 
-    string apiAddress = "http://" + conf.getAPIHost() + ":" + boost::lexical_cast<string>(conf.getAPIPort()) + "/" + resource
-            + "?eno_token=" + enoToken.toUTF8();
-
-    cout << "CALL: " << apiAddress << endl;
+    string apiAddress = getApiAddress();
+    apiAddress += resource;
+    apiAddress += "?eno_token=" + enoToken.toUTF8();
     Wt::WIOService ioService;
     ioService.start();
     Wt::Http::Client *client = new Wt::Http::Client(ioService);
@@ -570,7 +578,6 @@ void Server::postResourceCallback(boost::system::error_code err, const Wt::Http:
 void Server::getResourceCallback(boost::system::error_code err,
     const Wt::Http::Message& response, Wt::Http::Client *client, boost::function<void (Wt::Json::Value)> functor)
 {
-    cout << "CALLBACK" << endl;
     delete client;
     
     if (!err)
@@ -581,10 +588,7 @@ void Server::getResourceCallback(boost::system::error_code err,
             {
                 Wt::Json::Value result;
                 Wt::Json::parse(response.body(), result);
-                cout << "OK" << endl;
                 functor(result);
-                
-                cout << "REALLY OK ?" << endl;
             }
             catch (Wt::Json::ParseError const& e)
             {
@@ -597,7 +601,6 @@ void Server::getResourceCallback(boost::system::error_code err,
         }
         else 
         {
-            cout << "KO" << endl;
             functor(Wt::Json::Value::Null);
         }
     }

@@ -109,6 +109,7 @@ bool Conf::readConfFile()
         m_alerter = pt.get<bool>("engine.alerter");
         m_cleaner = pt.get<bool>("engine.cleaner");
         m_calculator = pt.get<bool>("engine.calculator");
+        m_probeChecker = pt.get<bool>("engine.probe-checker");
         sleepThreadCheckAlert = pt.get<int>("engine.sleep-alert-reading");
         sleepThreadRemoveOldValues = pt.get<int>("engine.sleep-remove-old-values");
         sleepThreadCalculate = pt.get<int>("engine.sleep-calculate");
@@ -121,6 +122,7 @@ bool Conf::readConfFile()
         setDBPassword(pt.get<string>("database.password"));
         setSessConnectParams(m_dbHost, m_dbPort, m_dbName, m_dbUser, m_dbPassword);
 
+        setAPIHttps(pt.get<bool>("api.https"));
         setAPIHost(pt.get<string>("api.host"));
         setAPIPort(pt.get<unsigned>("api.port"));
 
@@ -173,6 +175,10 @@ bool Conf::isCleaner() const
 bool Conf::isCalculator() const
 {
     return this->m_calculator;
+}
+bool Conf::isProbeChecker() const
+{
+    return this->m_probeChecker;
 }
 
 void Conf::setPath(string path)
@@ -305,6 +311,17 @@ unsigned Conf::getAPIPort() const
     return m_apiPort;
 }
 
+bool Conf::isAPIHttps() const
+{
+    return m_apiHttps;
+}
+
+void Conf::setAPIHttps(bool apiHttps)
+{
+    m_apiHttps = apiHttps;
+
+    return;
+}
 
 void Conf::setCriticity(unsigned short criticity)
 {
