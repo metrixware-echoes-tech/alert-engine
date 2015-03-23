@@ -274,10 +274,16 @@ void Server::isProbeAlive(Wt::Json::Value result)
             
             
             Wt::WDateTime lastAlert = pPrb->lastDownAlert;
+            Wt::WDateTime lastLog = pPrb->lastlog;
             Wt::WDateTime now = Wt::WDateTime::currentDateTime();
             int timeToWaitBeforeAlerting = pPrb->snoozeBeforeNextWarning;
             
-            if (((lastAlert.secsTo(now)) > timeToWaitBeforeAlerting) || lastAlert.isNull()) 
+            // Si le dernier log est après la dernière alerte 
+            // et que le heartbeat est false (condition qui nous permet d'arriver ici))
+            // OU qu'on a dépassé le délais depuis la dernière alerte
+            // OU qu'aucune alerte n'a jamais été envoyée
+            // On passe sendAlert à true.
+            if ((lastLog.secsTo(lastAlert) < 0) || ((lastAlert.secsTo(now)) > timeToWaitBeforeAlerting) || lastAlert.isNull()) 
             {
                 probeName = pPrb->name;
                 mediaId = pPrb->asset->organization->defaultMedia.id();
@@ -497,7 +503,7 @@ string Server::getApiAddress()
     apiAddress = "http";
     apiAddress += (conf.isAPIHttps() ? "s" : "");
     apiAddress += "://" + conf.getAPIHost() + ":" + boost::lexical_cast<string>(conf.getAPIPort()) + "/";
-
+    
     return apiAddress;
 }
 
@@ -513,10 +519,12 @@ void Server::sendHttpRequestGet(string resource, vector<string> listParameter, b
     }
     
     log("debug") << "[GET] address to call : " << apiAddress;
-    
+
     Wt::WIOService ioService;
     ioService.start();
     Wt::Http::Client *client = new Wt::Http::Client(ioService);
+    //FIXME: Use Wt Server ? Add parameters to the engine ?
+    client->setSslCertificateVerificationEnabled(false);
     client->done().connect(boost::bind(&Server::getResourceCallback, this, _1, _2, client, functor));
     if (!client->get(apiAddress))
     {
@@ -530,11 +538,13 @@ void Server::sendHttpRequestPost(string resource, Wt::Http::Message *message, Wt
     string apiAddress = getApiAddress();
     apiAddress += resource;
     apiAddress += "?eno_token=" + enoToken.toUTF8();
+    
     Wt::WIOService ioService;
     ioService.start();
     Wt::Http::Client *client = new Wt::Http::Client(ioService);
+    //FIXME: Use Wt Server ? Add parameters to the engine ?
+    client->setSslCertificateVerificationEnabled(false);
     client->done().connect(boost::bind(&Server::postResourceCallback, this, _1, _2, client));
-
 
     if (!client->post(apiAddress, *message))
     {
