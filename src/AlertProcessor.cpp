@@ -617,10 +617,16 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
                         "Content-length: $2\\n"
                         "Connection: close\\n\\n"
                         "{\\\\\\\"information_value_ids\\\\\\\": [$1],\\\\\\\"alert_id\\\\\\\":" + boost::lexical_cast<string>(alePtr.id()) + "}\\n\\n\n"
-                        "action=shellcmd (/usr/bin/perl -e \"alarm(2); exec(\\\"/usr/bin/printf \\'%s\\' | "
-                        + (conf.isAPIHttps() ? ("/usr/bin/openssl s_client -quiet -crlf -connect ") : ("/usr/bin/telnet ")) + conf.getAPIHost() + (conf.isAPIHttps() ? ":" : " ") + boost::lexical_cast<string>(conf.getAPIPort()) + "\\\")\")\n";
-
-                // { printf "GET %s?%s HTTP/1.1\nHost: %s\nConnection: close\n\n" "$1" "$2" "$API_HOST"; sleep 1; }  | /usr/bin/telnet ${API_HOST} 
+                        "action=shellcmd (/usr/bin/perl -e \"alarm(2); exec(\\\"/usr/bin/printf \\'%s\\' | ";
+                if(conf.isAPIHttps())
+                {
+                    masterRule += "/usr/bin/openssl s_client -quiet -crlf -connect " + conf.getAPIHost() + ":";
+                }
+                else
+                {
+                    masterRule += "/usr/bin/telnet " + conf.getAPIHost() + " ";
+                }
+                masterRule += boost::lexical_cast<string>(conf.getAPIPort()) + "\\\")\")\n";
 
                 secConfFile << inputRule;
                 secConfFile << "desc=dsds\n";

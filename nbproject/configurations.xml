@@ -64,7 +64,7 @@
             <pElem>include</pElem>
             <pElem>../dbo/include</pElem>
           </incDir>
-          <commandLine>-pedantic -DNDEBUG</commandLine>
+          <commandLine>-pedantic</commandLine>
           <warningLevel>2</warningLevel>
         </ccTool>
         <linkerTool>
