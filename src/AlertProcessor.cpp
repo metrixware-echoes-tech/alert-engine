@@ -29,6 +29,7 @@ AlertProcessor::AlertProcessor(Echoes::Dbo::Session &session) : m_session(sessio
                 .limit(1);
 
         transaction.commit();
+        
     }
     catch (Wt::Dbo::Exception const& e)
     {
@@ -66,13 +67,13 @@ int AlertProcessor::verifyAlerts(int *signum)
                     {
                         if (m_alertsMap.find(it->id()) == m_alertsMap.end())
                         {
-                            Wt::Dbo::ptr<Echoes::Dbo::EngOrg> engOrgPtr = m_session.find<Echoes::Dbo::EngOrg>()
+                            Wt::Dbo::ptr<Echoes::Dbo::EngGrp> engGrpPtr = m_session.find<Echoes::Dbo::EngGrp>()
                                     .where(QUOTE(TRIGRAM_ENGINE ID SEP TRIGRAM_ENGINE ID)" = ?").bind(m_enginePtr.id())
-                                    .where(QUOTE(TRIGRAM_ORGANIZATION ID SEP TRIGRAM_ORGANIZATION ID)" = ?").bind(it->get()->alertSequence->alertValue->informationData->asset->organization.id())
-                                    .where(QUOTE(TRIGRAM_ENG_ORG SEP "DELETE")" IS NULL")
+                                    .where(QUOTE(TRIGRAM_GROUP ID SEP TRIGRAM_GROUP ID)" = ?").bind(it->get()->alertSequence->alertValue->informationData->asset->group.id())
+                                    .where(QUOTE(TRIGRAM_ENG_GRP SEP "DELETE")" IS NULL")
                                     .limit(1);
                             log("info") << "Call responded";
-                            if (engOrgPtr)
+                            if (engGrpPtr)
                             {                                
                                 for (Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::AlertMediaSpecialization> >::const_iterator itMS = it->get()->alertMediaSpecializations.begin(); itMS != it->get()->alertMediaSpecializations.end(); ++itMS)
                                 {
@@ -100,7 +101,7 @@ int AlertProcessor::verifyAlerts(int *signum)
                                     };
                                 }
                                                                
-                                startAlert(*it, engOrgPtr);
+                                startAlert(*it, engGrpPtr);
                             }
                             else
                             {
@@ -134,13 +135,13 @@ int AlertProcessor::verifyAlerts(int *signum)
                     {
                         if (it->get()->alertSequence.id() > 0)
                         {
-                            Wt::Dbo::ptr<Echoes::Dbo::EngOrg> enoPtr = m_session.find<Echoes::Dbo::EngOrg>()
+                            Wt::Dbo::ptr<Echoes::Dbo::EngGrp> egpPtr = m_session.find<Echoes::Dbo::EngGrp>()
                                     .where(QUOTE(TRIGRAM_ENGINE ID SEP TRIGRAM_ENGINE ID)" = ?").bind(m_enginePtr.id())
-                                    .where(QUOTE(TRIGRAM_ORGANIZATION ID SEP TRIGRAM_ORGANIZATION ID)" = ?").bind(it->get()->alertSequence->alertValue->informationData->asset->organization.id())
-                                    .where(QUOTE(TRIGRAM_ENG_ORG SEP "DELETE")" IS NULL")
+                                    .where(QUOTE(TRIGRAM_GROUP ID SEP TRIGRAM_GROUP ID)" = ?").bind(it->get()->alertSequence->alertValue->informationData->asset->group.id())
+                                    .where(QUOTE(TRIGRAM_ENG_GRP SEP "DELETE")" IS NULL")
                                     .limit(1);
 
-                            if (enoPtr)
+                            if (egpPtr)
                             {
                                 it->modify()->engine = m_enginePtr;
                                 it->flush();
@@ -177,7 +178,7 @@ int AlertProcessor::verifyAlerts(int *signum)
                                 it->flush();
 
                                 
-                                startAlert(*it, enoPtr);
+                                startAlert(*it, egpPtr);
                             }
                             else
                             {
@@ -350,7 +351,7 @@ std::string AlertProcessor::setTimeSlotContext(int numTimeSlot, int start, int d
     return (output);
 }
 
-void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo::ptr<Echoes::Dbo::EngOrg> enoPtr)
+void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo::ptr<Echoes::Dbo::EngGrp> egpPtr)
 {
     for (Wt::Dbo::collection<Wt::Dbo::ptr<Echoes::Dbo::AlertMediaSpecialization> >::const_iterator itMS = alePtr->alertMediaSpecializations.begin(); itMS != alePtr->alertMediaSpecializations.end(); ++itMS)
     {
@@ -611,7 +612,7 @@ void AlertProcessor::startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo
                     masterRule += ")";
                 }
                 
-                masterRule += ")\ndesc=POST /messages?eno_token=" + enoPtr->token + "&alert_media_specialization_id=" + boost::lexical_cast<string>(itMS->id()) + " HTTP/1.1\\n"
+                masterRule += ")\ndesc=POST /messages?eno_token=" + egpPtr->token + "&alert_media_specialization_id=" + boost::lexical_cast<string>(itMS->id()) + " HTTP/1.1\\n"
                         "Host: " + conf.getAPIHost() + "\\n"
                         "Content-Type: application/json; charset=utf-8\\n"
                         "Content-length: $2\\n"
