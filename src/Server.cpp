@@ -270,7 +270,7 @@ void Server::isProbeAlive(Wt::Json::Value result)
     }
     catch(Wt::Json::ParseError e)
     {
-        
+        log("error") << "Json parse error : " << e.what();
     }
     if (informationsGet && !heartbeat)
     {
