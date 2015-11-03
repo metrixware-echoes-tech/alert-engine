@@ -211,15 +211,15 @@ void Server::checkProbes()
 
             for (const Wt::Dbo::ptr<Echoes::Dbo::Probe> &prb : cPrb)
             {
-                Wt::Dbo::ptr<Echoes::Dbo::EngOrg> enoPtr = m_session.find<Echoes::Dbo::EngOrg>()
+                Wt::Dbo::ptr<Echoes::Dbo::EngGrp> egpPtr = m_session.find<Echoes::Dbo::EngGrp>()
                                    .where(QUOTE(TRIGRAM_ENGINE ID SEP TRIGRAM_ENGINE ID)" = ?").bind(pEng.id())
-                                   .where(QUOTE(TRIGRAM_ORGANIZATION ID SEP TRIGRAM_ORGANIZATION ID)" = ?").bind(prb->asset->organization.id())
-                                   .where(QUOTE(TRIGRAM_ENG_ORG SEP "DELETE")" IS NULL")
+                                   .where(QUOTE(TRIGRAM_GROUP ID SEP TRIGRAM_GROUP ID)" = ?").bind(prb->asset->group.id())
+                                   .where(QUOTE(TRIGRAM_ENG_GRP SEP "DELETE")" IS NULL")
                                    .limit(1);
                 
-                if (enoPtr)
+                if (egpPtr)
                 {
-                    enoIdTokens[prb.id()] = enoPtr->token;
+                    enoIdTokens[prb.id()] = egpPtr->token;
                 }
                 
             }
@@ -243,12 +243,36 @@ void Server::checkProbes()
 
 void Server::isProbeAlive(Wt::Json::Value result)
 {
-    Wt::Json::Object& jsonObject = result;   
+       
+
+    bool informationsGet = false;
     
-    int id = jsonObject.get("id");
-    bool heartbeat = jsonObject.get("probe_heartbeat");
-    
-    if (!heartbeat)
+    int id = -1;
+    bool heartbeat = false;
+    try
+    {
+        if(result.type() == Wt::Json::ObjectType)
+        {
+            Wt::Json::Object& jsonObject = result;
+            if(jsonObject.contains("probe_heartbeat")
+                    && jsonObject.contains("id"))
+            {
+                heartbeat = jsonObject.get("probe_heartbeat");
+                id = jsonObject.get("id");
+                informationsGet = true;
+            }
+        }
+        else
+        {
+            log("error") << "missing parameters or unsafe format";
+        }
+
+    }
+    catch(Wt::Json::ParseError e)
+    {
+        
+    }
+    if (informationsGet && !heartbeat)
     {
         bool sendAlert = false;
         Wt::WString probeName;
@@ -266,10 +290,10 @@ void Server::isProbeAlive(Wt::Json::Value result)
                    .where(QUOTE(TRIGRAM_PROBE ID)" = ?").bind(id)
                    .limit(1);
             
-            Wt::Dbo::ptr<Echoes::Dbo::EngOrg> enoPtr = m_session.find<Echoes::Dbo::EngOrg>()
+            Wt::Dbo::ptr<Echoes::Dbo::EngGrp> egpPtr = m_session.find<Echoes::Dbo::EngGrp>()
                                    .where(QUOTE(TRIGRAM_ENGINE ID SEP TRIGRAM_ENGINE ID)" = ?").bind(pEng.id())
-                                   .where(QUOTE(TRIGRAM_ORGANIZATION ID SEP TRIGRAM_ORGANIZATION ID)" = ?").bind(pPrb->asset->organization.id())
-                                   .where(QUOTE(TRIGRAM_ENG_ORG SEP "DELETE")" IS NULL")
+                                   .where(QUOTE(TRIGRAM_GROUP ID SEP TRIGRAM_GROUP ID)" = ?").bind(pPrb->asset->group.id())
+                                   .where(QUOTE(TRIGRAM_ENG_GRP SEP "DELETE")" IS NULL")
                                    .limit(1);
             
             
@@ -286,8 +310,8 @@ void Server::isProbeAlive(Wt::Json::Value result)
             if ((lastLog.secsTo(lastAlert) < 0) || ((lastAlert.secsTo(now)) > timeToWaitBeforeAlerting) || lastAlert.isNull()) 
             {
                 probeName = pPrb->name;
-                mediaId = pPrb->asset->organization->defaultMedia.id();
-                enoToken = enoPtr->token;
+                mediaId = pPrb->asset->group->defaultMedia.id();
+                enoToken = egpPtr->token;
                 sendAlert = true;
                 pPrb.modify()->lastDownAlert = Wt::WDateTime::currentDateTime();
             }

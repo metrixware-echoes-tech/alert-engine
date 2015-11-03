@@ -76,7 +76,7 @@ class AlertProcessor {
         /**
          * Write SEC config file and launch it
          */
-        void startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo::ptr<Echoes::Dbo::EngOrg> enoPtr);
+        void startAlert(Wt::Dbo::ptr<Echoes::Dbo::Alert> alePtr, Wt::Dbo::ptr<Echoes::Dbo::EngGrp> enoPtr);
         /**
          * Stop SEC and remove its config file
          * @param IDentifier of the alert
