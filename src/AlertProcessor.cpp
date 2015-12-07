@@ -847,7 +847,9 @@ void AlertProcessor::informationValueLoop(const long long alertID, const long lo
                 int lotNumber = 0;
                 int lineNumber = 0;
 
-                log("debug") << "Retrieve IVA Key after: " << searchDateTime.toString("yyyy-MM-dd hh:mm:ss");
+                log("info") << "Retrieve IVA Key after: " << searchDateTime.toString("yyyy-MM-dd hh:mm:ss");
+                log("info") << "Retrieve IVA Key with IDA =  " << it->idakeyPtr.id();
+                log("info") << "Retrieve IVA Key with value = " << it->keyValue;
                 try
                 {
                     Wt::Dbo::Transaction transaction(m_session, true);
@@ -876,7 +878,7 @@ void AlertProcessor::informationValueLoop(const long long alertID, const long lo
                 }
                 if (isIVAKeyFound)
                 {
-                    log("debug") << "Retrieve IVA after: " << searchDateTime.toString("yyyy-MM-dd hh:mm:ss");
+                    log("info") << "Retrieve IVA after: " << searchDateTime.toString("yyyy-MM-dd hh:mm:ss");
                     try
                     {
                         Wt::Dbo::Transaction transaction(m_session, true);
@@ -906,7 +908,7 @@ void AlertProcessor::informationValueLoop(const long long alertID, const long lo
                 // second case, simple information without poskey
             else
             {
-                log("debug") << "Retrieve IVA after: " << searchDateTime.toString("yyyy-MM-dd hh:mm:ss");
+                log("info") << "Retrieve IVA after: " << searchDateTime.toString("yyyy-MM-dd hh:mm:ss");
                 try
                 {
                     Wt::Dbo::Transaction transaction(m_session, true);
